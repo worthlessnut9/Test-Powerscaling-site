@@ -187,15 +187,14 @@
   </div>
 
   <script>
-    // Link to your Form Responses published CSV URL
     const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQWRS4v9F9SJ-Y4wUOO3efaf3UXCItz8EX4wK4QV6lnHX37MQMrchewnvjC9IcwYnehddX5VjBAzUxi/pub?output=csv';
 
     let characterData = [];
 
-    // Helper functions to safely map Google Form response headers
-    const getCharName = (item) => item['Character Name'] || item.Character || '';
-    const getTier = (item) => item['Tier / Tier range'] || item.Tier || 'N/A';
-    const getAP = (item) => item['AP (Attack Potency)'] || item.AP || 'N/A';
+    // Exact Google Form response column mappings
+    const getCharName = (item) => item['Character Name'] || '';
+    const getTier = (item) => item['Tier / Tier range'] || 'N/A';
+    const getAP = (item) => item['AP (Attack Potency)'] || 'N/A';
     const getSpeed = (item) => item['Speed'] || 'N/A';
     const getDurability = (item) => item['Durability'] || 'N/A';
     const getStriking = (item) => item['Striking Strength'] || 'N/A';
@@ -203,12 +202,12 @@
     const getStamina = (item) => item['Stamina'] || 'N/A';
     const getRange = (item) => item['Range'] || 'N/A';
     const getIntel = (item) => item['Intelligence'] || 'N/A';
-    const getAbilities = (item) => item['Abilities'] || item['Hax / Abilities'] || 'N/A';
+    const getAbilities = (item) => item['Abilities'] || 'N/A';
     const getEquip = (item) => item['Standard Equipment'] || 'N/A';
-    const getFeats = (item) => item['External links for primary feats'] || item['Feat / Proof Link'] || '';
+    const getFeats = (item) => item['External links for primary feats'] || '';
     const getNotes = (item) => item['Notes'] || 'None';
-    const getTags = (item) => item['Tags'] || item.Tags || '';
-    const getImage = (item) => item['Image Link / Name'] || item['Image Link'] || '';
+    const getTags = (item) => item['Tags'] || '';
+    const getImage = (item) => item['Image Link / Name'] || '';
 
     async function loadDatabase() {
       Papa.parse(SHEET_CSV_URL, {
@@ -232,7 +231,7 @@
 
       data.forEach(item => {
         const charName = getCharName(item);
-        const imageSrc = getImage(item) || 'https://via.placeholder.com/300x350?text=No+Image';
+        const imageSrc = getImage(item) ? `images/${getImage(item)}` : 'https://via.placeholder.com/300x350?text=No+Image';
         const rawTags = getTags(item);
         const tagsArray = rawTags.split(',').map(t => t.replace(/"/g, '').trim()).filter(t => t.length > 0);
 
@@ -261,7 +260,7 @@
       document.getElementById('profile-view').classList.remove('hidden');
 
       const charName = getCharName(character);
-      const imageSrc = getImage(character) || 'https://via.placeholder.com/300x350?text=No+Image';
+      const imageSrc = getImage(character) ? `images/${getImage(character)}` : 'https://via.placeholder.com/300x350?text=No+Image';
       const proofLink = getFeats(character) ? `<a href="${getFeats(character)}" target="_blank" style="color: var(--accent);">View Feat / Calculation Proof</a>` : 'N/A';
       const rawTags = getTags(character);
       const tagsArray = rawTags.split(',').map(t => t.replace(/"/g, '').trim()).filter(t => t.length > 0);
