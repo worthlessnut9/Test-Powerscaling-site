@@ -197,8 +197,8 @@
         <div class="controls">
           <input type="text" id="search" placeholder="Search by character name, tier, or tags..." oninput="filterAndSortRoster()">
           <select id="sort-select" onchange="filterAndSortRoster()">
-            <option value="tier-desc">Tier (Strongest to Weakest / Tier 0 to 11)</option>
-            <option value="tier-asc">Tier (Weakest to Strongest / Tier 11 to 0)</option>
+            <option value="tier-asc">Tier (Weakest to Strongest)</option>
+            <option value="tier-desc">Tier (Strongest to Weakest)</option>
             <option value="name-asc">Alphabetical (A - Z)</option>
             <option value="name-desc">Alphabetical (Z - A)</option>
           </select>
@@ -334,35 +334,51 @@
       document.getElementById('roster-view').classList.remove('hidden');
     }
 
-    // Official VS Battles Wiki Tier Ranking Map (Higher score = Stronger tier)
+    // Exact Weak-to-Strong Tier Hierarchy Array
+    const exactTierSequence = [
+      "11-C", "11-B", "11-A", 
+      "LOW 10-C", "10-C", "10-B", "10-A", 
+      "9-C", "9-B", "9-A", 
+      "8-C", "HIGH 8-C", "8-B", "8-A", 
+      "LOW 7-C", "7-C", "HIGH 7-C", "LOW 7-B", "7-B", "7-A", "HIGH 7-A", 
+      "6-C", "HIGH 6-C", "LOW 6-B", "6-B", "HIGH 6-B", "6-A", "HIGH 6-A", 
+      "5-C", "LOW 5-B", "5-B", "5-A", "HIGH 5-A", 
+      "LOW 4-C", "4-C", "HIGH 4-C", "4-B", "4-A", 
+      "3-C", "3-B", "3-A", "HIGH 3-A", 
+      "LOW 2-C", "2-C", "2-C (X UNIVERSES)", "2-B", "2-A", 
+      "LOW 1-C", "1-C (X DIMENSIONS)", "HIGH 1-C (X DIMENSIONS)", "1-B (X DIMENSIONS)", "HIGH 1-B", 
+      "LOW 1-A", "1-A(X LAYERS)", "HIGH 1-A (X LAYERS)", "0"
+    ];
+
+    const tierRankMap = {};
+    exactTierSequence.forEach((tier, index) => {
+      tierRankMap[tier] = index;
+    });
+
     function parseTierWeight(tierStr) {
-      if (!tierStr) return 0;
+      if (!tierStr) return -1;
       let t = tierStr.toUpperCase().trim();
 
-      // Exact hierarchical weights matching VS Battles Wiki
-      const mapping = {
-        '0': 1000,
-        'HIGH 1-A': 910, '1-A': 900, 'LOW 1-A': 890,
-        'HIGH 1-B': 860, '1-B': 850,
-        'HIGH 1-C': 820, '1-C': 810, 'LOW 1-C': 800,
-        '2-A': 730, '2-B': 720, '2-C': 710, 'LOW 2-C': 700,
-        'HIGH 3-A': 640, '3-A': 630, '3-B': 620, '3-C': 610,
-        'HIGH 4-A': 540, '4-A': 530, '4-B': 520, 'HIGH 4-C': 515, '4-C': 510, 'LOW 4-C': 505,
-        'HIGH 5-A': 445, '5-A': 440, '5-B': 430, 'LOW 5-B': 420, '5-C': 410,
-        'HIGH 6-A': 365, '6-A': 360, 'HIGH 6-B': 355, '6-B': 350, 'LOW 6-B': 345, 'HIGH 6-C': 340, '6-C': 335,
-        'HIGH 7-A': 275, '7-A': 270, '7-B': 265, 'LOW 7-B': 260, 'HIGH 7-C': 255, '7-C': 250, 'LOW 7-C': 245,
-        'HIGH 8-C': 190, '8-A': 185, '8-B': 180, '8-C': 175,
-        '9-A': 125, '9-B': 120, '9-C': 115,
-        '10-A': 75, '10-B': 70, '10-C': 65,
-        '11-A': 25, '11-B': 20, '11-C': 15
-      };
+      // Direct exact match
+      if (tierRankMap[t] !== undefined) {
+        return tierRankMap[t];
+      }
 
-      for (let key in mapping) {
+      // Check if any key is contained in the tier string
+      for (let key of exactTierSequence) {
         if (t.includes(key)) {
-          return mapping[key];
+          // If there is an X number (e.g. 2-C (5 Universes)), let's extract the number to handle sorting within the same tier
+          let baseWeight = tierRankMap[key];
+          let numMatch = t.match(/\d+/g);
+          // If a number exists after the base tier, add a fractional weight based on that number
+          if (numMatch && numMatch.length > 1) {
+            let numericVal = parseInt(numMatch[numMatch.length - 1], 10);
+            return baseWeight + (numericVal * 0.01);
+          }
+          return baseWeight;
         }
       }
-      return 50; // default fallback
+      return 999; // unknown fallback
     }
 
     function filterAndSortRoster() {
@@ -387,12 +403,12 @@
           const weightA = parseTierWeight(getTier(a));
           const weightB = parseTierWeight(getTier(b));
 
-          if (sortValue === 'tier-desc') {
-            // Strongest to Weakest (Tier 0 -> Tier 11)
-            return weightB - weightA;
-          } else {
-            // Weakest to Strongest (Tier 11 -> Tier 0)
+          if (sortValue === 'tier-asc') {
+            // Weakest to Strongest (11-C up to 0)
             return weightA - weightB;
+          } else {
+            // Strongest to Weakest (0 down to 11-C)
+            return weightB - weightA;
           }
         }
       });
