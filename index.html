@@ -197,10 +197,10 @@
         <div class="controls">
           <input type="text" id="search" placeholder="Search by character name, tier, or tags..." oninput="filterAndSortRoster()">
           <select id="sort-select" onchange="filterAndSortRoster()">
+            <option value="tier-desc">Tier (Strongest to Weakest / Tier 0 to 11)</option>
+            <option value="tier-asc">Tier (Weakest to Strongest / Tier 11 to 0)</option>
             <option value="name-asc">Alphabetical (A - Z)</option>
             <option value="name-desc">Alphabetical (Z - A)</option>
-            <option value="tier-desc">Tier (High to Low / Tier 0 to 10)</option>
-            <option value="tier-asc">Tier (Low to High / Tier 10 to 0)</option>
           </select>
         </div>
       </header>
@@ -222,15 +222,15 @@
     const getCharName = (item) => item['Character Name'] || item.Character || '';
     const getTier = (item) => item['Tier / Tier range'] || item.Tier || 'N/A';
     const getAP = (item) => item['AP (Attack Potency)'] || item.AP || 'N/A';
-    const getSpeed = (item) => item['Speed'] || 'N/A';
-    const getDurability = (item) => item['Durability'] || 'N/A';
-    const getStriking = (item) => item['Striking Strength'] || 'N/A';
-    const getLifting = (item) => item['Lifting Strength'] || 'N/A';
-    const getStamina = (item) => item['Stamina'] || 'N/A';
-    const getRange = (item) => item['Range'] || 'N/A';
-    const getIntel = (item) => item['Intelligence'] || 'N/A';
+    const getSpeed = (item) => item['Speed'] || item.Speed || 'N/A';
+    const getDurability = (item) => item['Durability'] || item.Durability || 'N/A';
+    const getStriking = (item) => item['Striking Strength'] || item['Striking Strength'] || 'N/A';
+    const getLifting = (item) => item['Lifting Strength'] || item['Lifting Strength'] || 'N/A';
+    const getStamina = (item) => item['Stamina'] || item.Stamina || 'N/A';
+    const getRange = (item) => item['Range'] || item.Range || 'N/A';
+    const getIntel = (item) => item['Intelligence'] || item.Intelligence || 'N/A';
     const getAbilities = (item) => item['Abilities'] || item['Hax / Abilities'] || 'N/A';
-    const getEquip = (item) => item['Standard Equipment'] || 'N/A';
+    const getEquip = (item) => item['Standard Equipment'] || item.Equipment || 'N/A';
     const getFeats = (item) => item['External links for primary feats'] || item['Feat / Proof Link'] || '';
     const getNotes = (item) => item['Notes'] || 'None';
     const getTags = (item) => item['Tags'] || item.Tags || '';
@@ -334,27 +334,35 @@
       document.getElementById('roster-view').classList.remove('hidden');
     }
 
-    // Helper to parse tiers into a numerical scale for correct mathematical sorting
+    // Official VS Battles Wiki Tier Ranking Map (Higher score = Stronger tier)
     function parseTierWeight(tierStr) {
-      if (!tierStr) return 999;
-      let t = tierStr.toUpperCase();
-      
-      // Handle High / Low modifiers
-      let modifierWeight = 0; // Standard
-      if (t.includes('HIGH')) modifierWeight = 0.3;
-      if (t.includes('LOW')) modifierWeight = -0.3;
+      if (!tierStr) return 0;
+      let t = tierStr.toUpperCase().trim();
 
-      // Extract main tier number (e.g. 0, 1, 4, 5, 8, 10)
-      let match = t.match(/\b([0-9]|1[0-1])\b/);
-      if (match) {
-        let baseNum = parseInt(match[1], 10);
-        // In standard power scaling, Tier 0 is highest, Tier 10 is lowest.
-        // Let's invert so higher tier number = lower power, OR keep raw number inverted: (10 - baseNum) + modifier
-        // Let's map Tier 0 -> 100, Tier 1 -> 90, ..., Tier 10 -> 0
-        let weight = (10 - baseNum) * 10 + modifierWeight;
-        return weight;
+      // Exact hierarchical weights matching VS Battles Wiki
+      const mapping = {
+        '0': 1000,
+        'HIGH 1-A': 910, '1-A': 900, 'LOW 1-A': 890,
+        'HIGH 1-B': 860, '1-B': 850,
+        'HIGH 1-C': 820, '1-C': 810, 'LOW 1-C': 800,
+        '2-A': 730, '2-B': 720, '2-C': 710, 'LOW 2-C': 700,
+        'HIGH 3-A': 640, '3-A': 630, '3-B': 620, '3-C': 610,
+        'HIGH 4-A': 540, '4-A': 530, '4-B': 520, 'HIGH 4-C': 515, '4-C': 510, 'LOW 4-C': 505,
+        'HIGH 5-A': 445, '5-A': 440, '5-B': 430, 'LOW 5-B': 420, '5-C': 410,
+        'HIGH 6-A': 365, '6-A': 360, 'HIGH 6-B': 355, '6-B': 350, 'LOW 6-B': 345, 'HIGH 6-C': 340, '6-C': 335,
+        'HIGH 7-A': 275, '7-A': 270, '7-B': 265, 'LOW 7-B': 260, 'HIGH 7-C': 255, '7-C': 250, 'LOW 7-C': 245,
+        'HIGH 8-C': 190, '8-A': 185, '8-B': 180, '8-C': 175,
+        '9-A': 125, '9-B': 120, '9-C': 115,
+        '10-A': 75, '10-B': 70, '10-C': 65,
+        '11-A': 25, '11-B': 20, '11-C': 15
+      };
+
+      for (let key in mapping) {
+        if (t.includes(key)) {
+          return mapping[key];
+        }
       }
-      return 50; // default middle weight if unparsed
+      return 50; // default fallback
     }
 
     function filterAndSortRoster() {
@@ -376,15 +384,14 @@
         } else if (sortValue === 'name-desc') {
           return nameB.localeCompare(nameA);
         } else {
-          // Tier sorting using numerical weights
           const weightA = parseTierWeight(getTier(a));
           const weightB = parseTierWeight(getTier(b));
 
           if (sortValue === 'tier-desc') {
-            // High to Low (Tier 0 / High 4-C down to Tier 10)
+            // Strongest to Weakest (Tier 0 -> Tier 11)
             return weightB - weightA;
           } else {
-            // Low to High (Tier 10 up to Tier 0)
+            // Weakest to Strongest (Tier 11 -> Tier 0)
             return weightA - weightB;
           }
         }
