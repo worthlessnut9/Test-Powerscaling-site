@@ -199,8 +199,8 @@
           <select id="sort-select" onchange="filterAndSortRoster()">
             <option value="name-asc">Alphabetical (A - Z)</option>
             <option value="name-desc">Alphabetical (Z - A)</option>
-            <option value="tier-asc">Tier (Low to High / 10 to 0)</option>
-            <option value="tier-desc">Tier (High to Low / 0 to 10)</option>
+            <option value="tier-desc">Tier (High to Low / Tier 0 to 10)</option>
+            <option value="tier-asc">Tier (Low to High / Tier 10 to 0)</option>
           </select>
         </div>
       </header>
@@ -319,11 +319,8 @@
             <div class="stat-box"><div class="stat-label">Durability</div><div class="stat-value">${getDurability(character)}</div></div>
             <div class="stat-box"><div class="stat-label">Striking Strength</div><div class="stat-value">${getStriking(character)}</div></div>
             <div class="stat-box"><div class="stat-label">Lifting Strength</div><div class="stat-value">${getLifting(character)}</div></div>
-            <div class="stat-box"><div class="stat-label">Stamina</div><div class="stat-value">${getStamina(character)}</div></div>
-            <div class="stat-box"><div class="stat-label">Range</div><div class="stat-value">${getRange(character)}</div></div>
-            <div class="stat-box"><div class="stat-label">Intelligence</div><div class="stat-value">${getIntel(character)}</div></div>
+            <div class="stat-box"><div class="stat-label">Standard Equipment</div><div class="stat-value">${getEquip(character)}</div></div>
             <div class="stat-box full-width"><div class="stat-label">Abilities / Hax</div><div class="stat-value">${getAbilities(character)}</div></div>
-            <div class="stat-box full-width"><div class="stat-label">Standard Equipment</div><div class="stat-value">${getEquip(character)}</div></div>
             <div class="stat-box full-width"><div class="stat-label">Feats & Primary Calculation Links</div><div class="stat-value">${proofLink}</div></div>
             <div class="stat-box full-width"><div class="stat-label">Notes / Additional Context</div><div class="stat-value">${getNotes(character)}</div></div>
           </div>
@@ -335,6 +332,29 @@
     function showRoster() {
       document.getElementById('profile-view').classList.add('hidden');
       document.getElementById('roster-view').classList.remove('hidden');
+    }
+
+    // Helper to parse tiers into a numerical scale for correct mathematical sorting
+    function parseTierWeight(tierStr) {
+      if (!tierStr) return 999;
+      let t = tierStr.toUpperCase();
+      
+      // Handle High / Low modifiers
+      let modifierWeight = 0; // Standard
+      if (t.includes('HIGH')) modifierWeight = 0.3;
+      if (t.includes('LOW')) modifierWeight = -0.3;
+
+      // Extract main tier number (e.g. 0, 1, 4, 5, 8, 10)
+      let match = t.match(/\b([0-9]|1[0-1])\b/);
+      if (match) {
+        let baseNum = parseInt(match[1], 10);
+        // In standard power scaling, Tier 0 is highest, Tier 10 is lowest.
+        // Let's invert so higher tier number = lower power, OR keep raw number inverted: (10 - baseNum) + modifier
+        // Let's map Tier 0 -> 100, Tier 1 -> 90, ..., Tier 10 -> 0
+        let weight = (10 - baseNum) * 10 + modifierWeight;
+        return weight;
+      }
+      return 50; // default middle weight if unparsed
     }
 
     function filterAndSortRoster() {
@@ -350,19 +370,24 @@
       filtered.sort((a, b) => {
         const nameA = getCharName(a).toLowerCase();
         const nameB = getCharName(b).toLowerCase();
-        const tierA = getTier(a).toLowerCase();
-        const tierB = getTier(b).toLowerCase();
 
         if (sortValue === 'name-asc') {
           return nameA.localeCompare(nameB);
         } else if (sortValue === 'name-desc') {
           return nameB.localeCompare(nameA);
-        } else if (sortValue === 'tier-asc') {
-          return tierA.localeCompare(tierB);
-        } else if (sortValue === 'tier-desc') {
-          return tierB.localeCompare(tierA);
+        } else {
+          // Tier sorting using numerical weights
+          const weightA = parseTierWeight(getTier(a));
+          const weightB = parseTierWeight(getTier(b));
+
+          if (sortValue === 'tier-desc') {
+            // High to Low (Tier 0 / High 4-C down to Tier 10)
+            return weightB - weightA;
+          } else {
+            // Low to High (Tier 10 up to Tier 0)
+            return weightA - weightB;
+          }
         }
-        return 0;
       });
 
       renderRoster(filtered);
