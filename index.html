@@ -334,8 +334,8 @@
       document.getElementById('roster-view').classList.remove('hidden');
     }
 
-    // Exact Weak-to-Strong Tier Hierarchy Array
-    const exactTierSequence = [
+    // Expanded Weak-to-Strong Tier Hierarchy Sequence with support for '+' variants directly above base tiers
+    const baseTierSequence = [
       "11-C", "11-B", "11-A", 
       "LOW 10-C", "10-C", "10-B", "10-A", 
       "9-C", "9-B", "9-A", 
@@ -349,6 +349,12 @@
       "LOW 1-C", "1-C (X DIMENSIONS)", "HIGH 1-C (X DIMENSIONS)", "1-B (X DIMENSIONS)", "HIGH 1-B", 
       "LOW 1-A", "1-A(X LAYERS)", "HIGH 1-A (X LAYERS)", "0"
     ];
+
+    const exactTierSequence = [];
+    baseTierSequence.forEach(tier => {
+      exactTierSequence.push(tier);
+      exactTierSequence.push(tier + "+");
+    });
 
     const tierRankMap = {};
     exactTierSequence.forEach((tier, index) => {
@@ -364,13 +370,11 @@
         return tierRankMap[t];
       }
 
-      // Check if any key is contained in the tier string
+      // Check if any base key is contained in the tier string
       for (let key of exactTierSequence) {
         if (t.includes(key)) {
-          // If there is an X number (e.g. 2-C (5 Universes)), let's extract the number to handle sorting within the same tier
           let baseWeight = tierRankMap[key];
           let numMatch = t.match(/\d+/g);
-          // If a number exists after the base tier, add a fractional weight based on that number
           if (numMatch && numMatch.length > 1) {
             let numericVal = parseInt(numMatch[numMatch.length - 1], 10);
             return baseWeight + (numericVal * 0.01);
