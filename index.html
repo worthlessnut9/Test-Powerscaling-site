@@ -75,7 +75,6 @@
       border: 1px solid var(--border-color);
       border-radius: 10px;
       overflow: hidden;
-      cursor: pointer;
       transition: transform 0.2s ease, border-color 0.2s ease;
     }
     .card:hover { transform: translateY(-4px); border-color: var(--accent); }
@@ -85,10 +84,25 @@
       height: 220px;
       object-fit: cover;
       background: #000;
+      cursor: pointer;
     }
 
     .card-body { padding: 16px; }
-    .card-title { margin: 0 0 6px 0; color: #fff; font-size: 1.25rem; }
+    .card-title { 
+      margin: 0 0 6px 0; 
+      color: #fff; 
+      font-size: 1.25rem; 
+      cursor: pointer; 
+    }
+    .card-title:hover { color: var(--accent); }
+
+    .badge-container {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      margin-bottom: 8px;
+    }
 
     .badge {
       display: inline-block;
@@ -98,6 +112,16 @@
       border-radius: 12px;
       font-size: 0.8rem;
       font-weight: bold;
+    }
+
+    .stat-badge {
+      display: inline-block;
+      background: var(--tag-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
     }
 
     .tags-container {
@@ -224,8 +248,8 @@
     const getAP = (item) => item['AP (Attack Potency)'] || item.AP || 'N/A';
     const getSpeed = (item) => item['Speed'] || item.Speed || 'N/A';
     const getDurability = (item) => item['Durability'] || item.Durability || 'N/A';
-    const getStriking = (item) => item['Striking Strength'] || item['Striking Strength'] || 'N/A';
-    const getLifting = (item) => item['Lifting Strength'] || item['Lifting Strength'] || 'N/A';
+    const getStriking = (item) => item['Striking Strength'] || 'N/A';
+    const getLifting = (item) => item['Lifting Strength'] || 'N/A';
     const getStamina = (item) => item['Stamina'] || item.Stamina || 'N/A';
     const getRange = (item) => item['Range'] || item.Range || 'N/A';
     const getIntel = (item) => item['Intelligence'] || item.Intelligence || 'N/A';
@@ -267,15 +291,20 @@
         const imageSrc = getImage(item) || 'https://via.placeholder.com/300x350?text=No+Image';
         const rawTags = getTags(item);
         const tagsArray = rawTags.split(',').map(t => t.replace(/"/g, '').trim()).filter(t => t.length > 0);
+        const escapedName = charName.replace(/'/g, "\\'");
 
         const card = document.createElement('div');
         card.className = 'card';
 
         card.innerHTML = `
-          <img class="card-img" src="${imageSrc}" alt="${charName}" onerror="this.src='https://via.placeholder.com/300x350?text=Image+Not+Found'">
-          <div class="card-body" onclick="showProfile('${charName.replace(/'/g, "\\'")}')">
-            <h2 class="card-title">${charName}</h2>
-            <span class="badge">Tier ${getTier(item)}</span>
+          <img class="card-img" src="${imageSrc}" alt="${charName}" onclick="showProfile('${escapedName}')" onerror="this.src='https://via.placeholder.com/300x350?text=Image+Not+Found'">
+          <div class="card-body">
+            <h2 class="card-title" onclick="showProfile('${escapedName}')">${charName}</h2>
+            <div class="badge-container">
+              <span class="badge">Tier ${getTier(item)}</span>
+              <span class="stat-badge">AP: ${getAP(item)}</span>
+              <span class="stat-badge">Speed: ${getSpeed(item)}</span>
+            </div>
             <div class="tags-container">
               ${tagsArray.map(tag => `<span class="tag" onclick="event.stopPropagation(); searchByTag('${tag}')">${tag}</span>`).join('')}
             </div>
@@ -334,27 +363,21 @@
       document.getElementById('roster-view').classList.remove('hidden');
     }
 
-    // Expanded Weak-to-Strong Tier Hierarchy Sequence with support for '+' variants directly above base tiers
-    const baseTierSequence = [
-      "11-C", "11-B", "11-A", 
-      "LOW 10-C", "10-C", "10-B", "10-A", 
-      "9-C", "9-B", "9-A", 
-      "8-C", "HIGH 8-C", "8-B", "8-A", 
-      "LOW 7-C", "7-C", "HIGH 7-C", "LOW 7-B", "7-B", "7-A", "HIGH 7-A", 
-      "6-C", "HIGH 6-C", "LOW 6-B", "6-B", "HIGH 6-B", "6-A", "HIGH 6-A", 
-      "5-C", "LOW 5-B", "5-B", "5-A", "HIGH 5-A", 
-      "LOW 4-C", "4-C", "HIGH 4-C", "4-B", "4-A", 
-      "3-C", "3-B", "3-A", "HIGH 3-A", 
-      "LOW 2-C", "2-C", "2-C (X UNIVERSES)", "2-B", "2-A", 
-      "LOW 1-C", "1-C (X DIMENSIONS)", "HIGH 1-C (X DIMENSIONS)", "1-B (X DIMENSIONS)", "HIGH 1-B", 
-      "LOW 1-A", "1-A(X LAYERS)", "HIGH 1-A (X LAYERS)", "0"
+    const exactTierSequence = [
+      "11-C", "11-C+", "11-B", "11-B+", "11-A", "11-A+", 
+      "LOW 10-C", "LOW 10-C+", "10-C", "10-C+", "10-B", "10-B+", "10-A", "10-A+", 
+      "9-C", "9-C+", "9-B", "9-B+", "9-A", "9-A+", 
+      "8-C", "8-C+", "HIGH 8-C", "HIGH 8-C+", "8-B", "8-B+", "8-A", "8-A+", 
+      "LOW 7-C", "LOW 7-C+", "7-C", "7-C+", "HIGH 7-C", "HIGH 7-C+", 
+      "LOW 7-B", "LOW 7-B+", "7-B", "7-B+", "7-A", "7-A+", "HIGH 7-A", "HIGH 7-A+", 
+      "6-C", "6-C+", "HIGH 6-C", "HIGH 6-C+", "LOW 6-B", "LOW 6-B+", "6-B", "6-B+", "HIGH 6-B", "HIGH 6-B+", "6-A", "6-A+", "HIGH 6-A", "HIGH 6-A+", 
+      "5-C", "5-C+", "LOW 5-B", "LOW 5-B+", "5-B", "5-B+", "5-A", "5-A+", "HIGH 5-A", "HIGH 5-A+", 
+      "LOW 4-C", "LOW 4-C+", "4-C", "4-C+", "HIGH 4-C", "HIGH 4-C+", "4-B", "4-B+", "4-A", "4-A+", 
+      "3-C", "3-C+", "3-B", "3-B+", "3-A", "3-A+", "HIGH 3-A", "HIGH 3-A+", 
+      "LOW 2-C", "LOW 2-C+", "2-C", "2-C+", "2-C (X UNIVERSES)", "2-C (X UNIVERSES)+", "2-B", "2-B+", "2-A", "2-A+", 
+      "LOW 1-C", "LOW 1-C+", "1-C (X DIMENSIONS)", "1-C (X DIMENSIONS)+", "HIGH 1-C (X DIMENSIONS)", "HIGH 1-C (X DIMENSIONS)+", "1-B (X DIMENSIONS)", "1-B (X DIMENSIONS)+", "HIGH 1-B", "HIGH 1-B+", 
+      "LOW 1-A", "LOW 1-A+", "1-A(X LAYERS)", "1-A(X LAYERS)+", "HIGH 1-A (X LAYERS)", "HIGH 1-A (X LAYERS)+", "0", "0+"
     ];
-
-    const exactTierSequence = [];
-    baseTierSequence.forEach(tier => {
-      exactTierSequence.push(tier);
-      exactTierSequence.push(tier + "+");
-    });
 
     const tierRankMap = {};
     exactTierSequence.forEach((tier, index) => {
@@ -365,24 +388,26 @@
       if (!tierStr) return -1;
       let t = tierStr.toUpperCase().trim();
 
-      // Direct exact match
       if (tierRankMap[t] !== undefined) {
         return tierRankMap[t];
       }
 
-      // Check if any base key is contained in the tier string
       for (let key of exactTierSequence) {
-        if (t.includes(key)) {
+        let baseKey = key.replace('+', '');
+        if (t.includes(baseKey)) {
           let baseWeight = tierRankMap[key];
+          let hasPlus = t.includes('+');
+          let modifier = hasPlus ? 0.5 : 0;
+
           let numMatch = t.match(/\d+/g);
           if (numMatch && numMatch.length > 1) {
             let numericVal = parseInt(numMatch[numMatch.length - 1], 10);
-            return baseWeight + (numericVal * 0.01);
+            return baseWeight + modifier + (numericVal * 0.01);
           }
-          return baseWeight;
+          return baseWeight + modifier;
         }
       }
-      return 999; // unknown fallback
+      return 999;
     }
 
     function filterAndSortRoster() {
@@ -408,10 +433,8 @@
           const weightB = parseTierWeight(getTier(b));
 
           if (sortValue === 'tier-asc') {
-            // Weakest to Strongest (11-C up to 0)
             return weightA - weightB;
           } else {
-            // Strongest to Weakest (0 down to 11-C)
             return weightB - weightA;
           }
         }
