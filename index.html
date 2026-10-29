@@ -29,7 +29,13 @@
 
     .container { max-width: 1100px; margin: 0 auto; }
     header { text-align: center; margin-bottom: 30px; }
-    h1 { color: #fff; margin-bottom: 15px; }
+    h1 { color: #fff; margin-bottom: 8px; }
+
+    #character-count {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 15px;
+    }
 
     .controls {
       display: flex;
@@ -218,6 +224,7 @@
     <div id="roster-view">
       <header>
         <h1>Powerscaling Database</h1>
+        <div id="character-count">Loading characters...</div>
         <div class="controls">
           <input type="text" id="search" placeholder="Search by character name, tier, or tags..." oninput="filterAndSortRoster()">
           <select id="sort-select" onchange="filterAndSortRoster()">
@@ -279,7 +286,17 @@
 
     function renderRoster(data) {
       const grid = document.getElementById('character-grid');
+      const countEl = document.getElementById('character-count');
       grid.innerHTML = '';
+
+      // Update character counter text
+      const totalLoaded = characterData.length;
+      const currentShowing = data.length;
+      if (totalLoaded === currentShowing) {
+        countEl.textContent = `${totalLoaded} characters loaded`;
+      } else {
+        countEl.textContent = `Showing ${currentShowing} of ${totalLoaded} characters`;
+      }
 
       if (data.length === 0) {
         grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1;">No characters found.</p>';
