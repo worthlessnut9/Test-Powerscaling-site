@@ -250,6 +250,17 @@
 
     let characterData = [];
 
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    const FALLBACK_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="350"><rect width="100%" height="100%" fill="#000"/><text x="50%" y="50%" fill="#8b949e" font-family="sans-serif" font-size="16" text-anchor="middle">No image</text></svg>');
+
+    // Swap any broken image for the inline fallback exactly once (can't loop)
+    document.addEventListener('error', (e) => {
+      const el = e.target;
+      if (el.tagName === 'IMG' && !el.dataset.fb) { el.dataset.fb = '1'; el.src = FALLBACK_IMG; }
+    }, true);
+
     const getCharName = (item) => item['Character Name'] || item.Character || '';
     const getTier = (item) => item['Tier / Tier range'] || item.Tier || 'N/A';
     const getAP = (item) => item['AP (Attack Potency)'] || item.AP || 'N/A';
@@ -265,120 +276,163 @@
     const getFeats = (item) => item['External links for primary feats'] || item['Feat / Proof Link'] || '';
     const getNotes = (item) => item['Notes'] || 'None';
     const getTags = (item) => item['Tags'] || item.Tags || '';
-    
+
     const getImage = (item) => {
-      const rawVal = item['Image Link / Name'] || item['Image Link'] || '';
-      if (!rawVal.trim()) return '';
-      const cleanFileName = rawVal.trim().replace(/^(\.\/)?(Images|images)\//, '');
-      return `./Images/${cleanFileName}`;
+      const raw = (item['Image Link / Name'] || item['Image Link'] || '').trim();
+      if (!raw) return '';
+      if (/^https?:\/\//i.test(raw)) return raw;
+      const clean = raw.replace(/^(\.\/)?images\//i, '').replace(/[#?]/g, (c) => encodeURIComponent(c));
+      return `./Images/${clean}`;
     };
 
-    async function loadDatabase() {
-      Papa.parse(SHEET_CSV_URL, {
-        download: true,
-        header: true,
-        complete: (results) => {
-          characterData = results.data.filter(item => getCharName(item).trim() !== '');
-          filterAndSortRoster();
-        }
+    // Only http(s) links are allowed; anything else is shown as plain text
+    const safeUrl = (u) => {
+      try { const x = new URL(String(u).trim()); return /^https?:$/.test(x.protocol) ? x.href : ''; }
+      catch { return ''; }
+    };
+
+    const tagsOf = (item) => getTags(item).split(',').map((t) => t.replace(/"/g, '').trim()).filter(Boolean);
+    const tagHtml = (t) => `<span class="tag" data-tag="${esc(t)}">${esc(t)}</span>`;
+
+    // Unique, URL-safe slug per character for #/slug links
+    function assignSlugs() {
+      const used = new Set();
+      characterData.forEach((c) => {
+        const base = getCharName(c).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'character';
+        let slug = base, n = 2;
+        while (used.has(slug)) slug = `${base}-${n++}`;
+        used.add(slug);
+        c._slug = slug;
       });
     }
 
+    function loadDatabase() {
+      $('character-count').textContent = 'Loading characters...';
+      if (typeof Papa === 'undefined') return showLoadError('The CSV library (PapaParse) did not load.');
+      try {
+        Papa.parse(SHEET_CSV_URL, {
+          download: true,
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            try {
+              const rows = results.data.filter((item) => getCharName(item).trim() !== '');
+              if (!rows.length) return showLoadError('The sheet returned no characters.');
+              characterData = rows;
+              assignSlugs();
+              filterAndSortRoster();
+              route();
+            } catch (err) { showLoadError(err.message || err); }
+          },
+          error: (err) => showLoadError((err && err.message) || err)
+        });
+      } catch (err) { showLoadError(err.message || err); }
+    }
+
+    function showLoadError(detail) {
+      $('character-count').textContent = 'Could not load characters';
+      $('character-grid').innerHTML = `<div style="grid-column: 1/-1; text-align:center;">
+        <p>Couldn't load the database. Check your connection and try again.</p>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">${esc(detail || '')}</p>
+        <button class="back-btn" id="retry-btn">Retry</button></div>`;
+    }
+
     function renderRoster(data) {
-      const grid = document.getElementById('character-grid');
-      const countEl = document.getElementById('character-count');
-      grid.innerHTML = '';
+      const total = characterData.length;
+      $('character-count').textContent = total === data.length
+        ? `${total} characters loaded`
+        : `Showing ${data.length} of ${total} characters`;
 
-      // Update character counter text
-      const totalLoaded = characterData.length;
-      const currentShowing = data.length;
-      if (totalLoaded === currentShowing) {
-        countEl.textContent = `${totalLoaded} characters loaded`;
-      } else {
-        countEl.textContent = `Showing ${currentShowing} of ${totalLoaded} characters`;
-      }
-
-      if (data.length === 0) {
+      const grid = $('character-grid');
+      if (!data.length) {
         grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1;">No characters found.</p>';
         return;
       }
 
-      data.forEach(item => {
-        const charName = getCharName(item);
-        const imageSrc = getImage(item) || 'https://via.placeholder.com/300x350?text=No+Image';
-        const rawTags = getTags(item);
-        const tagsArray = rawTags.split(',').map(t => t.replace(/"/g, '').trim()).filter(t => t.length > 0);
-        const escapedName = charName.replace(/'/g, "\\'");
-
-        const card = document.createElement('div');
-        card.className = 'card';
-
-        card.innerHTML = `
-          <img class="card-img" src="${imageSrc}" alt="${charName}" onclick="showProfile('${escapedName}')" onerror="this.src='https://via.placeholder.com/300x350?text=Image+Not+Found'">
-          <div class="card-body">
-            <h2 class="card-title" onclick="showProfile('${escapedName}')">${charName}</h2>
-            <div class="badge-container">
-              <span class="badge">Tier ${getTier(item)}</span>
-              <span class="stat-badge">AP: ${getAP(item)}</span>
-              <span class="stat-badge">Speed: ${getSpeed(item)}</span>
+      grid.innerHTML = data.map((item) => {
+        const name = esc(getCharName(item));
+        const slug = esc(item._slug);
+        return `
+          <div class="card">
+            <img class="card-img" src="${esc(getImage(item) || FALLBACK_IMG)}" alt="${name}" loading="lazy" decoding="async" data-slug="${slug}">
+            <div class="card-body">
+              <h2 class="card-title" data-slug="${slug}">${name}</h2>
+              <div class="badge-container">
+                <span class="badge">Tier ${esc(getTier(item))}</span>
+                <span class="stat-badge">AP: ${esc(getAP(item))}</span>
+                <span class="stat-badge">Speed: ${esc(getSpeed(item))}</span>
+              </div>
+              <div class="tags-container">${tagsOf(item).map(tagHtml).join('')}</div>
             </div>
-            <div class="tags-container">
-              ${tagsArray.map(tag => `<span class="tag" onclick="event.stopPropagation(); searchByTag('${tag}')">${tag}</span>`).join('')}
-            </div>
-          </div>
-        `;
-        grid.appendChild(card);
-      });
+          </div>`;
+      }).join('');
     }
 
-    function showProfile(characterName) {
-      const character = characterData.find(item => getCharName(item) === characterName);
-      if (!character) return;
+    function renderProfile(c) {
+      const name = esc(getCharName(c));
+      const feats = getFeats(c).trim();
+      const url = safeUrl(feats);
+      const proofLink = url
+        ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" style="color: var(--accent);">View Feat / Calculation Proof</a>`
+        : (feats ? esc(feats) : 'N/A');
 
-      document.getElementById('roster-view').classList.add('hidden');
-      document.getElementById('profile-view').classList.remove('hidden');
-
-      const charName = getCharName(character);
-      const imageSrc = getImage(character) || 'https://via.placeholder.com/300x350?text=No+Image';
-      const proofLink = getFeats(character) ? `<a href="${getFeats(character)}" target="_blank" style="color: var(--accent);">View Feat / Calculation Proof</a>` : 'N/A';
-      const rawTags = getTags(character);
-      const tagsArray = rawTags.split(',').map(t => t.replace(/"/g, '').trim()).filter(t => t.length > 0);
-
-      const profileContent = document.getElementById('profile-content');
-      profileContent.innerHTML = `
+      $('profile-content').innerHTML = `
         <div class="profile-header">
-          <img class="profile-img" src="${imageSrc}" alt="${charName}" onerror="this.src='https://via.placeholder.com/300x350?text=Image+Not+Found'">
+          <img class="profile-img" src="${esc(getImage(c) || FALLBACK_IMG)}" alt="${name}">
           <div class="profile-info">
-            <h1>${charName}</h1>
-            <div style="margin-top: 15px;"><span class="badge" style="font-size: 1rem;">Tier ${getTier(character)}</span></div>
-            <div class="tags-container" style="margin-top: 15px;">
-              ${tagsArray.map(tag => `<span class="tag" onclick="searchByTag('${tag}')">${tag}</span>`).join('')}
-            </div>
+            <h1>${name}</h1>
+            <div style="margin-top: 15px;"><span class="badge" style="font-size: 1rem;">Tier ${esc(getTier(c))}</span></div>
+            <div class="tags-container" style="margin-top: 15px;">${tagsOf(c).map(tagHtml).join('')}</div>
           </div>
         </div>
 
         <div class="stats-section">
           <h2>Combat Metrics & Powerscaling</h2>
           <div class="stats-grid">
-            <div class="stat-box"><div class="stat-label">Attack Potency (AP)</div><div class="stat-value">${getAP(character)}</div></div>
-            <div class="stat-box"><div class="stat-label">Speed</div><div class="stat-value">${getSpeed(character)}</div></div>
-            <div class="stat-box"><div class="stat-label">Durability</div><div class="stat-value">${getDurability(character)}</div></div>
-            <div class="stat-box"><div class="stat-label">Striking Strength</div><div class="stat-value">${getStriking(character)}</div></div>
-            <div class="stat-box"><div class="stat-label">Lifting Strength</div><div class="stat-value">${getLifting(character)}</div></div>
-            <div class="stat-box"><div class="stat-label">Standard Equipment</div><div class="stat-value">${getEquip(character)}</div></div>
-            <div class="stat-box full-width"><div class="stat-label">Abilities / Hax</div><div class="stat-value">${getAbilities(character)}</div></div>
+            <div class="stat-box"><div class="stat-label">Attack Potency (AP)</div><div class="stat-value">${esc(getAP(c))}</div></div>
+            <div class="stat-box"><div class="stat-label">Speed</div><div class="stat-value">${esc(getSpeed(c))}</div></div>
+            <div class="stat-box"><div class="stat-label">Durability</div><div class="stat-value">${esc(getDurability(c))}</div></div>
+            <div class="stat-box"><div class="stat-label">Striking Strength</div><div class="stat-value">${esc(getStriking(c))}</div></div>
+            <div class="stat-box"><div class="stat-label">Lifting Strength</div><div class="stat-value">${esc(getLifting(c))}</div></div>
+            <div class="stat-box"><div class="stat-label">Standard Equipment</div><div class="stat-value">${esc(getEquip(c))}</div></div>
+            <div class="stat-box full-width"><div class="stat-label">Abilities / Hax</div><div class="stat-value">${esc(getAbilities(c))}</div></div>
             <div class="stat-box full-width"><div class="stat-label">Feats & Primary Calculation Links</div><div class="stat-value">${proofLink}</div></div>
-            <div class="stat-box full-width"><div class="stat-label">Notes / Additional Context</div><div class="stat-value">${getNotes(character)}</div></div>
+            <div class="stat-box full-width"><div class="stat-label">Notes / Additional Context</div><div class="stat-value">${esc(getNotes(c))}</div></div>
           </div>
-        </div>
-      `;
-      window.scrollTo(0, 0);
+        </div>`;
+    }
+
+    // ---- Routing: #/character-slug opens a profile, no hash shows the roster ----
+    function setView(c) {
+      $('roster-view').classList.toggle('hidden', !!c);
+      $('profile-view').classList.toggle('hidden', !c);
+      document.title = c ? `${getCharName(c)} - Powerscaling Database` : 'Powerscaling Database';
+      if (c) { renderProfile(c); window.scrollTo(0, 0); }
+    }
+
+    function route() {
+      const m = location.hash.match(/^#\/(.+)$/);
+      let slug = '';
+      try { slug = m ? decodeURIComponent(m[1]) : ''; } catch { slug = ''; }
+      setView(slug ? characterData.find((c) => c._slug === slug) : null);
     }
 
     function showRoster() {
-      document.getElementById('profile-view').classList.add('hidden');
-      document.getElementById('roster-view').classList.remove('hidden');
+      if (location.hash) location.hash = '';   // triggers hashchange -> route()
+      else setView(null);
     }
+
+    window.addEventListener('hashchange', route);
+
+    // One delegated click handler replaces all the inline onclick strings
+    document.querySelector('.container').addEventListener('click', (e) => {
+      if (e.target.closest('#retry-btn')) return loadDatabase();
+      const tag = e.target.closest('[data-tag]');
+      if (tag) return searchByTag(tag.dataset.tag);
+      const card = e.target.closest('[data-slug]');
+      if (card) location.hash = '#/' + card.dataset.slug;
+    });
 
     const exactTierSequence = [
       "11-C", "11-C+", "11-B", "11-B+", "11-A", "11-A+", 
@@ -396,78 +450,55 @@
       "LOW 1-A", "LOW 1-A+", "1-A(X LAYERS)", "1-A(X LAYERS)+", "HIGH 1-A (X LAYERS)", "HIGH 1-A (X LAYERS)+", "0", "0+"
     ];
 
+    const normTier = (s) => s.toUpperCase().replace(/\s+/g, ' ').replace(/ \(/g, '(');
     const tierRankMap = {};
-    exactTierSequence.forEach((tier, index) => {
-      tierRankMap[tier] = index;
-    });
+    exactTierSequence.forEach((tier, i) => { tierRankMap[normTier(tier)] = i; });
 
+    // Longest tier names first so "HIGH 7-A+" wins over "7-A"
+    const tierRegex = new RegExp('(?:^|[^\\w-])(' +
+      Object.keys(tierRankMap).sort((a, b) => b.length - a.length)
+        .map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')(?!\\w)');
+
+    // Returns the rank of the first tier found in the string (so ranges sort by
+    // their first tier), or null when nothing is recognised.
     function parseTierWeight(tierStr) {
-      if (!tierStr) return -1;
-      let t = tierStr.toUpperCase().trim();
-
-      if (tierRankMap[t] !== undefined) {
-        return tierRankMap[t];
-      }
-
-      for (let key of exactTierSequence) {
-        let baseKey = key.replace('+', '');
-        if (t.includes(baseKey)) {
-          let baseWeight = tierRankMap[key];
-          let hasPlus = t.includes('+');
-          let modifier = hasPlus ? 0.5 : 0;
-
-          let numMatch = t.match(/\d+/g);
-          if (numMatch && numMatch.length > 1) {
-            let numericVal = parseInt(numMatch[numMatch.length - 1], 10);
-            return baseWeight + modifier + (numericVal * 0.01);
-          }
-          return baseWeight + modifier;
-        }
-      }
-      return 999;
+      const m = normTier(String(tierStr || '')).match(tierRegex);
+      return m ? tierRankMap[m[1]] : null;
     }
 
     function filterAndSortRoster() {
-      const query = document.getElementById('search').value.toLowerCase();
-      const sortValue = document.getElementById('sort-select').value;
+      const query = $('search').value.toLowerCase();
+      const sortValue = $('sort-select').value;
 
-      let filtered = characterData.filter(item =>
+      const filtered = characterData.filter((item) =>
         getCharName(item).toLowerCase().includes(query) ||
         getTier(item).toLowerCase().includes(query) ||
         getTags(item).toLowerCase().includes(query)
       );
 
       filtered.sort((a, b) => {
-        const nameA = getCharName(a).toLowerCase();
-        const nameB = getCharName(b).toLowerCase();
+        if (sortValue === 'name-asc') return getCharName(a).toLowerCase().localeCompare(getCharName(b).toLowerCase());
+        if (sortValue === 'name-desc') return getCharName(b).toLowerCase().localeCompare(getCharName(a).toLowerCase());
 
-        if (sortValue === 'name-asc') {
-          return nameA.localeCompare(nameB);
-        } else if (sortValue === 'name-desc') {
-          return nameB.localeCompare(nameA);
-        } else {
-          const weightA = parseTierWeight(getTier(a));
-          const weightB = parseTierWeight(getTier(b));
-
-          if (sortValue === 'tier-asc') {
-            return weightA - weightB;
-          } else {
-            return weightB - weightA;
-          }
-        }
+        const wa = parseTierWeight(getTier(a));
+        const wb = parseTierWeight(getTier(b));
+        if (wa === null && wb === null) return 0;
+        if (wa === null) return 1;    // unrecognised tiers always go last
+        if (wb === null) return -1;
+        return sortValue === 'tier-asc' ? wa - wb : wb - wa;
       });
 
       renderRoster(filtered);
     }
 
     function searchByTag(tag) {
-      showRoster();
-      const searchInput = document.getElementById('search');
-      searchInput.value = tag;
+      $('search').value = tag;
       filterAndSortRoster();
+      showRoster();
     }
 
     loadDatabase();
+
   </script>
 </body>
 </html>
