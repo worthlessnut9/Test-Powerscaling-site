@@ -5,6 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Compare - Powerscaling Database</title>
   <link rel="stylesheet" href="site.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <style>
+    .sec-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .sec-head h2 { margin: 0; }
+    .matchup { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: start; }
+    .vs { align-self: center; color: var(--text-muted); font-weight: 700; letter-spacing: 0.1em; }
+    .pick { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-main); font-size: 1rem; }
+    .pick:focus { outline: none; border-color: var(--accent); }
+    .fighter { margin-top: 12px; }
+    .fighter img { width: 100%; max-height: 320px; object-fit: cover; border-radius: 10px; background: #000; border: 1px solid var(--border-color); }
+    .fighter h3 { color: #fff; margin: 12px 0 8px; }
+    .row { background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+    .lbl { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px; }
+    .val { color: #fff; white-space: pre-line; }
+    .btn { background: var(--tag-bg); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 16px; cursor: pointer; font-size: 0.95rem; }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn.small { padding: 4px 10px; font-size: 0.8rem; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; }
+    .tab { background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; color: var(--text-muted); padding: 10px 16px; cursor: pointer; font-size: 0.95rem; }
+    .tab:hover { color: var(--text-main); }
+    .tab[aria-selected="true"] { color: #fff; border-bottom-color: var(--accent); }
+    @media (max-width: 700px) { .matchup { grid-template-columns: 1fr; } .vs { justify-self: center; } }
+  </style>
 </head>
 <body>
   <nav class="site-nav">
@@ -16,11 +39,115 @@
       <a href="terms.html">Terms</a>
     </div>
   </nav>
+
   <main class="container">
     <header>
       <h1>Compare</h1>
-      <p class="muted">Coming soon.</p>
+      <p class="muted" id="status">Loading characters...</p>
     </header>
+
+    <datalist id="names"></datalist>
+    <div class="tabs" id="tabs" role="tablist"></div>
+    <div id="panels"></div>
   </main>
+
+  <script>
+    const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQWRS4v9F9SJ-Y4wUOO3efaf3UXCItz8EX4wK4QV6lnHX37MQMrchewnvjC9IcwYnehddX5VjBAzUxi/pub?output=csv';
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const FALLBACK_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="350"><rect width="100%" height="100%" fill="#000"/><text x="50%" y="50%" fill="#8b949e" font-family="sans-serif" font-size="16" text-anchor="middle">No image</text></svg>');
+
+    document.addEventListener('error', (e) => {
+      const el = e.target;
+      if (el.tagName === 'IMG' && !el.dataset.fb) { el.dataset.fb = '1'; el.src = FALLBACK_IMG; }
+    }, true);
+
+    const val = (item, ...keys) => { for (const k of keys) { const v = (item[k] || '').trim(); if (v) return v; } return ''; };
+    const isEmpty = (v) => !v || /^(none|n\/a)$/i.test(v.trim());   // "None" fields are not shown
+    const nameOf = (item) => val(item, 'Character Name', 'Character');
+    const imageOf = (item) => {
+      const raw = val(item, 'Image Link / Name', 'Image Link');
+      if (!raw) return '';
+      if (/^https?:\/\//i.test(raw)) return raw;
+      return './Images/' + raw.replace(/^(\.\/)?images\//i, '').replace(/[#?]/g, (c) => encodeURIComponent(c));
+    };
+
+    const FIELDS = [
+      ['Attack Potency', ['AP (Attack Potency)', 'AP']],
+      ['Durability', ['Durability']],
+      ['Speed', ['Speed']],
+      ['Abilities', ['Abilities', 'Hax / Abilities']],
+      ['Items', ['Standard Equipment', 'Equipment']]
+    ];
+
+    const byName = new Map();
+
+    function fighterHtml(c) {
+      const rows = FIELDS.map(([label, keys]) => {
+        const v = val(c, ...keys);
+        return isEmpty(v) ? '' : `<div class="row"><div class="lbl">${label}</div><div class="val">${esc(v)}</div></div>`;
+      }).join('');
+      return `<img src="${esc(imageOf(c) || FALLBACK_IMG)}" alt="${esc(nameOf(c))}"><h3>${esc(nameOf(c))}</h3>${rows}`;
+    }
+
+    // ---- Tabs: each comparison type is one entry in TABS. To add a type, write a build function and add it below. ----
+    function buildFight(el) {
+      const side = (i) => `<div class="side"><input class="pick" list="names" placeholder="Choose character ${i}..." autocomplete="off" aria-label="Character ${i}"><div class="fighter"></div></div>`;
+      el.innerHTML = `<div class="matchup">${side(1)}<div class="vs">VS</div>${side(2)}</div>`;
+      el.querySelectorAll('.side').forEach((s) => {
+        const input = s.querySelector('.pick'), box = s.querySelector('.fighter');
+        input.addEventListener('input', () => {
+          const c = byName.get(input.value.trim().toLowerCase());
+          box.innerHTML = c ? fighterHtml(c) : '';
+        });
+      });
+    }
+
+    const TABS = [
+      { id: 'fight', title: 'Fight', build: buildFight }
+    ];
+
+    TABS.forEach((t) => {
+      const btn = document.createElement('button');
+      btn.className = 'tab';
+      btn.id = 'tab-' + t.id;
+      btn.textContent = t.title;
+      btn.setAttribute('role', 'tab');
+      btn.addEventListener('click', () => { location.hash = '#' + t.id; });
+      $('tabs').appendChild(btn);
+
+      const panel = document.createElement('section');
+      panel.className = 'panel';
+      panel.id = 'panel-' + t.id;
+      t.build(panel);   // built once, so picks are kept when switching tabs
+      $('panels').appendChild(panel);
+    });
+
+    function showTab() {
+      const id = (TABS.find((t) => '#' + t.id === location.hash) || TABS[0]).id;
+      TABS.forEach((t) => {
+        $('panel-' + t.id).hidden = t.id !== id;
+        $('tab-' + t.id).setAttribute('aria-selected', String(t.id === id));
+      });
+    }
+    window.addEventListener('hashchange', showTab);
+    showTab();
+
+    // ---- Load characters from the sheet ----
+    function fail(msg) { $('status').textContent = "Couldn't load characters. " + (msg || ''); }
+
+    if (typeof Papa === 'undefined') fail('The CSV library did not load.');
+    else Papa.parse(SHEET_CSV_URL, {
+      download: true, header: true, skipEmptyLines: true,
+      complete: (r) => {
+        const chars = r.data.filter((i) => nameOf(i));
+        chars.forEach((c) => { const k = nameOf(c).toLowerCase(); if (!byName.has(k)) byName.set(k, c); });
+        $('names').innerHTML = [...byName.values()].map(nameOf).sort((a, b) => a.localeCompare(b)).map((n) => `<option value="${esc(n)}">`).join('');
+        $('status').textContent = `${byName.size} characters available. Type a name to pick a fighter.`;
+        document.querySelectorAll('.pick').forEach((i) => i.dispatchEvent(new Event('input')));
+      },
+      error: (err) => fail(err && err.message)
+    });
+  </script>
 </body>
 </html>
