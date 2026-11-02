@@ -215,6 +215,15 @@
     }
     .stat-value { color: #fff; font-size: 1rem; }
     .full-width { grid-column: 1 / -1; }
+      .folder-bar { margin: 0 0 12px; }
+    .folder-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 0.8rem; }
+    .crumb { color: var(--accent); text-decoration: none; }
+    .crumb:hover { text-decoration: underline; }
+    .crumb-sep { color: var(--text-muted); }
+    .crumb-cur { color: var(--text-main); font-weight: 600; }
+    .folder-chip { background: var(--tag-bg); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; padding: 3px 10px; text-decoration: none; }
+    .folder-chip:hover { border-color: var(--accent); color: var(--accent); }
+    .folder-chip span { color: var(--text-muted); margin-left: 6px; }
   </style>
 </head>
 <body>
@@ -235,6 +244,7 @@
           </select>
         </div>
       </header>
+      <div id="folder-bar" class="folder-bar" style="display:none"></div>
       <div id="character-grid" class="grid"></div>
     </div>
 
@@ -321,6 +331,7 @@
               if (!rows.length) return showLoadError('The sheet returned no characters.');
               characterData = rows;
               assignSlugs();
+              buildFolderTree();
               filterAndSortRoster();
               route();
             } catch (err) { showLoadError(err.message || err); }
@@ -346,7 +357,7 @@
 
       const grid = $('character-grid');
       if (!data.length) {
-        grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1;">No characters found.</p>';
+        grid.innerHTML = (folderRoot.kids.size && !$('search').value.trim()) ? '' : '<p style="text-align:center; grid-column: 1/-1;">No characters found.</p>';
         return;
       }
 
@@ -408,20 +419,91 @@
       $('roster-view').classList.toggle('hidden', !!c);
       $('profile-view').classList.toggle('hidden', !c);
       document.title = c ? `${getCharName(c)} - Powerscaling Database` : 'Powerscaling Database';
-      if (c) { renderProfile(c); window.scrollTo(0, 0); }
+      if (c) { currentPath = c._path || []; renderProfile(c); window.scrollTo(0, 0); }
     }
 
+    // ---- Folders: the "Folders" column holds a path like  Marvel > MCU > Phase 1 > Iron Man (2008)
+    const getFolders = (item) => (item['Folders'] || item['Folder'] || '').trim();
+    const slugify = (x) => String(x).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    const safeDecode = (x) => { try { return decodeURIComponent(x); } catch { return x; } };
+
+    let folderRoot = { name: 'Home', kids: new Map(), chars: [], count: 0 };
+    let currentPath = [];   // folder slugs from Home down to the open folder
+
+    function buildFolderTree() {
+      folderRoot = { name: 'Home', kids: new Map(), chars: [], count: 0 };
+      characterData.forEach((c) => {
+        c._path = [];
+        let node = folderRoot;
+        node.count++;
+        // "Marvel" / "marvel" / "Marvel " all land in the same folder (first spelling is shown)
+        getFolders(c).split(/\s*(?:>|›|→|»)\s*/).map((part) => part.trim()).filter(Boolean).forEach((name) => {
+          const key = name.toLowerCase().replace(/\s+/g, ' ');
+          if (!node.kids.has(key)) node.kids.set(key, { name, slug: '', kids: new Map(), chars: [], count: 0 });
+          node = node.kids.get(key);
+          node.count++;
+        });
+        node.chars.push(c);   // characters with no folder stay at Home
+      });
+      const walk = (n, path) => {
+        const used = new Set();
+        n.kids.forEach((k) => {
+          const base = slugify(k.name) || 'folder';
+          let slug = base, i = 2;
+          while (used.has(slug)) slug = `${base}-${i++}`;
+          used.add(slug);
+          k.slug = slug;
+          const kp = [...path, slug];
+          k.chars.forEach((c) => { c._path = kp; });
+          walk(k, kp);
+        });
+      };
+      walk(folderRoot, []);
+    }
+
+    function folderNode(path) {
+      let node = folderRoot;
+      for (const slug of path) {
+        node = [...node.kids.values()].find((k) => k.slug === slug);
+        if (!node) return null;
+      }
+      return node;
+    }
+
+    function renderFolderBar(node, searching) {
+      const bar = $('folder-bar');
+      bar.style.display = folderRoot.kids.size ? '' : 'none';   // hidden until the sheet has folders
+      let n = folderRoot;
+      const acc = [];
+      const trail = [{ name: 'Home', href: '#/f/' }].concat(currentPath.map((slug) => {
+        n = [...n.kids.values()].find((k) => k.slug === slug);
+        acc.push(slug);
+        return { name: n.name, href: '#/f/' + acc.join('/') };
+      }));
+      const crumbs = trail.map((t, i) => (i === trail.length - 1 && !searching)
+        ? `<span class="crumb-cur">${esc(t.name)}</span>`
+        : `<a class="crumb" href="${esc(t.href)}">${esc(t.name)}</a>`).join('<span class="crumb-sep">›</span>');
+      const chips = [...node.kids.values()].sort((a, b) => a.name.localeCompare(b.name))
+        .map((k) => `<a class="folder-chip" href="#/f/${[...currentPath, k.slug].join('/')}">${esc(k.name)}<span>${k.count}</span></a>`).join('');
+      bar.innerHTML = `<div class="folder-row">${crumbs}</div>` +
+        (searching ? '<div class="folder-row"><span class="crumb-sep">Searching all folders</span></div>'
+                   : (chips ? `<div class="folder-row">${chips}</div>` : ''));
+    }
+
+    // ---- Routing: #/f/marvel/mcu = a folder, #/character-slug = a profile ----
     function route() {
-      const m = location.hash.match(/^#\/(.+)$/);
-      let slug = '';
-      try { slug = m ? decodeURIComponent(m[1]) : ''; } catch { slug = ''; }
-      setView(slug ? characterData.find((c) => c._slug === slug) : null);
+      const h = location.hash;
+      const f = h.match(/^#\/f\/(.*)$/);
+      if (f) { currentPath = f[1].split('/').filter(Boolean).map(safeDecode); return showFolder(); }
+      const m = h.match(/^#\/(.+)$/);
+      const c = m && characterData.find((x) => x._slug === safeDecode(m[1]));
+      if (c) setView(c); else showFolder();
     }
 
-    function showRoster() {
-      if (location.hash) location.hash = '';   // triggers hashchange -> route()
-      else setView(null);
-    }
+    function showFolder() { setView(null); filterAndSortRoster(); }
+
+    // Back button / tag clicks: return to the folder the character lives in
+    function showRoster() { location.hash = '#/f/' + currentPath.join('/'); }
 
     window.addEventListener('hashchange', route);
 
@@ -470,7 +552,9 @@
       const query = $('search').value.toLowerCase();
       const sortValue = $('sort-select').value;
 
-      const filtered = characterData.filter((item) =>
+      const node = folderNode(currentPath) || (currentPath = [], folderRoot);
+      const pool = query.trim() ? characterData : node.chars;
+      const filtered = pool.filter((item) =>
         getCharName(item).toLowerCase().includes(query) ||
         getTier(item).toLowerCase().includes(query) ||
         getTags(item).toLowerCase().includes(query)
@@ -489,6 +573,10 @@
       });
 
       renderRoster(filtered);
+      renderFolderBar(node, !!query.trim());
+      $('character-count').textContent = query.trim()
+        ? `${filtered.length} of ${characterData.length} characters match`
+        : (currentPath.length ? `${node.count} characters in ${node.name}` : `${characterData.length} characters loaded`);
     }
 
     function searchByTag(tag) {
