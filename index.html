@@ -224,6 +224,8 @@
     .folder-chip { background: var(--tag-bg); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; padding: 3px 10px; text-decoration: none; }
     .folder-chip:hover { border-color: var(--accent); color: var(--accent); }
     .folder-chip span { color: var(--text-muted); margin-left: 6px; }
+      .stat-note { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-color); font-size: 0.85rem; line-height: 1.5; color: var(--text-muted); }
+    .stat-note a, .stat-value a { color: var(--accent); }
   </style>
 </head>
 <body>
@@ -377,13 +379,33 @@
       }).join('');
     }
 
+    // Explanation text: [label](https://link) and bare https:// links become clickable
+    function richText(txt, bareLabel) {
+      const re = /\[([^\]]+)\]\((https?:\/\/(?:[^\s()]|\([^\s()]*\))+)\)|(https?:\/\/[^\s<]*[^\s<.,;:!?)])/g;
+      let out = '', last = 0, m;
+      while ((m = re.exec(txt))) {
+        out += esc(txt.slice(last, m.index));
+        const url = safeUrl(m[2] || m[3]);
+        const label = m[1] || bareLabel || (url && new URL(url).hostname.replace(/^www\./, ''));
+        out += url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>` : esc(m[0]);
+        last = re.lastIndex;
+      }
+      return (out + esc(txt.slice(last))).replace(/\r?\n/g, '<br>');
+    }
+
     function renderProfile(c) {
       const name = esc(getCharName(c));
+      // A stat box: label, value, and optional explanation text underneath (from the "<Stat> Notes" column)
+      const box = (label, value, note, full) => `<div class="stat-box${full ? ' full-width' : ''}">
+          <div class="stat-label">${label}</div>
+          <div class="stat-value">${value}</div>
+          ${note ? `<div class="stat-note">${note}</div>` : ''}
+        </div>`;
+      const col = (key) => { const t = (c[key] || '').trim(); return t ? richText(t) : ''; };
+      // Equipment / Abilities: the first line is the main text, anything after it is the explanation underneath
+      const split = (raw) => { const [first, ...rest] = String(raw).trim().split(/\r?\n/); return [richText(first), richText(rest.join('\n').trim())]; };
       const feats = getFeats(c).trim();
-      const url = safeUrl(feats);
-      const proofLink = url
-        ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" style="color: var(--accent);">View Feat / Calculation Proof</a>`
-        : (feats ? esc(feats) : 'N/A');
+      const notes = getNotes(c).trim();
 
       $('profile-content').innerHTML = `
         <div class="profile-header">
@@ -398,15 +420,15 @@
         <div class="stats-section">
           <h2>Combat Metrics & Powerscaling</h2>
           <div class="stats-grid">
-            <div class="stat-box"><div class="stat-label">Attack Potency (AP)</div><div class="stat-value">${esc(getAP(c))}</div></div>
-            <div class="stat-box"><div class="stat-label">Speed</div><div class="stat-value">${esc(getSpeed(c))}</div></div>
-            <div class="stat-box"><div class="stat-label">Durability</div><div class="stat-value">${esc(getDurability(c))}</div></div>
-            <div class="stat-box"><div class="stat-label">Striking Strength</div><div class="stat-value">${esc(getStriking(c))}</div></div>
-            <div class="stat-box"><div class="stat-label">Lifting Strength</div><div class="stat-value">${esc(getLifting(c))}</div></div>
-            <div class="stat-box"><div class="stat-label">Standard Equipment</div><div class="stat-value">${esc(getEquip(c))}</div></div>
-            <div class="stat-box full-width"><div class="stat-label">Abilities / Hax</div><div class="stat-value">${esc(getAbilities(c))}</div></div>
-            <div class="stat-box full-width"><div class="stat-label">Feats & Primary Calculation Links</div><div class="stat-value">${proofLink}</div></div>
-            <div class="stat-box full-width"><div class="stat-label">Notes / Additional Context</div><div class="stat-value">${esc(getNotes(c))}</div></div>
+            ${box('Attack Potency (AP)', esc(getAP(c)), col('AP Notes'))}
+            ${box('Speed', esc(getSpeed(c)), col('Speed Notes'))}
+            ${box('Durability', esc(getDurability(c)), col('Durability Notes'))}
+            ${box('Striking Strength', esc(getStriking(c)), col('Striking Strength Notes'))}
+            ${box('Lifting Strength', esc(getLifting(c)), col('Lifting Strength Notes'))}
+            ${box('Standard Equipment', ...split(getEquip(c)))}
+            ${box('Abilities / Hax', ...split(getAbilities(c)), true)}
+            ${box('Feats & Primary Calculation Links', feats ? richText(feats, 'View Feat / Calculation Proof') : 'N/A', '', true)}
+            ${box('Notes / Additional Context', notes ? richText(notes) : 'None', '', true)}
           </div>
         </div>`;
     }
