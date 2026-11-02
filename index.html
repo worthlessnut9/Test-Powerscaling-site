@@ -215,7 +215,7 @@
     }
     .stat-value { color: #fff; font-size: 1rem; }
     .full-width { grid-column: 1 / -1; }
-      .folder-bar { margin: 0 0 12px; }
+    .folder-bar { margin: 0 0 12px; }
     .folder-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 0.8rem; }
     .crumb { color: var(--accent); text-decoration: none; }
     .crumb:hover { text-decoration: underline; }
@@ -265,7 +265,6 @@
 
     const FALLBACK_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="350"><rect width="100%" height="100%" fill="#000"/><text x="50%" y="50%" fill="#8b949e" font-family="sans-serif" font-size="16" text-anchor="middle">No image</text></svg>');
 
-    // Swap any broken image for the inline fallback exactly once (can't loop)
     document.addEventListener('error', (e) => {
       const el = e.target;
       if (el.tagName === 'IMG' && !el.dataset.fb) { el.dataset.fb = '1'; el.src = FALLBACK_IMG; }
@@ -295,7 +294,6 @@
       return `./Images/${clean}`;
     };
 
-    // Only http(s) links are allowed; anything else is shown as plain text
     const safeUrl = (u) => {
       try { const x = new URL(String(u).trim()); return /^https?:$/.test(x.protocol) ? x.href : ''; }
       catch { return ''; }
@@ -304,7 +302,6 @@
     const tagsOf = (item) => getTags(item).split(',').map((t) => t.replace(/"/g, '').trim()).filter(Boolean);
     const tagHtml = (t) => `<span class="tag" data-tag="${esc(t)}">${esc(t)}</span>`;
 
-    // Unique, URL-safe slug per character for #/slug links
     function assignSlugs() {
       const used = new Set();
       characterData.forEach((c) => {
@@ -414,7 +411,6 @@
         </div>`;
     }
 
-    // ---- Routing: #/character-slug opens a profile, no hash shows the roster ----
     function setView(c) {
       $('roster-view').classList.toggle('hidden', !!c);
       $('profile-view').classList.toggle('hidden', !c);
@@ -422,31 +418,42 @@
       if (c) { currentPath = c._path || []; renderProfile(c); window.scrollTo(0, 0); }
     }
 
-    // ---- Folders: the "Folders" column holds a path like  Marvel, MCU, Phase 1, Iron Man (2008)
     const getFolders = (item) => (item['Folders'] || item['Folder'] || '').trim();
     const slugify = (x) => String(x).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     const safeDecode = (x) => { try { return decodeURIComponent(x); } catch { return x; } };
 
-    let folderRoot = { name: 'Home', kids: new Map(), chars: [], count: 0 };
-    let currentPath = [];   // folder slugs from Home down to the open folder
+    let folderRoot = { name: 'Home', kids: new Map(), chars: [], allChars: [], count: 0 };
+    let currentPath = [];
 
     function buildFolderTree() {
-      folderRoot = { name: 'Home', kids: new Map(), chars: [], count: 0 };
+      folderRoot = { name: 'Home', kids: new Map(), chars: [], allChars: [], count: 0 };
+      
       characterData.forEach((c) => {
         c._path = [];
         let node = folderRoot;
-        node.count++;
-        // "Marvel" / "marvel" / "Marvel " all land in the same folder (first spelling is shown)
+        node.chars.push(c);
+        
         getFolders(c).split(/\s*,\s*/).map((part) => part.trim()).filter(Boolean).forEach((name) => {
           const key = name.toLowerCase().replace(/\s+/g, ' ');
-          if (!node.kids.has(key)) node.kids.set(key, { name, slug: '', kids: new Map(), chars: [], count: 0 });
+          if (!node.kids.has(key)) node.kids.set(key, { name, slug: '', kids: new Map(), chars: [], allChars: [], count: 0 });
           node = node.kids.get(key);
-          node.count++;
+          node.chars.push(c);
         });
-        node.chars.push(c);   // characters with no folder stay at Home
       });
+
       const walk = (n, path) => {
         const used = new Set();
+        // Aggregate all characters recursively from this node and its subfolders
+        const gatherAllChars = (node) => {
+          const set = new Set(node.chars);
+          node.kids.forEach((child) => {
+            gatherAllChars(child).forEach((c) => set.add(c));
+          });
+          return Array.from(set);
+        };
+        n.allChars = gatherAllChars(n);
+        n.count = n.allChars.length;
+
         n.kids.forEach((k) => {
           const base = slugify(k.name) || 'folder';
           let slug = base, i = 2;
@@ -459,6 +466,8 @@
         });
       };
       walk(folderRoot, []);
+      folderRoot.allChars = characterData;
+      folderRoot.count = characterData.length;
     }
 
     function folderNode(path) {
@@ -472,7 +481,7 @@
 
     function renderFolderBar(node, searching) {
       const bar = $('folder-bar');
-      bar.style.display = folderRoot.kids.size ? '' : 'none';   // hidden until the sheet has folders
+      bar.style.display = folderRoot.kids.size ? '' : 'none';
       let n = folderRoot;
       const acc = [];
       const trail = [{ name: 'Home', href: '#/f/' }].concat(currentPath.map((slug) => {
@@ -490,7 +499,6 @@
                    : (chips ? `<div class="folder-row">${chips}</div>` : ''));
     }
 
-    // ---- Routing: #/f/marvel/mcu = a folder, #/character-slug = a profile ----
     function route() {
       const h = location.hash;
       const f = h.match(/^#\/f\/(.*)$/);
@@ -502,12 +510,10 @@
 
     function showFolder() { setView(null); filterAndSortRoster(); }
 
-    // Back button / tag clicks: return to the folder the character lives in
     function showRoster() { location.hash = '#/f/' + currentPath.join('/'); }
 
     window.addEventListener('hashchange', route);
 
-    // One delegated click handler replaces all the inline onclick strings
     document.querySelector('.container').addEventListener('click', (e) => {
       if (e.target.closest('#retry-btn')) return loadDatabase();
       const tag = e.target.closest('[data-tag]');
@@ -536,13 +542,10 @@
     const tierRankMap = {};
     exactTierSequence.forEach((tier, i) => { tierRankMap[normTier(tier)] = i; });
 
-    // Longest tier names first so "HIGH 7-A+" wins over "7-A"
     const tierRegex = new RegExp('(?:^|[^\\w-])(' +
       Object.keys(tierRankMap).sort((a, b) => b.length - a.length)
         .map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')(?!\\w)');
 
-    // Returns the rank of the first tier found in the string (so ranges sort by
-    // their first tier), or null when nothing is recognised.
     function parseTierWeight(tierStr) {
       const m = normTier(String(tierStr || '')).match(tierRegex);
       return m ? tierRankMap[m[1]] : null;
@@ -553,7 +556,7 @@
       const sortValue = $('sort-select').value;
 
       const node = folderNode(currentPath) || (currentPath = [], folderRoot);
-      const pool = query.trim() ? characterData : node.chars;
+      const pool = query.trim() ? characterData : node.allChars;
       const filtered = pool.filter((item) =>
         getCharName(item).toLowerCase().includes(query) ||
         getTier(item).toLowerCase().includes(query) ||
@@ -567,7 +570,7 @@
         const wa = parseTierWeight(getTier(a));
         const wb = parseTierWeight(getTier(b));
         if (wa === null && wb === null) return 0;
-        if (wa === null) return 1;    // unrecognised tiers always go last
+        if (wa === null) return 1;
         if (wb === null) return -1;
         return sortValue === 'tier-asc' ? wa - wb : wb - wa;
       });
