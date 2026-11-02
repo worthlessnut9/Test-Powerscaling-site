@@ -118,8 +118,8 @@
       });
     }
 
-    // ---- Fight tab: each side picks a character by browsing folders ----
-    function buildFight(el) {
+    // ---- Compare tab: each side picks a character by browsing folders ----
+    function buildCompare(el) {
       const side = (i) => `<div class="side"><button type="button" class="pick-btn">Choose character ${i} &#9662;</button><div class="browser" hidden></div><div class="fighter"></div></div>`;
       el.innerHTML = `<div class="matchup">${side(1)}<div class="vs">VS</div>${side(2)}</div>`;
       el.querySelectorAll('.side').forEach((s) => {
@@ -157,7 +157,7 @@
     }
 
     const TABS = [
-      { id: 'fight', title: 'Fight', build: buildFight }
+      { id: 'compare', title: 'Compare', build: buildCompare }
     ];
 
     TABS.forEach((t) => {
@@ -195,7 +195,7 @@
       complete: (r) => {
         const chars = r.data.filter((i) => nameOf(i));
         buildTree(chars);
-        $('status').textContent = `${chars.length} characters available. Pick fighters by browsing the folders.`;
+        $('status').textContent = `${chars.length} characters available. Pick two characters by browsing the folders.`;
         refreshers.forEach((f) => f());
       },
       error: (err) => fail(err && err.message)
