@@ -422,7 +422,7 @@
       if (c) { currentPath = c._path || []; renderProfile(c); window.scrollTo(0, 0); }
     }
 
-    // ---- Folders: the "Folders" column holds a path like  Marvel > MCU > Phase 1 > Iron Man (2008)
+    // ---- Folders: the "Folders" column holds a path like  Marvel, MCU, Phase 1, Iron Man (2008)
     const getFolders = (item) => (item['Folders'] || item['Folder'] || '').trim();
     const slugify = (x) => String(x).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     const safeDecode = (x) => { try { return decodeURIComponent(x); } catch { return x; } };
@@ -437,7 +437,7 @@
         let node = folderRoot;
         node.count++;
         // "Marvel" / "marvel" / "Marvel " all land in the same folder (first spelling is shown)
-        getFolders(c).split(/\s*(?:>|›|→|»)\s*/).map((part) => part.trim()).filter(Boolean).forEach((name) => {
+        getFolders(c).split(/\s*,\s*/).map((part) => part.trim()).filter(Boolean).forEach((name) => {
           const key = name.toLowerCase().replace(/\s+/g, ' ');
           if (!node.kids.has(key)) node.kids.set(key, { name, slug: '', kids: new Map(), chars: [], count: 0 });
           node = node.kids.get(key);
