@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Powerscaling Database</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <link rel="stylesheet" href="site.css">
+  <style>
+    :root {
+      --bg-color: #0d1117;
+      --card-bg: #161b22;
+      --border-color: #30363d;
+      --text-main: #c9d1d9;
+      --text-muted: #8b949e;
+      --accent: #58a6ff;
+      --tier-badge: #238636;
+      --tag-bg: #21262d;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 30px; }
+    h1 { color: #fff; margin-bottom: 8px; }
+
+    #character-count {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 15px;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    #search {
+      width: 100%;
+      max-width: 400px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--card-bg);
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+    }
+    #search:focus { border-color: var(--accent); }
+
+    #sort-select {
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--card-bg);
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+      cursor: pointer;
+    }
+    #sort-select:focus { border-color: var(--accent); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      overflow: hidden;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .card:hover { transform: translateY(-4px); border-color: var(--accent); }
+
+    .card-img {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      background: #000;
+      cursor: pointer;
+    }
+
+    .card-body { padding: 16px; }
+    .card-title { 
+      margin: 0 0 6px 0; 
+      color: #fff; 
+      font-size: 1.25rem; 
+      cursor: pointer; 
+    }
+    .card-title:hover { color: var(--accent); }
+
+    .badge-container {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      margin-bottom: 8px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: var(--tier-badge);
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+
+    .stat-badge {
+      display: inline-block;
+      background: var(--tag-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+    }
+
+    .tags-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .tag {
+      background: var(--tag-bg);
+      border: 1px solid var(--border-color);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .tag:hover { background: var(--border-color); color: #fff; }
+
+    .hidden { display: none !important; }
+
+    .back-btn {
+      background: var(--card-bg);
+      color: var(--accent);
+      border: 1px solid var(--border-color);
+      padding: 10px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      margin-bottom: 20px;
+    }
+    .back-btn:hover { background: var(--border-color); color: #fff; }
+
+    .profile-header {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 30px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .profile-img {
+      width: 100%;
+      max-width: 300px;
+      height: 350px;
+      object-fit: cover;
+      border-radius: 8px;
+      background: #000;
+    }
+
+    .profile-info { flex: 1; min-width: 280px; }
+    .profile-info h1 { margin-top: 0; font-size: 2.2rem; }
+
+    .stats-section {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .stat-box {
+      background: var(--bg-color);
+      border: 1px solid var(--border-color);
+      padding: 12px 16px;
+      border-radius: 8px;
+    }
+
+    .stat-label {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .stat-value { color: #fff; font-size: 1rem; }
+    .full-width { grid-column: 1 / -1; }
+    .folder-bar { margin: 0 0 12px; }
+    .folder-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 0.8rem; }
+    .crumb { color: var(--accent); text-decoration: none; }
+    .crumb:hover { text-decoration: underline; }
+    .crumb-sep { color: var(--text-muted); }
+    .crumb-cur { color: var(--text-main); font-weight: 600; }
+    .folder-chip { background: var(--tag-bg); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; padding: 3px 10px; text-decoration: none; }
+    .folder-chip:hover { border-color: var(--accent); color: var(--accent); }
+    .folder-chip span { color: var(--text-muted); margin-left: 6px; }
+      .stat-note { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-color); font-size: 0.85rem; line-height: 1.5; color: var(--text-muted); }
+    .stat-note a, .stat-value a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <nav class="site-nav">
+    <a class="brand" href="index.html">Powerscaling Database</a>
+    <div class="links">
+      <a href="index.html">Home</a>
+      <a href="database.html" aria-current="page">Characters</a>
+      <a href="compare.html">Compare</a>
+      <a href="terms.html">Terms</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- Roster View -->
+    <div id="roster-view">
+      <header>
+        <h1>Character Database</h1>
+        <div id="character-count">Loading characters...</div>
+        <div class="controls">
+          <input type="text" id="search" placeholder="Search by character name, tier, or tags..." oninput="filterAndSortRoster()">
+          <select id="sort-select" onchange="filterAndSortRoster()">
+            <option value="tier-asc">Tier (Weakest to Strongest)</option>
+            <option value="tier-desc">Tier (Strongest to Weakest)</option>
+            <option value="name-asc">Alphabetical (A - Z)</option>
+            <option value="name-desc">Alphabetical (Z - A)</option>
+          </select>
+        </div>
+      </header>
+      <div id="folder-bar" class="folder-bar" style="display:none"></div>
+      <div id="character-grid" class="grid"></div>
+    </div>
+
+    <!-- Profile View -->
+    <div id="profile-view" class="hidden">
+      <button class="back-btn" onclick="showRoster()">← Back to Roster</button>
+      <div id="profile-content"></div>
+    </div>
+  </div>
+
+  <script>
+    const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQWRS4v9F9SJ-Y4wUOO3efaf3UXCItz8EX4wK4QV6lnHX37MQMrchewnvjC9IcwYnehddX5VjBAzUxi/pub?output=csv';
+
+    let characterData = [];
+
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    const FALLBACK_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="350"><rect width="100%" height="100%" fill="#000"/><text x="50%" y="50%" fill="#8b949e" font-family="sans-serif" font-size="16" text-anchor="middle">No image</text></svg>');
+
+    document.addEventListener('error', (e) => {
+      const el = e.target;
+      if (el.tagName === 'IMG' && !el.dataset.fb) { el.dataset.fb = '1'; el.src = FALLBACK_IMG; }
+    }, true);
+
+    const getCharName = (item) => item['Character Name'] || item.Character || '';
+    const getTier = (item) => item['Tier / Tier range'] || item.Tier || 'N/A';
+    const getAP = (item) => item['AP (Attack Potency)'] || item.AP || 'N/A';
+    const getSpeed = (item) => item['Speed'] || item.Speed || 'N/A';
+    const getDurability = (item) => item['Durability'] || item.Durability || 'N/A';
+    const getStriking = (item) => item['Striking Strength'] || 'N/A';
+    const getLifting = (item) => item['Lifting Strength'] || 'N/A';
+    const getStamina = (item) => item['Stamina'] || item.Stamina || 'N/A';
+    const getRange = (item) => item['Range'] || item.Range || 'N/A';
+    const getIntel = (item) => item['Intelligence'] || item.Intelligence || 'N/A';
+    const getAbilities = (item) => item['Abilities'] || item['Hax / Abilities'] || 'N/A';
+    const getEquip = (item) => item['Standard Equipment'] || item.Equipment || 'N/A';
+    const getFeats = (item) => item['External links for primary feats'] || item['Feat / Proof Link'] || '';
+    const getNotes = (item) => item['Notes'] || 'None';
+    const getTags = (item) => item['Tags'] || item.Tags || '';
+
+    const getImage = (item) => {
+      const raw = (item['Image Link / Name'] || item['Image Link'] || '').trim();
+      if (!raw) return '';
+      if (/^https?:\/\//i.test(raw)) return raw;
+      const clean = raw.replace(/^(\.\/)?images\//i, '').replace(/[#?]/g, (c) => encodeURIComponent(c));
+      return `./Images/${clean}`;
+    };
+
+    const safeUrl = (u) => {
+      try { const x = new URL(String(u).trim()); return /^https?:$/.test(x.protocol) ? x.href : ''; }
+      catch { return ''; }
+    };
+
+    const tagsOf = (item) => getTags(item).split(',').map((t) => t.replace(/"/g, '').trim()).filter(Boolean);
+    const tagHtml = (t) => `<span class="tag" data-tag="${esc(t)}">${esc(t)}</span>`;
+
+    function assignSlugs() {
+      const used = new Set();
+      characterData.forEach((c) => {
+        const base = getCharName(c).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'character';
+        let slug = base, n = 2;
+        while (used.has(slug)) slug = `${base}-${n++}`;
+        used.add(slug);
+        c._slug = slug;
+      });
+    }
+
+    function loadDatabase() {
+      $('character-count').textContent = 'Loading characters...';
+      if (typeof Papa === 'undefined') return showLoadError('The CSV library (PapaParse) did not load.');
+      try {
+        Papa.parse(SHEET_CSV_URL, {
+          download: true,
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            try {
+              const rows = results.data.filter((item) => getCharName(item).trim() !== '');
+              if (!rows.length) return showLoadError('The sheet returned no characters.');
+              characterData = rows;
+              assignSlugs();
+              buildFolderTree();
+              filterAndSortRoster();
+              route();
+            } catch (err) { showLoadError(err.message || err); }
+          },
+          error: (err) => showLoadError((err && err.message) || err)
+        });
+      } catch (err) { showLoadError(err.message || err); }
+    }
+
+    function showLoadError(detail) {
+      $('character-count').textContent = 'Could not load characters';
+      $('character-grid').innerHTML = `<div style="grid-column: 1/-1; text-align:center;">
+        <p>Couldn't load the database. Check your connection and try again.</p>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">${esc(detail || '')}</p>
+        <button class="back-btn" id="retry-btn">Retry</button></div>`;
+    }
+
+    function renderRoster(data) {
+      const total = characterData.length;
+      $('character-count').textContent = total === data.length
+        ? `${total} characters loaded`
+        : `Showing ${data.length} of ${total} characters`;
+
+      const grid = $('character-grid');
+      if (!data.length) {
+        grid.innerHTML = (folderRoot.kids.size && !$('search').value.trim()) ? '' : '<p style="text-align:center; grid-column: 1/-1;">No characters found.</p>';
+        return;
+      }
+
+      grid.innerHTML = data.map((item) => {
+        const name = esc(getCharName(item));
+        const slug = esc(item._slug);
+        return `
+          <div class="card">
+            <img class="card-img" src="${esc(getImage(item) || FALLBACK_IMG)}" alt="${name}" loading="lazy" decoding="async" data-slug="${slug}">
+            <div class="card-body">
+              <h2 class="card-title" data-slug="${slug}">${name}</h2>
+              <div class="badge-container">
+                <span class="badge">Tier ${esc(getTier(item))}</span>
+                <span class="stat-badge">AP: ${esc(getAP(item))}</span>
+                <span class="stat-badge">Speed: ${esc(getSpeed(item))}</span>
+              </div>
+              <div class="tags-container">${tagsOf(item).map(tagHtml).join('')}</div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // Explanation text: [label](https://link) and bare https:// links become clickable
+    function richText(txt, bareLabel) {
+      const re = /\[([^\]]+)\]\((https?:\/\/(?:[^\s()]|\([^\s()]*\))+)\)|(https?:\/\/[^\s<]*[^\s<.,;:!?)])/g;
+      let out = '', last = 0, m;
+      while ((m = re.exec(txt))) {
+        out += esc(txt.slice(last, m.index));
+        const url = safeUrl(m[2] || m[3]);
+        const label = m[1] || bareLabel || (url && new URL(url).hostname.replace(/^www\./, ''));
+        out += url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>` : esc(m[0]);
+        last = re.lastIndex;
+      }
+      return (out + esc(txt.slice(last))).replace(/\r?\n/g, '<br>');
+    }
+
+    function renderProfile(c) {
+      const name = esc(getCharName(c));
+      // A stat box: label, value, and optional explanation text underneath (from the "<Stat> Notes" column)
+      const box = (label, value, note, full) => `<div class="stat-box${full ? ' full-width' : ''}">
+          <div class="stat-label">${label}</div>
+          <div class="stat-value">${value}</div>
+          ${note ? `<div class="stat-note">${note}</div>` : ''}
+        </div>`;
+      const col = (key) => { const t = (c[key] || '').trim(); return t ? richText(t) : ''; };
+      // Equipment / Abilities: the first line is the main text, anything after it is the explanation underneath
+      const split = (raw) => { const [first, ...rest] = String(raw).trim().split(/\r?\n/); return [richText(first), richText(rest.join('\n').trim())]; };
+      const feats = getFeats(c).trim();
+      const notes = getNotes(c).trim();
+
+      $('profile-content').innerHTML = `
+        <div class="profile-header">
+          <img class="profile-img" src="${esc(getImage(c) || FALLBACK_IMG)}" alt="${name}">
+          <div class="profile-info">
+            <h1>${name}</h1>
+            <div style="margin-top: 15px;"><span class="badge" style="font-size: 1rem;">Tier ${esc(getTier(c))}</span></div>
+            <div class="tags-container" style="margin-top: 15px;">${tagsOf(c).map(tagHtml).join('')}</div>
+          </div>
+        </div>
+
+        <div class="stats-section">
+          <h2>Combat Metrics & Powerscaling</h2>
+          <div class="stats-grid">
+            ${box('Attack Potency (AP)', esc(getAP(c)), col('AP Notes'))}
+            ${box('Speed', esc(getSpeed(c)), col('Speed Notes'))}
+            ${box('Durability', esc(getDurability(c)), col('Durability Notes'))}
+            ${box('Striking Strength', esc(getStriking(c)), col('Striking Strength Notes'))}
+            ${box('Lifting Strength', esc(getLifting(c)), col('Lifting Strength Notes'))}
+            ${box('Standard Equipment', ...split(getEquip(c)))}
+            ${box('Abilities / Hax', ...split(getAbilities(c)), true)}
+            ${box('Feats & Primary Calculation Links', feats ? richText(feats, 'View Feat / Calculation Proof') : 'N/A', '', true)}
+            ${box('Notes / Additional Context', notes ? richText(notes) : 'None', '', true)}
+          </div>
+        </div>`;
+    }
+
+    function setView(c) {
+      $('roster-view').classList.toggle('hidden', !!c);
+      $('profile-view').classList.toggle('hidden', !c);
+      document.title = c ? `${getCharName(c)} - Powerscaling Database` : 'Powerscaling Database';
+      if (c) { currentPath = c._path || []; renderProfile(c); window.scrollTo(0, 0); }
+    }
+
+    const getFolders = (item) => (item['Folders'] || item['Folder'] || '').trim();
+    const slugify = (x) => String(x).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    const safeDecode = (x) => { try { return decodeURIComponent(x); } catch { return x; } };
+
+    let folderRoot = { name: 'Home', kids: new Map(), chars: [], allChars: [], count: 0 };
+    let currentPath = [];
+
+    function buildFolderTree() {
+      folderRoot = { name: 'Home', kids: new Map(), chars: [], allChars: [], count: 0 };
+      
+      characterData.forEach((c) => {
+        c._path = [];
+        let node = folderRoot;
+        node.chars.push(c);
+        
+        getFolders(c).split(/\s*,\s*/).map((part) => part.trim()).filter(Boolean).forEach((name) => {
+          const key = name.toLowerCase().replace(/\s+/g, ' ');
+          if (!node.kids.has(key)) node.kids.set(key, { name, slug: '', kids: new Map(), chars: [], allChars: [], count: 0 });
+          node = node.kids.get(key);
+          node.chars.push(c);
+        });
+      });
+
+      const walk = (n, path) => {
+        const used = new Set();
+        // Aggregate all characters recursively from this node and its subfolders
+        const gatherAllChars = (node) => {
+          const set = new Set(node.chars);
+          node.kids.forEach((child) => {
+            gatherAllChars(child).forEach((c) => set.add(c));
+          });
+          return Array.from(set);
+        };
+        n.allChars = gatherAllChars(n);
+        n.count = n.allChars.length;
+
+        n.kids.forEach((k) => {
+          const base = slugify(k.name) || 'folder';
+          let slug = base, i = 2;
+          while (used.has(slug)) slug = `${base}-${i++}`;
+          used.add(slug);
+          k.slug = slug;
+          const kp = [...path, slug];
+          k.chars.forEach((c) => { c._path = kp; });
+          walk(k, kp);
+        });
+      };
+      walk(folderRoot, []);
+      folderRoot.allChars = characterData;
+      folderRoot.count = characterData.length;
+    }
+
+    function folderNode(path) {
+      let node = folderRoot;
+      for (const slug of path) {
+        node = [...node.kids.values()].find((k) => k.slug === slug);
+        if (!node) return null;
+      }
+      return node;
+    }
+
+    function renderFolderBar(node, searching) {
+      const bar = $('folder-bar');
+      bar.style.display = folderRoot.kids.size ? '' : 'none';
+      let n = folderRoot;
+      const acc = [];
+      const trail = [{ name: 'Home', href: '#/f/' }].concat(currentPath.map((slug) => {
+        n = [...n.kids.values()].find((k) => k.slug === slug);
+        acc.push(slug);
+        return { name: n.name, href: '#/f/' + acc.join('/') };
+      }));
+      const crumbs = trail.map((t, i) => (i === trail.length - 1 && !searching)
+        ? `<span class="crumb-cur">${esc(t.name)}</span>`
+        : `<a class="crumb" href="${esc(t.href)}">${esc(t.name)}</a>`).join('<span class="crumb-sep">›</span>');
+      const chips = [...node.kids.values()].sort((a, b) => a.name.localeCompare(b.name))
+        .map((k) => `<a class="folder-chip" href="#/f/${[...currentPath, k.slug].join('/')}">${esc(k.name)}<span>${k.count}</span></a>`).join('');
+      bar.innerHTML = `<div class="folder-row">${crumbs}</div>` +
+        (searching ? '<div class="folder-row"><span class="crumb-sep">Searching all folders</span></div>'
+                   : (chips ? `<div class="folder-row">${chips}</div>` : ''));
+    }
+
+    function route() {
+      const h = location.hash;
+      const f = h.match(/^#\/f\/(.*)$/);
+      if (f) { currentPath = f[1].split('/').filter(Boolean).map(safeDecode); return showFolder(); }
+      const m = h.match(/^#\/(.+)$/);
+      const c = m && characterData.find((x) => x._slug === safeDecode(m[1]));
+      if (c) setView(c); else showFolder();
+    }
+
+    function showFolder() { setView(null); filterAndSortRoster(); }
+
+    function showRoster() { location.hash = '#/f/' + currentPath.join('/'); }
+
+    window.addEventListener('hashchange', route);
+
+    document.querySelector('.container').addEventListener('click', (e) => {
+      if (e.target.closest('#retry-btn')) return loadDatabase();
+      const tag = e.target.closest('[data-tag]');
+      if (tag) return searchByTag(tag.dataset.tag);
+      const card = e.target.closest('[data-slug]');
+      if (card) location.hash = '#/' + card.dataset.slug;
+    });
+
+    const exactTierSequence = [
+      "11-C", "11-C+", "11-B", "11-B+", "11-A", "11-A+", 
+      "LOW 10-C", "LOW 10-C+", "10-C", "10-C+", "10-B", "10-B+", "10-A", "10-A+", 
+      "9-C", "9-C+", "9-B", "9-B+", "9-A", "9-A+", 
+      "8-C", "8-C+", "HIGH 8-C", "HIGH 8-C+", "8-B", "8-B+", "8-A", "8-A+", 
+      "LOW 7-C", "LOW 7-C+", "7-C", "7-C+", "HIGH 7-C", "HIGH 7-C+", 
+      "LOW 7-B", "LOW 7-B+", "7-B", "7-B+", "7-A", "7-A+", "HIGH 7-A", "HIGH 7-A+", 
+      "6-C", "6-C+", "HIGH 6-C", "HIGH 6-C+", "LOW 6-B", "LOW 6-B+", "6-B", "6-B+", "HIGH 6-B", "HIGH 6-B+", "6-A", "6-A+", "HIGH 6-A", "HIGH 6-A+", 
+      "5-C", "5-C+", "LOW 5-B", "LOW 5-B+", "5-B", "5-B+", "5-A", "5-A+", "HIGH 5-A", "HIGH 5-A+", 
+      "LOW 4-C", "LOW 4-C+", "4-C", "4-C+", "HIGH 4-C", "HIGH 4-C+", "4-B", "4-B+", "4-A", "4-A+", 
+      "3-C", "3-C+", "3-B", "3-B+", "3-A", "3-A+", "HIGH 3-A", "HIGH 3-A+", 
+      "LOW 2-C", "LOW 2-C+", "2-C", "2-C+", "2-C (X UNIVERSES)", "2-C (X UNIVERSES)+", "2-B", "2-B+", "2-A", "2-A+", 
+      "LOW 1-C", "LOW 1-C+", "1-C (X DIMENSIONS)", "1-C (X DIMENSIONS)+", "HIGH 1-C (X DIMENSIONS)", "HIGH 1-C (X DIMENSIONS)+", "1-B (X DIMENSIONS)", "1-B (X DIMENSIONS)+", "HIGH 1-B", "HIGH 1-B+", 
+      "LOW 1-A", "LOW 1-A+", "1-A(X LAYERS)", "1-A(X LAYERS)+", "HIGH 1-A (X LAYERS)", "HIGH 1-A (X LAYERS)+", "0", "0+"
+    ];
+
+    const normTier = (s) => s.toUpperCase().replace(/\s+/g, ' ').replace(/ \(/g, '(');
+    const tierRankMap = {};
+    exactTierSequence.forEach((tier, i) => { tierRankMap[normTier(tier)] = i; });
+
+    const tierRegex = new RegExp('(?:^|[^\\w-])(' +
+      Object.keys(tierRankMap).sort((a, b) => b.length - a.length)
+        .map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')(?!\\w)');
+
+    function parseTierWeight(tierStr) {
+      const m = normTier(String(tierStr || '')).match(tierRegex);
+      return m ? tierRankMap[m[1]] : null;
+    }
+
+    function filterAndSortRoster() {
+      const query = $('search').value.toLowerCase();
+      const sortValue = $('sort-select').value;
+
+      const node = folderNode(currentPath) || (currentPath = [], folderRoot);
+      const pool = query.trim() ? characterData : node.allChars;
+      const filtered = pool.filter((item) =>
+        getCharName(item).toLowerCase().includes(query) ||
+        getTier(item).toLowerCase().includes(query) ||
+        getTags(item).toLowerCase().includes(query)
+      );
+
+      filtered.sort((a, b) => {
+        if (sortValue === 'name-asc') return getCharName(a).toLowerCase().localeCompare(getCharName(b).toLowerCase());
+        if (sortValue === 'name-desc') return getCharName(b).toLowerCase().localeCompare(getCharName(a).toLowerCase());
+
+        const wa = parseTierWeight(getTier(a));
+        const wb = parseTierWeight(getTier(b));
+        if (wa === null && wb === null) return 0;
+        if (wa === null) return 1;
+        if (wb === null) return -1;
+        return sortValue === 'tier-asc' ? wa - wb : wb - wa;
+      });
+
+      renderRoster(filtered);
+      renderFolderBar(node, !!query.trim());
+      $('character-count').textContent = query.trim()
+        ? `${filtered.length} of ${characterData.length} characters match`
+        : (currentPath.length ? `${node.count} characters in ${node.name}` : `${characterData.length} characters loaded`);
+    }
+
+    function searchByTag(tag) {
+      $('search').value = tag;
+      filterAndSortRoster();
+      showRoster();
+    }
+
+    loadDatabase();
+
+  </script>
+</body>
+</html>
