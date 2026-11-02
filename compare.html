@@ -26,6 +26,16 @@
     .tab { background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; color: var(--text-muted); padding: 10px 16px; cursor: pointer; font-size: 0.95rem; }
     .tab:hover { color: var(--text-main); }
     .tab[aria-selected="true"] { color: #fff; border-bottom-color: var(--accent); }
+    .pick-btn { width: 100%; text-align: left; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-main); font-size: 1rem; cursor: pointer; }
+    .pick-btn:hover, .pick-btn:focus { border-color: var(--accent); outline: none; }
+    .browser { margin-top: 8px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-color); padding: 10px; max-height: 320px; overflow: auto; }
+    .group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 0.85rem; }
+    .crumb-btn { background: none; border: none; padding: 0; color: var(--accent); cursor: pointer; font-size: 0.85rem; }
+    .crumb-cur { color: #fff; font-weight: 600; }
+    .opt { background: var(--tag-bg); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 0.85rem; }
+    .opt:hover { border-color: var(--accent); color: var(--accent); }
+    .opt span { color: var(--text-muted); margin-left: 6px; }
+    .opt.char { background: var(--card-bg); }
     @media (max-width: 700px) { .matchup { grid-template-columns: 1fr; } .vs { justify-self: center; } }
   </style>
 </head>
@@ -46,7 +56,6 @@
       <p class="muted" id="status">Loading characters...</p>
     </header>
 
-    <datalist id="names"></datalist>
     <div class="tabs" id="tabs" role="tablist"></div>
     <div id="panels"></div>
   </main>
@@ -80,9 +89,7 @@
       ['Items', ['Standard Equipment', 'Equipment']]
     ];
 
-    const byName = new Map();
-
-    function fighterHtml(c) {
+        function fighterHtml(c) {
       const rows = FIELDS.map(([label, keys]) => {
         const v = val(c, ...keys);
         return isEmpty(v) ? '' : `<div class="row"><div class="lbl">${label}</div><div class="val">${esc(v)}</div></div>`;
@@ -91,15 +98,61 @@
     }
 
     // ---- Tabs: each comparison type is one entry in TABS. To add a type, write a build function and add it below. ----
+    // ---- Folder tree, built from the "Folders" column (e.g. Marvel, MCU, Phase 1, Iron Man (2008)) ----
+    const newNode = (name) => ({ name, kids: new Map(), chars: [], count: 0 });
+    let root = newNode('Home');
+    const refreshers = [];
+
+    function buildTree(chars) {
+      root = newNode('Home');
+      chars.forEach((c) => {
+        let node = root;
+        node.count++;
+        val(c, 'Folders', 'Folder').split(/\s*,\s*/).filter(Boolean).forEach((name) => {
+          const key = name.toLowerCase().replace(/\s+/g, ' ');
+          if (!node.kids.has(key)) node.kids.set(key, newNode(name));
+          node = node.kids.get(key);
+          node.count++;
+        });
+        node.chars.push(c);   // characters with no folder stay at Home
+      });
+    }
+
+    // ---- Fight tab: each side picks a character by browsing folders ----
     function buildFight(el) {
-      const side = (i) => `<div class="side"><input class="pick" list="names" placeholder="Choose character ${i}..." autocomplete="off" aria-label="Character ${i}"><div class="fighter"></div></div>`;
+      const side = (i) => `<div class="side"><button type="button" class="pick-btn">Choose character ${i} &#9662;</button><div class="browser" hidden></div><div class="fighter"></div></div>`;
       el.innerHTML = `<div class="matchup">${side(1)}<div class="vs">VS</div>${side(2)}</div>`;
       el.querySelectorAll('.side').forEach((s) => {
-        const input = s.querySelector('.pick'), box = s.querySelector('.fighter');
-        input.addEventListener('input', () => {
-          const c = byName.get(input.value.trim().toLowerCase());
-          box.innerHTML = c ? fighterHtml(c) : '';
+        const btn = s.querySelector('.pick-btn'), browser = s.querySelector('.browser'), box = s.querySelector('.fighter');
+        let path = [], shown = [];
+
+        function render() {
+          if (!root.count) { browser.innerHTML = '<p class="muted">Loading characters...</p>'; return; }
+          let n = root;
+          const trail = [{ name: 'Home', path: [] }].concat(path.map((k, i) => { n = n.kids.get(k); return { name: n.name, path: path.slice(0, i + 1) }; }));
+          const crumbs = trail.map((t, i) => i === trail.length - 1
+            ? `<span class="crumb-cur">${esc(t.name)}</span>`
+            : `<button type="button" class="crumb-btn" data-path="${esc(JSON.stringify(t.path))}">${esc(t.name)}</button>`).join('<span class="muted">\u203A</span>');
+          const folders = [...n.kids.entries()].sort((a, b) => a[1].name.localeCompare(b[1].name))
+            .map(([k, f]) => `<button type="button" class="opt" data-path="${esc(JSON.stringify([...path, k]))}">${esc(f.name)}<span>${f.count}</span></button>`).join('');
+          shown = [...n.chars].sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
+          const chars = shown.map((c, i) => `<button type="button" class="opt char" data-i="${i}">${esc(nameOf(c))}</button>`).join('');
+          browser.innerHTML = `<div class="group">${crumbs}</div>` + (folders ? `<div class="group">${folders}</div>` : '') + (chars ? `<div class="group">${chars}</div>` : '');
+        }
+
+        btn.addEventListener('click', () => { browser.hidden = !browser.hidden; if (!browser.hidden) render(); });
+        browser.addEventListener('click', (e) => {
+          const f = e.target.closest('[data-path]');
+          if (f) { path = JSON.parse(f.dataset.path); return render(); }
+          const c = e.target.closest('[data-i]');
+          if (c) {
+            const ch = shown[+c.dataset.i];
+            btn.textContent = nameOf(ch) + ' \u25BE';
+            box.innerHTML = fighterHtml(ch);
+            browser.hidden = true;
+          }
         });
+        refreshers.push(() => { if (!browser.hidden) render(); });
       });
     }
 
@@ -141,10 +194,9 @@
       download: true, header: true, skipEmptyLines: true,
       complete: (r) => {
         const chars = r.data.filter((i) => nameOf(i));
-        chars.forEach((c) => { const k = nameOf(c).toLowerCase(); if (!byName.has(k)) byName.set(k, c); });
-        $('names').innerHTML = [...byName.values()].map(nameOf).sort((a, b) => a.localeCompare(b)).map((n) => `<option value="${esc(n)}">`).join('');
-        $('status').textContent = `${byName.size} characters available. Type a name to pick a fighter.`;
-        document.querySelectorAll('.pick').forEach((i) => i.dispatchEvent(new Event('input')));
+        buildTree(chars);
+        $('status').textContent = `${chars.length} characters available. Pick fighters by browsing the folders.`;
+        refreshers.forEach((f) => f());
       },
       error: (err) => fail(err && err.message)
     });
