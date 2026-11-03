@@ -36,6 +36,9 @@
     .opt:hover { border-color: var(--accent); color: var(--accent); }
     .opt span { color: var(--text-muted); margin-left: 6px; }
     .opt.char { background: var(--card-bg); }
+    .pick-row { display: flex; gap: 8px; }
+    .pick-row .pick-btn { flex: 1; min-width: 0; }
+    .rand-btn { white-space: nowrap; }
     @media (max-width: 700px) { .matchup { grid-template-columns: 1fr; } .vs { justify-self: center; } }
   </style>
 </head>
@@ -102,9 +105,11 @@
     // ---- Folder tree, built from the "Folders" column (e.g. Marvel, MCU, Phase 1, Iron Man (2008)) ----
     const newNode = (name) => ({ name, kids: new Map(), chars: [], count: 0 });
     let root = newNode('Home');
+    let allChars = [];
     const refreshers = [];
 
     function buildTree(chars) {
+      allChars = chars;
       root = newNode('Home');
       chars.forEach((c) => {
         let node = root;
@@ -122,7 +127,7 @@
 
     // ---- Compare tab: each side picks a character by browsing folders ----
     function buildCompare(el) {
-      const side = (i) => `<div class="side"><button type="button" class="pick-btn">Choose character ${i} &#9662;</button><div class="browser" hidden></div><div class="fighter"></div></div>`;
+      const side = (i) => `<div class="side"><div class="pick-row"><button type="button" class="pick-btn">Choose character ${i} &#9662;</button><button type="button" class="btn rand-btn" title="Pick a random character">Random</button></div><div class="browser" hidden></div><div class="fighter"></div></div>`;
       el.innerHTML = `<div class="matchup">${side(1)}<div class="vs">VS</div>${side(2)}</div>`;
       el.querySelectorAll('.side').forEach((s) => {
         const btn = s.querySelector('.pick-btn'), browser = s.querySelector('.browser'), box = s.querySelector('.fighter');
@@ -142,17 +147,20 @@
           browser.innerHTML = `<div class="group">${crumbs}</div>` + (folders ? `<div class="group">${folders}</div>` : '') + (chars ? `<div class="group">${chars}</div>` : '');
         }
 
+        function choose(ch) {
+          btn.textContent = nameOf(ch) + ' \u25BE';
+          box.innerHTML = fighterHtml(ch);
+          browser.hidden = true;
+        }
+        s.querySelector('.rand-btn').addEventListener('click', () => {
+          if (allChars.length) choose(allChars[Math.floor(Math.random() * allChars.length)]);
+        });
         btn.addEventListener('click', () => { browser.hidden = !browser.hidden; if (!browser.hidden) render(); });
         browser.addEventListener('click', (e) => {
           const f = e.target.closest('[data-path]');
           if (f) { path = JSON.parse(f.dataset.path); return render(); }
           const c = e.target.closest('[data-i]');
-          if (c) {
-            const ch = shown[+c.dataset.i];
-            btn.textContent = nameOf(ch) + ' \u25BE';
-            box.innerHTML = fighterHtml(ch);
-            browser.hidden = true;
-          }
+          if (c) choose(shown[+c.dataset.i]);
         });
         refreshers.push(() => { if (!browser.hidden) render(); });
       });
