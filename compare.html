@@ -227,13 +227,18 @@
 
     // ---- Guess tab: pick which of two random characters is stronger (by tier) ----
     function buildGuess(el) {
-      el.innerHTML = `<div class="guess-head"><h2>Who’s stronger?</h2><div class="streak">Streak: <b class="streak-n">0</b></div></div>
+      el.innerHTML = `<div class="guess-head"><h2>Who’s stronger?</h2><div class="streak">Streak: <b class="streak-n">0</b> &nbsp;&middot;&nbsp; Best: <b class="best-n">0</b></div></div>
         <div class="matchup"><div class="gcard"></div><div class="vs">VS</div><div class="gcard"></div></div>
         <p class="guess-msg muted"></p>
         <div style="text-align:center"><button type="button" class="btn next-btn" hidden>Next matchup</button></div>`;
       const cards = el.querySelectorAll('.gcard'), msg = el.querySelector('.guess-msg');
-      const nextBtn = el.querySelector('.next-btn'), streakEl = el.querySelector('.streak-n');
+      const nextBtn = el.querySelector('.next-btn'), streakEl = el.querySelector('.streak-n'), bestEl = el.querySelector('.best-n');
       let pair = [], answered = false, streak = 0;
+      // Personal best is saved in this browser so it survives a refresh
+      const BEST_KEY = 'powerscaling-guess-best';
+      let best = 0;
+      try { best = parseInt(localStorage.getItem(BEST_KEY), 10) || 0; } catch (err) { best = 0; }
+      bestEl.textContent = best;
       const tierOf = (c) => val(c, 'Tier / Tier range', 'Tier');
       const tw = (c) => parseTierWeight(tierOf(c));
       const say = (text, cls) => { msg.textContent = text; msg.className = 'guess-msg ' + (cls || 'muted'); };
@@ -264,13 +269,20 @@
         const before = streak;
         streak = correct ? streak + 1 : 0;   // a wrong guess resets the counter
         streakEl.textContent = streak;
+        let newBest = false;
+        if (streak > best) {
+          best = streak;
+          newBest = true;
+          bestEl.textContent = best;
+          try { localStorage.setItem(BEST_KEY, String(best)); } catch (err) { /* storage unavailable: best just won't persist */ }
+        }
         cards.forEach((card, k) => {
           card.classList.add(k === win ? 'win' : 'lose');
           const ap = val(pair[k], 'AP (Attack Potency)', 'AP');
           card.querySelector('.reveal').textContent = 'Tier ' + tierOf(pair[k]) + (isEmpty(ap) ? '' : '\nAP: ' + ap);
           card.querySelector('.guess-btn').disabled = true;
         });
-        say(correct ? 'Correct! Streak: ' + streak : 'Wrong. Your streak of ' + before + ' was reset to 0.', correct ? 'ok' : 'bad');
+        say(correct ? 'Correct! Streak: ' + streak + (newBest ? ' (new personal best!)' : '') : 'Wrong. Your streak of ' + before + ' was reset to 0.', correct ? 'ok' : 'bad');
         nextBtn.hidden = false;
       });
       nextBtn.addEventListener('click', newRound);
