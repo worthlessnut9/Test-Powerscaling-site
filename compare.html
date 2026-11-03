@@ -227,12 +227,12 @@
 
     // ---- Guess tab: pick which of two random characters is stronger (by tier) ----
     function buildGuess(el) {
-      el.innerHTML = `<div class="guess-head"><h2>Who’s stronger?</h2><div class="streak">Streak: <b class="streak-n">0</b> &nbsp;&middot;&nbsp; Best: <b class="best-n">0</b></div></div>
+      el.innerHTML = `<div class="guess-head"><h2>Who’s stronger?</h2><div class="streak">Streak: <b class="streak-n">0</b> &nbsp;&middot;&nbsp; Best: <b class="best-n">0</b> &nbsp;&middot;&nbsp; Max tier gap: <b class="gap-n">20</b></div></div>
         <div class="matchup"><div class="gcard"></div><div class="vs">VS</div><div class="gcard"></div></div>
         <p class="guess-msg muted"></p>
         <div style="text-align:center"><button type="button" class="btn next-btn" hidden>Next matchup</button></div>`;
       const cards = el.querySelectorAll('.gcard'), msg = el.querySelector('.guess-msg');
-      const nextBtn = el.querySelector('.next-btn'), streakEl = el.querySelector('.streak-n'), bestEl = el.querySelector('.best-n');
+      const nextBtn = el.querySelector('.next-btn'), streakEl = el.querySelector('.streak-n'), bestEl = el.querySelector('.best-n'), gapEl = el.querySelector('.gap-n');
       let pair = [], answered = false, streak = 0;
       // Personal best is saved in this browser so it survives a refresh
       const BEST_KEY = 'powerscaling-guess-best';
@@ -243,14 +243,29 @@
       const tw = (c) => parseTierWeight(tierOf(c));
       const say = (text, cls) => { msg.textContent = text; msg.className = 'guess-msg ' + (cls || 'muted'); };
       const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+      // Difficulty: the biggest allowed tier gap starts at 20 and shrinks by 1 for every 5 correct in a row, down to 1
+      const maxGap = () => Math.max(1, 20 - Math.floor(streak / 5));
+      const showGap = () => { gapEl.textContent = maxGap(); };
 
       function newRound() {
         nextBtn.hidden = true;
         if (!allChars.length) { say('Loading characters...'); return; }
         const pool = allChars.filter((c) => tw(c) !== null);   // only characters with a recognised tier
-        let a, b, tries = 0;
-        if (pool.length >= 2) do { a = pick(pool); b = pick(pool); } while ((a === b || tw(a) === tw(b)) && ++tries < 200);
-        if (!a || a === b || tw(a) === tw(b)) { say('Not enough characters with different tiers to play yet.'); return; }
+        const w = new Map(pool.map((c) => [c, tw(c)]));
+        // Two characters whose tiers differ by at least 1 and at most `limit` steps in the tier list
+        const findPair = (limit) => {
+          for (let t = 0; t < 100; t++) {
+            const x = pick(pool);
+            const near = pool.filter((c) => { const d = Math.abs(w.get(c) - w.get(x)); return d >= 1 && d <= limit; });
+            if (near.length) return [x, pick(near)];
+          }
+          return null;
+        };
+        // If the sheet has no pair that close, fall back to any two different tiers so the game keeps going
+        const found = pool.length >= 2 && (findPair(maxGap()) || findPair(Infinity));
+        if (!found) { say('Not enough characters with different tiers to play yet.'); return; }
+        const [a, b] = found;
+        showGap();
         pair = [a, b];
         answered = false;
         say('Click the character you think is stronger.');
@@ -269,6 +284,7 @@
         const before = streak;
         streak = correct ? streak + 1 : 0;   // a wrong guess resets the counter
         streakEl.textContent = streak;
+        showGap();
         let newBest = false;
         if (streak > best) {
           best = streak;
