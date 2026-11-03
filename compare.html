@@ -41,6 +41,20 @@
     .rand-btn { white-space: nowrap; }
     .browser-search { width: 100%; padding: 8px 10px; margin-bottom: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-main); font-size: 0.9rem; }
     .browser-search:focus { outline: none; border-color: var(--accent); }
+    .guess-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .guess-head h2 { margin: 0; }
+    .streak { color: var(--text-muted); }
+    .streak b { color: #fff; font-size: 1.3rem; }
+    .gcard { background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 12px; padding: 12px; text-align: center; }
+    .gcard img { width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; background: #000; }
+    .gcard h3 { color: #fff; margin: 10px 0; }
+    .gcard .btn { width: 100%; }
+    .gcard.win { border-color: #238636; }
+    .gcard.lose { border-color: #da3633; }
+    .reveal { margin-top: 10px; color: var(--text-muted); font-size: 0.9rem; white-space: pre-line; }
+    .guess-msg { text-align: center; font-weight: 600; min-height: 1.5em; margin: 14px 0 10px; }
+    .guess-msg.ok { color: #3fb950; }
+    .guess-msg.bad { color: #f85149; }
     @media (max-width: 700px) { .matchup { grid-template-columns: 1fr; } .vs { justify-self: center; } }
   </style>
 </head>
@@ -180,8 +194,93 @@
       });
     }
 
+    // ---- Tier order (same list as the character page): a higher number means a stronger tier ----
+    const exactTierSequence = [
+      "11-C", "11-C+", "11-B", "11-B+", "11-A", "11-A+", 
+      "LOW 10-C", "LOW 10-C+", "10-C", "10-C+", "10-B", "10-B+", "10-A", "10-A+", 
+      "9-C", "9-C+", "9-B", "9-B+", "9-A", "9-A+", 
+      "8-C", "8-C+", "HIGH 8-C", "HIGH 8-C+", "8-B", "8-B+", "8-A", "8-A+", 
+      "LOW 7-C", "LOW 7-C+", "7-C", "7-C+", "HIGH 7-C", "HIGH 7-C+", 
+      "LOW 7-B", "LOW 7-B+", "7-B", "7-B+", "7-A", "7-A+", "HIGH 7-A", "HIGH 7-A+", 
+      "6-C", "6-C+", "HIGH 6-C", "HIGH 6-C+", "LOW 6-B", "LOW 6-B+", "6-B", "6-B+", "HIGH 6-B", "HIGH 6-B+", "6-A", "6-A+", "HIGH 6-A", "HIGH 6-A+", 
+      "5-C", "5-C+", "LOW 5-B", "LOW 5-B+", "5-B", "5-B+", "5-A", "5-A+", "HIGH 5-A", "HIGH 5-A+", 
+      "LOW 4-C", "LOW 4-C+", "4-C", "4-C+", "HIGH 4-C", "HIGH 4-C+", "4-B", "4-B+", "4-A", "4-A+", 
+      "3-C", "3-C+", "3-B", "3-B+", "3-A", "3-A+", "HIGH 3-A", "HIGH 3-A+", 
+      "LOW 2-C", "LOW 2-C+", "2-C", "2-C+", "2-C (X UNIVERSES)", "2-C (X UNIVERSES)+", "2-B", "2-B+", "2-A", "2-A+", 
+      "LOW 1-C", "LOW 1-C+", "1-C (X DIMENSIONS)", "1-C (X DIMENSIONS)+", "HIGH 1-C (X DIMENSIONS)", "HIGH 1-C (X DIMENSIONS)+", "1-B (X DIMENSIONS)", "1-B (X DIMENSIONS)+", "HIGH 1-B", "HIGH 1-B+", 
+      "LOW 1-A", "LOW 1-A+", "1-A(X LAYERS)", "1-A(X LAYERS)+", "HIGH 1-A (X LAYERS)", "HIGH 1-A (X LAYERS)+", "0", "0+"
+    ];
+
+    const normTier = (s) => s.toUpperCase().replace(/\s+/g, ' ').replace(/ \(/g, '(');
+    const tierRankMap = {};
+    exactTierSequence.forEach((tier, i) => { tierRankMap[normTier(tier)] = i; });
+
+    const tierRegex = new RegExp('(?:^|[^\\w-])(' +
+      Object.keys(tierRankMap).sort((a, b) => b.length - a.length)
+        .map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')(?!\\w)');
+
+    function parseTierWeight(tierStr) {
+      const m = normTier(String(tierStr || '')).match(tierRegex);
+      return m ? tierRankMap[m[1]] : null;
+    }
+
+
+    // ---- Guess tab: pick which of two random characters is stronger (by tier) ----
+    function buildGuess(el) {
+      el.innerHTML = `<div class="guess-head"><h2>Who’s stronger?</h2><div class="streak">Streak: <b class="streak-n">0</b></div></div>
+        <div class="matchup"><div class="gcard"></div><div class="vs">VS</div><div class="gcard"></div></div>
+        <p class="guess-msg muted"></p>
+        <div style="text-align:center"><button type="button" class="btn next-btn" hidden>Next matchup</button></div>`;
+      const cards = el.querySelectorAll('.gcard'), msg = el.querySelector('.guess-msg');
+      const nextBtn = el.querySelector('.next-btn'), streakEl = el.querySelector('.streak-n');
+      let pair = [], answered = false, streak = 0;
+      const tierOf = (c) => val(c, 'Tier / Tier range', 'Tier');
+      const tw = (c) => parseTierWeight(tierOf(c));
+      const say = (text, cls) => { msg.textContent = text; msg.className = 'guess-msg ' + (cls || 'muted'); };
+      const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+      function newRound() {
+        nextBtn.hidden = true;
+        if (!allChars.length) { say('Loading characters...'); return; }
+        const pool = allChars.filter((c) => tw(c) !== null);   // only characters with a recognised tier
+        let a, b, tries = 0;
+        if (pool.length >= 2) do { a = pick(pool); b = pick(pool); } while ((a === b || tw(a) === tw(b)) && ++tries < 200);
+        if (!a || a === b || tw(a) === tw(b)) { say('Not enough characters with different tiers to play yet.'); return; }
+        pair = [a, b];
+        answered = false;
+        say('Click the character you think is stronger.');
+        cards.forEach((card, i) => {
+          card.className = 'gcard';
+          card.innerHTML = `<img src="${esc(imageOf(pair[i]) || FALLBACK_IMG)}" alt="${esc(nameOf(pair[i]))}"><h3>${esc(nameOf(pair[i]))}</h3><button type="button" class="btn guess-btn" data-i="${i}">Stronger</button><div class="reveal"></div>`;
+        });
+      }
+
+      el.addEventListener('click', (e) => {
+        const g = e.target.closest('.guess-btn');
+        if (!g || answered) return;
+        answered = true;
+        const win = tw(pair[0]) > tw(pair[1]) ? 0 : 1;
+        const correct = +g.dataset.i === win;
+        const before = streak;
+        streak = correct ? streak + 1 : 0;   // a wrong guess resets the counter
+        streakEl.textContent = streak;
+        cards.forEach((card, k) => {
+          card.classList.add(k === win ? 'win' : 'lose');
+          const ap = val(pair[k], 'AP (Attack Potency)', 'AP');
+          card.querySelector('.reveal').textContent = 'Tier ' + tierOf(pair[k]) + (isEmpty(ap) ? '' : '\nAP: ' + ap);
+          card.querySelector('.guess-btn').disabled = true;
+        });
+        say(correct ? 'Correct! Streak: ' + streak : 'Wrong. Your streak of ' + before + ' was reset to 0.', correct ? 'ok' : 'bad');
+        nextBtn.hidden = false;
+      });
+      nextBtn.addEventListener('click', newRound);
+      refreshers.push(() => { if (!pair.length) newRound(); });   // start once the sheet has loaded
+      newRound();
+    }
+
     const TABS = [
-      { id: 'compare', title: 'Compare', build: buildCompare }
+      { id: 'compare', title: 'Compare', build: buildCompare },
+      { id: 'guess', title: 'Who’s Stronger?', build: buildGuess }
     ];
 
     TABS.forEach((t) => {
