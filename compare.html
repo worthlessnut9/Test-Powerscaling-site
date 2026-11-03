@@ -109,13 +109,14 @@
       chars.forEach((c) => {
         let node = root;
         node.count++;
-        val(c, 'Folders', 'Folder').split(/\s*,\s*/).filter(Boolean).forEach((name) => {
+        const parts = val(c, 'Folders', 'Folder').split(/\s*,\s*/).filter(Boolean);
+        (parts.length ? parts : ['Not Sorted']).forEach((name) => {
           const key = name.toLowerCase().replace(/\s+/g, ' ');
           if (!node.kids.has(key)) node.kids.set(key, newNode(name));
           node = node.kids.get(key);
           node.count++;
         });
-        node.chars.push(c);   // characters with no folder stay at Home
+        node.chars.push(c);   // characters with no folder end up in "Not Sorted"
       });
     }
 
