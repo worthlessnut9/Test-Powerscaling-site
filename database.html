@@ -227,6 +227,8 @@
     .folder-chip span { color: var(--text-muted); margin-left: 6px; }
       .stat-note { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-color); font-size: 0.85rem; line-height: 1.5; color: var(--text-muted); }
     .stat-note a, .stat-value a { color: var(--accent); }
+    .badge-link { text-decoration: none; display: inline-block; }
+    .badge-link:hover .badge { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -404,6 +406,20 @@
       return (out + esc(txt.slice(last))).replace(/\r?\n/g, '<br>');
     }
 
+    // Link from a character's tier to its description on the Terms page ("+" tiers link to their base tier)
+    function tierAnchor(tierStr) {
+      const m = normTier(String(tierStr || '')).match(tierRegex);
+      if (!m) return '';
+      const slug = m[1].replace(/\+$/, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      return 'terms.html#tiering-system/tier/' + slug;
+    }
+
+    function tierBadgeHtml(c) {
+      const badge = `<span class="badge" style="font-size: 1rem;">Tier ${esc(getTier(c))}</span>`;
+      const url = tierAnchor(getTier(c));
+      return url ? `<a class="badge-link" href="${esc(url)}" title="See what this tier means">${badge}</a>` : badge;
+    }
+
     function renderProfile(c) {
       const name = esc(getCharName(c));
       // A stat box: label, value, and optional explanation text underneath (from the "<Stat> Notes" column)
@@ -423,7 +439,7 @@
           <img class="profile-img" src="${esc(getImage(c) || FALLBACK_IMG)}" alt="${name}">
           <div class="profile-info">
             <h1>${name}</h1>
-            <div style="margin-top: 15px;"><span class="badge" style="font-size: 1rem;">Tier ${esc(getTier(c))}</span></div>
+            <div style="margin-top: 15px;">${tierBadgeHtml(c)}</div>
             <div class="tags-container" style="margin-top: 15px;">${tagsOf(c).map(tagHtml).join('')}</div>
           </div>
         </div>

@@ -14,6 +14,8 @@
     .subtabs .tab { border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 12px; font-size: 0.9rem; margin-bottom: 0; }
     .subtabs .tab[aria-selected="true"] { background: var(--tag-bg); color: #fff; border-color: var(--accent); }
     .panel h3 { color: #fff; margin: 24px 0 6px; font-size: 1.05rem; }
+    .panel h3.flash { color: var(--accent); }
+    .panel h3 { scroll-margin-top: 16px; }
   </style>
 </head>
 <body>
@@ -38,117 +40,117 @@
   <!-- TIER TAB CONTENT: under each tier, replace the bold placeholder text with its description -->
   <template id="content-tier">
     <h2>Tier</h2>
-    <h3>11-C</h3>
+    <h3 id="tier-11-c">11-C</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>11-B</h3>
+    <h3 id="tier-11-b">11-B</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>11-A</h3>
+    <h3 id="tier-11-a">11-A</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>Low 10-C</h3>
+    <h3 id="tier-low-10-c">Low 10-C</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>10-C</h3>
+    <h3 id="tier-10-c">10-C</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>10-B</h3>
+    <h3 id="tier-10-b">10-B</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>10-A</h3>
+    <h3 id="tier-10-a">10-A</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>9-C</h3>
+    <h3 id="tier-9-c">9-C</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>9-B</h3>
+    <h3 id="tier-9-b">9-B</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>9-A</h3>
+    <h3 id="tier-9-a">9-A</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>8-C</h3>
+    <h3 id="tier-8-c">8-C</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>High 8-C</h3>
+    <h3 id="tier-high-8-c">High 8-C</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>8-B</h3>
+    <h3 id="tier-8-b">8-B</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>8-A</h3>
+    <h3 id="tier-8-a">8-A</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>Low 7-C</h3>
+    <h3 id="tier-low-7-c">Low 7-C</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>7-C</h3>
+    <h3 id="tier-7-c">7-C</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>High 7-C</h3>
+    <h3 id="tier-high-7-c">High 7-C</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>Low 7-B</h3>
+    <h3 id="tier-low-7-b">Low 7-B</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>7-B</h3>
+    <h3 id="tier-7-b">7-B</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>7-A</h3>
+    <h3 id="tier-7-a">7-A</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>High 7-A</h3>
+    <h3 id="tier-high-7-a">High 7-A</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>6-C</h3>
+    <h3 id="tier-6-c">6-C</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>High 6-C</h3>
+    <h3 id="tier-high-6-c">High 6-C</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>Low 6-B</h3>
+    <h3 id="tier-low-6-b">Low 6-B</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>6-B</h3>
+    <h3 id="tier-6-b">6-B</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>High 6-B</h3>
+    <h3 id="tier-high-6-b">High 6-B</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>6-A</h3>
+    <h3 id="tier-6-a">6-A</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>High 6-A</h3>
+    <h3 id="tier-high-6-a">High 6-A</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>5-C</h3>
+    <h3 id="tier-5-c">5-C</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>Low 5-B</h3>
+    <h3 id="tier-low-5-b">Low 5-B</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>5-B</h3>
+    <h3 id="tier-5-b">5-B</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>5-A</h3>
+    <h3 id="tier-5-a">5-A</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>High 5-A</h3>
+    <h3 id="tier-high-5-a">High 5-A</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>Low 4-C</h3>
+    <h3 id="tier-low-4-c">Low 4-C</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>4-C</h3>
+    <h3 id="tier-4-c">4-C</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>High 4-C</h3>
+    <h3 id="tier-high-4-c">High 4-C</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>4-B</h3>
+    <h3 id="tier-4-b">4-B</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>4-A</h3>
+    <h3 id="tier-4-a">4-A</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>3-C</h3>
+    <h3 id="tier-3-c">3-C</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>3-B</h3>
+    <h3 id="tier-3-b">3-B</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>3-A</h3>
+    <h3 id="tier-3-a">3-A</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>High 3-A</h3>
+    <h3 id="tier-high-3-a">High 3-A</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>Low 2-C</h3>
+    <h3 id="tier-low-2-c">Low 2-C</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>2-C</h3>
+    <h3 id="tier-2-c">2-C</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>2-C (X UNIVERSES)</h3>
+    <h3 id="tier-2-c-x-universes">2-C (X UNIVERSES)</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>2-B</h3>
+    <h3 id="tier-2-b">2-B</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>2-A</h3>
+    <h3 id="tier-2-a">2-A</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>Low 1-C</h3>
+    <h3 id="tier-low-1-c">Low 1-C</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>1-C (X DIMENSIONS)</h3>
+    <h3 id="tier-1-c-x-dimensions">1-C (X DIMENSIONS)</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>High 1-C (X DIMENSIONS)</h3>
+    <h3 id="tier-high-1-c-x-dimensions">High 1-C (X DIMENSIONS)</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>1-B (X DIMENSIONS)</h3>
+    <h3 id="tier-1-b-x-dimensions">1-B (X DIMENSIONS)</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>High 1-B</h3>
+    <h3 id="tier-high-1-b">High 1-B</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>Low 1-A</h3>
+    <h3 id="tier-low-1-a">Low 1-A</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>1-A (X LAYERS)</h3>
+    <h3 id="tier-1-a-x-layers">1-A (X LAYERS)</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>High 1-A (X LAYERS)</h3>
+    <h3 id="tier-high-1-a-x-layers">High 1-A (X LAYERS)</h3>
     <p><b>DESCRIPTION HERE</b></p>
-    <h3>0</h3>
+    <h3 id="tier-0">0</h3>
     <p><b>DESCRIPTION HERE</b></p>
   </template>
 
@@ -211,7 +213,7 @@
 
     // Links look like terms.html#tiering-system/speed
     function showTab() {
-      const [gid, tid] = location.hash.slice(1).split('/');
+      const [gid, tid, anchor] = location.hash.slice(1).split('/');
       const group = GROUPS.find((g) => g.id === gid) || GROUPS[0];
       const tab = group.tabs.find((t) => t.id === tid) || group.tabs[0];
       GROUPS.forEach((g) => {
@@ -222,6 +224,13 @@
         byId('panel-' + group.id + '-' + t.id).hidden = t !== tab;
         byId('tab-' + group.id + '-' + t.id).setAttribute('aria-selected', String(t === tab));
       });
+      // Links like terms.html#tiering-system/tier/low-10-c scroll to that tier's description
+      const target = anchor && byId('tier-' + anchor);
+      if (target && !target.closest('[hidden]')) {
+        target.scrollIntoView({ block: 'start' });
+        target.classList.add('flash');
+        setTimeout(() => target.classList.remove('flash'), 2000);
+      }
     }
     window.addEventListener('hashchange', showTab);
     showTab();
