@@ -3,59 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Compare - Powerscaling Database</title>
+  <title>Terms - Powerscaling Database</title>
   <link rel="stylesheet" href="site.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
-    .sec-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-    .sec-head h2 { margin: 0; }
-    .matchup { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: start; }
-    .vs { align-self: center; color: var(--text-muted); font-weight: 700; letter-spacing: 0.1em; }
-    .pick { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-main); font-size: 1rem; }
-    .pick:focus { outline: none; border-color: var(--accent); }
-    .fighter { margin-top: 12px; }
-    .fighter img { width: 100%; max-height: 320px; object-fit: cover; border-radius: 10px; background: #000; border: 1px solid var(--border-color); }
-    .fighter h3 { color: #fff; margin: 12px 0 8px; }
-    .row { background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
-    .lbl { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px; }
-    .val { color: #fff; white-space: pre-line; }
-    .btn { background: var(--tag-bg); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 16px; cursor: pointer; font-size: 0.95rem; }
-    .btn:hover { border-color: var(--accent); color: var(--accent); }
-    .btn.small { padding: 4px 10px; font-size: 0.8rem; }
     .tabs { display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; }
     .tab { background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; color: var(--text-muted); padding: 10px 16px; cursor: pointer; font-size: 0.95rem; }
     .tab:hover { color: var(--text-main); }
     .tab[aria-selected="true"] { color: #fff; border-bottom-color: var(--accent); }
-    .pick-btn { width: 100%; text-align: left; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-main); font-size: 1rem; cursor: pointer; }
-    .pick-btn:hover, .pick-btn:focus { border-color: var(--accent); outline: none; }
-    .browser { margin-top: 8px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-color); padding: 10px; max-height: 320px; overflow: auto; }
-    .group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 0.85rem; }
-    .crumb-btn { background: none; border: none; padding: 0; color: var(--accent); cursor: pointer; font-size: 0.85rem; }
-    .crumb-cur { color: #fff; font-weight: 600; }
-    .opt { background: var(--tag-bg); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 0.85rem; }
-    .opt:hover { border-color: var(--accent); color: var(--accent); }
-    .opt span { color: var(--text-muted); margin-left: 6px; }
-    .opt.char { background: var(--card-bg); }
-    .pick-row { display: flex; gap: 8px; }
-    .pick-row .pick-btn { flex: 1; min-width: 0; }
-    .rand-btn { white-space: nowrap; }
-    .browser-search { width: 100%; padding: 8px 10px; margin-bottom: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-main); font-size: 0.9rem; }
-    .browser-search:focus { outline: none; border-color: var(--accent); }
-    .guess-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-    .guess-head h2 { margin: 0; }
-    .streak { color: var(--text-muted); }
-    .streak b { color: #fff; font-size: 1.3rem; }
-    .gcard { background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 12px; padding: 12px; text-align: center; }
-    .gcard img { width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; background: #000; }
-    .gcard h3 { color: #fff; margin: 10px 0; }
-    .gcard .btn { width: 100%; }
-    .gcard.win { border-color: #238636; }
-    .gcard.lose { border-color: #da3633; }
-    .reveal { margin-top: 10px; color: var(--text-muted); font-size: 0.9rem; white-space: pre-line; }
-    .guess-msg { text-align: center; font-weight: 600; min-height: 1.5em; margin: 14px 0 10px; }
-    .guess-msg.ok { color: #3fb950; }
-    .guess-msg.bad { color: #f85149; }
-    @media (max-width: 700px) { .matchup { grid-template-columns: 1fr; } .vs { justify-self: center; } }
+    .subtabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+    .subtabs .tab { border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 12px; font-size: 0.9rem; margin-bottom: 0; }
+    .subtabs .tab[aria-selected="true"] { background: var(--tag-bg); color: #fff; border-color: var(--accent); }
+    .panel h3 { color: #fff; margin: 24px 0 6px; font-size: 1.05rem; }
   </style>
 </head>
 <body>
@@ -64,293 +22,209 @@
     <div class="links">
       <a href="index.html">Home</a>
       <a href="database.html">Characters</a>
-      <a href="compare.html" aria-current="page">Compare</a>
+      <a href="compare.html">Compare</a>
       <a href="calculators.html">Calculators</a>
-      <a href="terms.html">Terms</a>
+      <a href="terms.html" aria-current="page">Terms</a>
     </div>
   </nav>
-
   <main class="container">
     <header>
-      <h1>Compare</h1>
-      <p class="muted" id="status">Loading characters...</p>
+      <h1>Terms</h1>
     </header>
 
     <div class="tabs" id="tabs" role="tablist"></div>
     <div id="panels"></div>
   </main>
+  <!-- TIER TAB CONTENT: under each tier, replace the bold placeholder text with its description -->
+  <template id="content-tier">
+    <h2>Tier</h2>
+    <h3>11-C</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>11-B</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>11-A</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>Low 10-C</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>10-C</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>10-B</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>10-A</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>9-C</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>9-B</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>9-A</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>8-C</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>High 8-C</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>8-B</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>8-A</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>Low 7-C</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>7-C</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>High 7-C</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>Low 7-B</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>7-B</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>7-A</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>High 7-A</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>6-C</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>High 6-C</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>Low 6-B</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>6-B</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>High 6-B</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>6-A</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>High 6-A</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>5-C</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>Low 5-B</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>5-B</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>5-A</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>High 5-A</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>Low 4-C</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>4-C</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>High 4-C</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>4-B</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>4-A</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>3-C</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>3-B</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>3-A</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>High 3-A</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>Low 2-C</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>2-C</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>2-C (X UNIVERSES)</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>2-B</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>2-A</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>Low 1-C</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>1-C (X DIMENSIONS)</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>High 1-C (X DIMENSIONS)</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>1-B (X DIMENSIONS)</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>High 1-B</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>Low 1-A</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>1-A (X LAYERS)</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>High 1-A (X LAYERS)</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+    <h3>0</h3>
+    <p><b>DESCRIPTION HERE</b></p>
+  </template>
 
   <script>
-    const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQWRS4v9F9SJ-Y4wUOO3efaf3UXCItz8EX4wK4QV6lnHX37MQMrchewnvjC9IcwYnehddX5VjBAzUxi/pub?output=csv';
-    const $ = (id) => document.getElementById(id);
-    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    const FALLBACK_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="350"><rect width="100%" height="100%" fill="#000"/><text x="50%" y="50%" fill="#8b949e" font-family="sans-serif" font-size="16" text-anchor="middle">No image</text></svg>');
-
-    document.addEventListener('error', (e) => {
-      const el = e.target;
-      if (el.tagName === 'IMG' && !el.dataset.fb) { el.dataset.fb = '1'; el.src = FALLBACK_IMG; }
-    }, true);
-
-    const val = (item, ...keys) => { for (const k of keys) { const v = (item[k] || '').trim(); if (v) return v; } return ''; };
-    const isEmpty = (v) => !v || /^(none|n\/a)$/i.test(v.trim());   // "None" fields are not shown
-    const nameOf = (item) => val(item, 'Character Name', 'Character');
-    const imageOf = (item) => {
-      const raw = val(item, 'Image Link / Name', 'Image Link');
-      if (!raw) return '';
-      if (/^https?:\/\//i.test(raw)) return raw;
-      return './Images/' + raw.replace(/^(\.\/)?images\//i, '').replace(/[#?]/g, (c) => encodeURIComponent(c));
-    };
-
-    const FIELDS = [
-      ['Attack Potency', ['AP (Attack Potency)', 'AP']],
-      ['Durability', ['Durability']],
-      ['Speed', ['Speed']],
-      ['Abilities', ['Abilities', 'Hax / Abilities']],
-      ['Items', ['Standard Equipment', 'Equipment']]
-    ];
-
-        function fighterHtml(c) {
-      const rows = FIELDS.map(([label, keys]) => {
-        const v = val(c, ...keys);
-        return isEmpty(v) ? '' : `<div class="row"><div class="lbl">${label}</div><div class="val">${esc(v)}</div></div>`;
-      }).join('');
-      return `<img src="${esc(imageOf(c) || FALLBACK_IMG)}" alt="${esc(nameOf(c))}"><h3>${esc(nameOf(c))}</h3>${rows}`;
-    }
-
-    // ---- Tabs: each comparison type is one entry in TABS. To add a type, write a build function and add it below. ----
-    // ---- Folder tree, built from the "Folders" column (e.g. Marvel, MCU, Phase 1, Iron Man (2008)) ----
-    const newNode = (name) => ({ name, kids: new Map(), chars: [], count: 0 });
-    let root = newNode('Home');
-    let allChars = [];
-    const refreshers = [];
-
-    function buildTree(chars) {
-      allChars = chars;
-      root = newNode('Home');
-      chars.forEach((c) => {
-        let node = root;
-        node.count++;
-        const parts = val(c, 'Folders', 'Folder').split(/\s*,\s*/).filter(Boolean);
-        (parts.length ? parts : ['Not Sorted']).forEach((name) => {
-          const key = name.toLowerCase().replace(/\s+/g, ' ');
-          if (!node.kids.has(key)) node.kids.set(key, newNode(name));
-          node = node.kids.get(key);
-          node.count++;
-        });
-        node.chars.push(c);   // characters with no folder end up in "Not Sorted"
-      });
-    }
-
-    // ---- Compare tab: each side picks a character by browsing folders ----
-    function buildCompare(el) {
-      const side = (i) => `<div class="side"><div class="pick-row"><button type="button" class="pick-btn">Choose character ${i} &#9662;</button><button type="button" class="btn rand-btn" title="Pick a random character">Random</button></div><div class="browser" hidden><input type="search" class="browser-search" placeholder="Search characters..." autocomplete="off" aria-label="Search characters"><div class="browser-list"></div></div><div class="fighter"></div></div>`;
-      el.innerHTML = `<div class="matchup">${side(1)}<div class="vs">VS</div>${side(2)}</div>`;
-      el.querySelectorAll('.side').forEach((s) => {
-        const btn = s.querySelector('.pick-btn'), browser = s.querySelector('.browser'), box = s.querySelector('.fighter');
-        let path = [], shown = [];
-        const search = browser.querySelector('.browser-search'), list = browser.querySelector('.browser-list');
-
-        function render() {
-          if (!root.count) { list.innerHTML = '<p class="muted">Loading characters...</p>'; return; }
-          // Typing searches every character, ignoring folders; clear the box to go back to the folders
-          const q = search.value.trim().toLowerCase();
-          if (q) {
-            const matches = allChars.filter((c) => nameOf(c).toLowerCase().includes(q)).sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
-            shown = matches.slice(0, 100);
-            list.innerHTML = `<div class="group muted">${matches.length ? matches.length + ' found' + (matches.length > 100 ? ' (showing 100)' : '') : 'No matches.'}</div>` +
-              (shown.length ? `<div class="group">${shown.map((c, i) => `<button type="button" class="opt char" data-i="${i}">${esc(nameOf(c))}</button>`).join('')}</div>` : '');
-            return;
-          }
-          let n = root;
-          const trail = [{ name: 'Home', path: [] }].concat(path.map((k, i) => { n = n.kids.get(k); return { name: n.name, path: path.slice(0, i + 1) }; }));
-          const crumbs = trail.map((t, i) => i === trail.length - 1
-            ? `<span class="crumb-cur">${esc(t.name)}</span>`
-            : `<button type="button" class="crumb-btn" data-path="${esc(JSON.stringify(t.path))}">${esc(t.name)}</button>`).join('<span class="muted">\u203A</span>');
-          const folders = [...n.kids.entries()].sort((a, b) => a[1].name.localeCompare(b[1].name))
-            .map(([k, f]) => `<button type="button" class="opt" data-path="${esc(JSON.stringify([...path, k]))}">${esc(f.name)}<span>${f.count}</span></button>`).join('');
-          shown = [...n.chars].sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
-          const chars = shown.map((c, i) => `<button type="button" class="opt char" data-i="${i}">${esc(nameOf(c))}</button>`).join('');
-          list.innerHTML = `<div class="group">${crumbs}</div>` + (folders ? `<div class="group">${folders}</div>` : '') + (chars ? `<div class="group">${chars}</div>` : '');
-        }
-
-        function choose(ch) {
-          search.value = '';
-          btn.textContent = nameOf(ch) + ' \u25BE';
-          box.innerHTML = fighterHtml(ch);
-          browser.hidden = true;
-        }
-        s.querySelector('.rand-btn').addEventListener('click', () => {
-          if (allChars.length) choose(allChars[Math.floor(Math.random() * allChars.length)]);
-        });
-        btn.addEventListener('click', () => { browser.hidden = !browser.hidden; if (!browser.hidden) render(); });
-        browser.addEventListener('click', (e) => {
-          const f = e.target.closest('[data-path]');
-          if (f) { path = JSON.parse(f.dataset.path); return render(); }
-          const c = e.target.closest('[data-i]');
-          if (c) choose(shown[+c.dataset.i]);
-        });
-        search.addEventListener('input', render);
-        refreshers.push(() => { if (!browser.hidden) render(); });
-      });
-    }
-
-    // ---- Tier order (same list as the character page): a higher number means a stronger tier ----
-    const exactTierSequence = [
-      "11-C", "11-C+", "11-B", "11-B+", "11-A", "11-A+", 
-      "LOW 10-C", "LOW 10-C+", "10-C", "10-C+", "10-B", "10-B+", "10-A", "10-A+", 
-      "9-C", "9-C+", "9-B", "9-B+", "9-A", "9-A+", 
-      "8-C", "8-C+", "HIGH 8-C", "HIGH 8-C+", "8-B", "8-B+", "8-A", "8-A+", 
-      "LOW 7-C", "LOW 7-C+", "7-C", "7-C+", "HIGH 7-C", "HIGH 7-C+", 
-      "LOW 7-B", "LOW 7-B+", "7-B", "7-B+", "7-A", "7-A+", "HIGH 7-A", "HIGH 7-A+", 
-      "6-C", "6-C+", "HIGH 6-C", "HIGH 6-C+", "LOW 6-B", "LOW 6-B+", "6-B", "6-B+", "HIGH 6-B", "HIGH 6-B+", "6-A", "6-A+", "HIGH 6-A", "HIGH 6-A+", 
-      "5-C", "5-C+", "LOW 5-B", "LOW 5-B+", "5-B", "5-B+", "5-A", "5-A+", "HIGH 5-A", "HIGH 5-A+", 
-      "LOW 4-C", "LOW 4-C+", "4-C", "4-C+", "HIGH 4-C", "HIGH 4-C+", "4-B", "4-B+", "4-A", "4-A+", 
-      "3-C", "3-C+", "3-B", "3-B+", "3-A", "3-A+", "HIGH 3-A", "HIGH 3-A+", 
-      "LOW 2-C", "LOW 2-C+", "2-C", "2-C+", "2-C (X UNIVERSES)", "2-C (X UNIVERSES)+", "2-B", "2-B+", "2-A", "2-A+", 
-      "LOW 1-C", "LOW 1-C+", "1-C (X DIMENSIONS)", "1-C (X DIMENSIONS)+", "HIGH 1-C (X DIMENSIONS)", "HIGH 1-C (X DIMENSIONS)+", "1-B (X DIMENSIONS)", "1-B (X DIMENSIONS)+", "HIGH 1-B", "HIGH 1-B+", 
-      "LOW 1-A", "LOW 1-A+", "1-A(X LAYERS)", "1-A(X LAYERS)+", "HIGH 1-A (X LAYERS)", "HIGH 1-A (X LAYERS)+", "0", "0+"
-    ];
-
-    const normTier = (s) => s.toUpperCase().replace(/\s+/g, ' ').replace(/ \(/g, '(');
-    const tierRankMap = {};
-    exactTierSequence.forEach((tier, i) => { tierRankMap[normTier(tier)] = i; });
-
-    const tierRegex = new RegExp('(?:^|[^\\w-])(' +
-      Object.keys(tierRankMap).sort((a, b) => b.length - a.length)
-        .map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')(?!\\w)');
-
-    function parseTierWeight(tierStr) {
-      const m = normTier(String(tierStr || '')).match(tierRegex);
-      return m ? tierRankMap[m[1]] : null;
-    }
-
-
-    // ---- Guess tab: pick which of two random characters is stronger (by tier) ----
-    function buildGuess(el) {
-      el.innerHTML = `<div class="guess-head"><h2>Who’s stronger?</h2><div class="streak">Streak: <b class="streak-n">0</b> &nbsp;&middot;&nbsp; Best: <b class="best-n">0</b> &nbsp;&middot;&nbsp; Difficulty: <b class="gap-n">1</b></div></div>
-        <div class="matchup"><div class="gcard"></div><div class="vs">VS</div><div class="gcard"></div></div>
-        <p class="guess-msg muted"></p>
-        <div style="text-align:center"><button type="button" class="btn next-btn" hidden>Next matchup</button></div>`;
-      const cards = el.querySelectorAll('.gcard'), msg = el.querySelector('.guess-msg');
-      const nextBtn = el.querySelector('.next-btn'), streakEl = el.querySelector('.streak-n'), bestEl = el.querySelector('.best-n'), gapEl = el.querySelector('.gap-n');
-      let pair = [], answered = false, streak = 0;
-      // Personal best is saved in this browser so it survives a refresh
-      const BEST_KEY = 'powerscaling-guess-best';
-      let best = 0;
-      try { best = parseInt(localStorage.getItem(BEST_KEY), 10) || 0; } catch (err) { best = 0; }
-      bestEl.textContent = best;
-      const tierOf = (c) => val(c, 'Tier / Tier range', 'Tier');
-      const tw = (c) => parseTierWeight(tierOf(c));
-      const say = (text, cls) => { msg.textContent = text; msg.className = 'guess-msg ' + (cls || 'muted'); };
-      const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-      // Difficulty: the biggest allowed tier gap starts at 50 and shrinks by 1 for every 5 correct in a row, down to 1 (difficulty 50)
-      const maxGap = () => Math.max(1, 50 - Math.floor(streak / 5));
-      const showGap = () => { const level = Math.min(50, Math.floor(streak / 5) + 1); gapEl.textContent = level >= 50 ? '50 (max)' : level; };
-
-      function newRound() {
-        nextBtn.hidden = true;
-        if (!allChars.length) { say('Loading characters...'); return; }
-        const pool = allChars.filter((c) => tw(c) !== null);   // only characters with a recognised tier
-        const w = new Map(pool.map((c) => [c, tw(c)]));
-        // Two characters whose tiers differ by at least 1 and at most `limit` steps in the tier list
-        const findPair = (limit) => {
-          for (let t = 0; t < 100; t++) {
-            const x = pick(pool);
-            const near = pool.filter((c) => { const d = Math.abs(w.get(c) - w.get(x)); return d >= 1 && d <= limit; });
-            if (near.length) return [x, pick(near)];
-          }
-          return null;
-        };
-        // If the sheet has no pair that close, fall back to any two different tiers so the game keeps going
-        const found = pool.length >= 2 && (findPair(maxGap()) || findPair(Infinity));
-        if (!found) { say('Not enough characters with different tiers to play yet.'); return; }
-        const [a, b] = found;
-        showGap();
-        pair = [a, b];
-        answered = false;
-        say('Click the character you think is stronger.');
-        cards.forEach((card, i) => {
-          card.className = 'gcard';
-          card.innerHTML = `<img src="${esc(imageOf(pair[i]) || FALLBACK_IMG)}" alt="${esc(nameOf(pair[i]))}"><h3>${esc(nameOf(pair[i]))}</h3><button type="button" class="btn guess-btn" data-i="${i}">Stronger</button><div class="reveal"></div>`;
-        });
+    // Top-level tabs ("groups"), each with its own row of sub-tabs. To write a tab, add a <template id="content-TABID"> block in the HTML like the Tier one.
+    const GROUPS = [
+      {
+        id: 'tiering-system',
+        title: 'Tiering System',
+        tabs: [
+          { id: 'tier', title: 'Tier' },
+          { id: 'attack-potency', title: 'Attack Potency' },
+          { id: 'speed', title: 'Speed' },
+          { id: 'lifting-strength', title: 'Lifting Strength' },
+          { id: 'striking-strength', title: 'Striking Strength' },
+          { id: 'durability', title: 'Durability' },
+          { id: 'intelligence', title: 'Intelligence' },
+          { id: 'range', title: 'Range' },
+          { id: 'stamina', title: 'Stamina' }
+        ]
       }
-
-      el.addEventListener('click', (e) => {
-        const g = e.target.closest('.guess-btn');
-        if (!g || answered) return;
-        answered = true;
-        const win = tw(pair[0]) > tw(pair[1]) ? 0 : 1;
-        const correct = +g.dataset.i === win;
-        const before = streak;
-        streak = correct ? streak + 1 : 0;   // a wrong guess resets the counter
-        streakEl.textContent = streak;
-        showGap();
-        let newBest = false;
-        if (streak > best) {
-          best = streak;
-          newBest = true;
-          bestEl.textContent = best;
-          try { localStorage.setItem(BEST_KEY, String(best)); } catch (err) { /* storage unavailable: best just won't persist */ }
-        }
-        cards.forEach((card, k) => {
-          card.classList.add(k === win ? 'win' : 'lose');
-          const ap = val(pair[k], 'AP (Attack Potency)', 'AP');
-          card.querySelector('.reveal').textContent = 'Tier ' + tierOf(pair[k]) + (isEmpty(ap) ? '' : '\nAP: ' + ap);
-          card.querySelector('.guess-btn').disabled = true;
-        });
-        say(correct ? 'Correct! Streak: ' + streak + (newBest ? ' (new personal best!)' : '') : 'Wrong. Your streak of ' + before + ' was reset to 0.', correct ? 'ok' : 'bad');
-        nextBtn.hidden = false;
-      });
-      nextBtn.addEventListener('click', newRound);
-      refreshers.push(() => { if (!pair.length) newRound(); });   // start once the sheet has loaded
-      newRound();
-    }
-
-    const TABS = [
-      { id: 'compare', title: 'Compare', build: buildCompare },
-      { id: 'guess', title: 'Who’s Stronger?', build: buildGuess }
     ];
 
-    TABS.forEach((t) => {
-      const btn = document.createElement('button');
-      btn.className = 'tab';
-      btn.id = 'tab-' + t.id;
-      btn.textContent = t.title;
-      btn.setAttribute('role', 'tab');
-      btn.addEventListener('click', () => { location.hash = '#' + t.id; });
-      $('tabs').appendChild(btn);
+    const byId = (id) => document.getElementById(id);
 
-      const panel = document.createElement('section');
-      panel.className = 'panel';
-      panel.id = 'panel-' + t.id;
-      t.build(panel);   // built once, so picks are kept when switching tabs
-      $('panels').appendChild(panel);
+    GROUPS.forEach((g) => {
+      const top = document.createElement('button');
+      top.className = 'tab';
+      top.id = 'tab-' + g.id;
+      top.textContent = g.title;
+      top.setAttribute('role', 'tab');
+      top.addEventListener('click', () => { location.hash = '#' + g.id; });
+      byId('tabs').appendChild(top);
+
+      const box = document.createElement('div');
+      box.id = 'group-' + g.id;
+      const sub = document.createElement('div');
+      sub.className = 'subtabs';
+      sub.setAttribute('role', 'tablist');
+      box.appendChild(sub);
+
+      g.tabs.forEach((t) => {
+        const btn = document.createElement('button');
+        btn.className = 'tab';
+        btn.id = 'tab-' + g.id + '-' + t.id;
+        btn.textContent = t.title;
+        btn.setAttribute('role', 'tab');
+        btn.addEventListener('click', () => { location.hash = '#' + g.id + '/' + t.id; });
+        sub.appendChild(btn);
+
+        const panel = document.createElement('section');
+        panel.className = 'panel';
+        panel.id = 'panel-' + g.id + '-' + t.id;
+        const tpl = byId('content-' + t.id);   // content comes from a <template id="content-TABID"> in the HTML
+        panel.innerHTML = tpl ? tpl.innerHTML : `<h2>${t.title}</h2><p class="muted">Coming soon.</p>`;
+        box.appendChild(panel);
+      });
+      byId('panels').appendChild(box);
     });
 
+    // Links look like terms.html#tiering-system/speed
     function showTab() {
-      const id = (TABS.find((t) => '#' + t.id === location.hash) || TABS[0]).id;
-      TABS.forEach((t) => {
-        $('panel-' + t.id).hidden = t.id !== id;
-        $('tab-' + t.id).setAttribute('aria-selected', String(t.id === id));
+      const [gid, tid] = location.hash.slice(1).split('/');
+      const group = GROUPS.find((g) => g.id === gid) || GROUPS[0];
+      const tab = group.tabs.find((t) => t.id === tid) || group.tabs[0];
+      GROUPS.forEach((g) => {
+        byId('group-' + g.id).hidden = g !== group;
+        byId('tab-' + g.id).setAttribute('aria-selected', String(g === group));
+      });
+      group.tabs.forEach((t) => {
+        byId('panel-' + group.id + '-' + t.id).hidden = t !== tab;
+        byId('tab-' + group.id + '-' + t.id).setAttribute('aria-selected', String(t === tab));
       });
     }
     window.addEventListener('hashchange', showTab);
     showTab();
-
-    // ---- Load characters from the sheet ----
-    function fail(msg) { $('status').textContent = "Couldn't load characters. " + (msg || ''); }
-
-    if (typeof Papa === 'undefined') fail('The CSV library did not load.');
-    else Papa.parse(SHEET_CSV_URL, {
-      download: true, header: true, skipEmptyLines: true,
-      complete: (r) => {
-        const chars = r.data.filter((i) => nameOf(i));
-        buildTree(chars);
-        $('status').textContent = `${chars.length} characters available. Pick two characters by browsing the folders.`;
-        refreshers.forEach((f) => f());
-      },
-      error: (err) => fail(err && err.message)
-    });
   </script>
 </body>
 </html>
