@@ -229,6 +229,11 @@
     .stat-note a, .stat-value a { color: var(--accent); }
     .badge-link { text-decoration: none; display: inline-block; }
     .badge-link:hover .badge { text-decoration: underline; }
+    .filters { margin: 0 0 14px; }
+    .filters summary { cursor: pointer; color: var(--accent); font-size: 0.9rem; padding: 4px 0; }
+    .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-top: 10px; align-items: end; }
+    .filter-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); }
+    .filter-grid select { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-main); font-size: 0.9rem; text-transform: none; }
   </style>
 </head>
 <body>
@@ -259,6 +264,16 @@
           </select>
         </div>
       </header>
+      <details id="filters" class="filters">
+        <summary>Filters<span id="filter-badge"></span></summary>
+        <div class="filter-grid">
+          <label>Tier from <select id="f-from"></select></label>
+          <label>Tier to <select id="f-to"></select></label>
+          <label>Speed tier <select id="f-speed"></select></label>
+          <label>Strength tier <select id="f-strength"></select></label>
+          <button type="button" id="f-clear" class="back-btn">Clear filters</button>
+        </div>
+      </details>
       <div id="folder-bar" class="folder-bar" style="display:none"></div>
       <div id="character-grid" class="grid"></div>
     </div>
@@ -369,7 +384,7 @@
 
       const grid = $('character-grid');
       if (!data.length) {
-        grid.innerHTML = (folderRoot.kids.size && !$('search').value.trim()) ? '' : '<p style="text-align:center; grid-column: 1/-1;">No characters found.</p>';
+        grid.innerHTML = (folderRoot.kids.size && !$('search').value.trim() && !filtersActive()) ? '' : '<p style="text-align:center; grid-column: 1/-1;">No characters found.</p>';
         return;
       }
 
@@ -600,17 +615,84 @@
       return m ? tierRankMap[m[1]] : null;
     }
 
+    // ---- Filters: tier range, speed tier, strength tier ----
+    const SPEED_NAMES = ["Immobile", "Below Average Human", "Average Human", "Athletic Human", "Peak Human", "Superhuman", "Subsonic (Faster than the Eye)", "Subsonic+", "Transonic", "Supersonic", "Supersonic+", "Hypersonic", "Hypersonic+", "High Hypersonic", "High Hypersonic+", "Massively Hypersonic", "Massively Hypersonic+", "Sub-Relativistic", "Sub-Relativistic+", "Relativistic", "Relativistic+", "Speed of Light", "FTL", "FTL+", "Massively FTL", "Massively FTL+"];
+    const STRENGTH_LEVELS = [["10-C", "Below Average Human"], ["10-B", "Human"], ["10-A", "Athlete"], ["9-C", "Street"], ["9-B", "Wall"], ["9-A", "Small Building"], ["8-C", "Building"], ["High 8-C", "Large Building"], ["8-B", "City Block"], ["8-A", "Multi-City Block"], ["Low 7-C", "Small Town"], ["7-C", "Town"], ["High 7-C", "Large Town"], ["Low 7-B", "Small City"], ["7-B", "City"], ["7-A", "Mountain"], ["High 7-A", "Large Mountain"], ["6-C", "Island"], ["High 6-C", "Large Island"], ["Low 6-B", "Small Country"], ["6-B", "Country"], ["High 6-B", "Large Country"], ["6-A", "Continent"], ["High 6-A", "Multi-Continent"], ["5-C", "Moon"], ["Low 5-B", "Small Planet"], ["5-B", "Planet"], ["5-A", "Large Planet"], ["High 5-A", "Brown Dwarf"], ["Low 4-C", "Small Star"], ["4-C", "Star"], ["High 4-C", "Large Star"], ["4-B", "Solar System"], ["4-A", "Multi-Solar System"], ["3-C", "Galaxy"], ["3-B", "Multi-Galaxy"], ["3-A", "Universe"]];   // [tier, level]
+
+    const prettyTier = (t) => t.replace(/^LOW /, 'Low ').replace(/^HIGH /, 'High ').replace(/(\S)\(/, '$1 (');
+    const escRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // Finds which chart name a cell's text starts with, e.g. "Large Planet Level+" -> "large planet", "MFTL" -> "massively ftl"
+    function makeMatcher(names, aliases = {}) {
+      // [text to look for, chart name to report]; longest text first so "hypersonic+" wins over "hypersonic"
+      const pairs = names.map((n) => [n.toLowerCase(), n.toLowerCase()]).concat(Object.entries(aliases))
+        .sort((a, b) => b[0].length - a[0].length)
+        .map(([pat, name]) => ({ name, re: new RegExp('(?:^|[^a-z0-9-])' + escRe(pat) + '(?![a-z0-9-])') }));
+      return (text) => {
+        const t = String(text || '').toLowerCase().replace(/\bmftl\b/g, 'massively ftl');
+        const hit = pairs.find((x) => x.re.test(t));
+        return hit ? hit.name : '';
+      };
+    }
+    // Cells often just say "Subsonic" for the chart's "Subsonic (Faster than the Eye)"
+    const speedMatch = makeMatcher(SPEED_NAMES, { 'subsonic': 'subsonic (faster than the eye)', 'faster than the eye': 'subsonic (faster than the eye)' });
+    const strengthMatch = makeMatcher(STRENGTH_LEVELS.map((l) => l[1]));
+
+    function filterState() {
+      return { from: $('f-from').value, to: $('f-to').value, speed: $('f-speed').value, strength: $('f-strength').value };
+    }
+
+    function filtersActive() {
+      const f = filterState();
+      return !!(f.from !== '' || f.to !== '' || f.speed || f.strength);
+    }
+
+    function matchesFilters(c, f) {
+      if (f.from !== '' || f.to !== '') {
+        const w = parseTierWeight(getTier(c));
+        if (w === null) return false;   // characters with an unrecognised tier can't match a tier range
+        let lo = f.from === '' ? -Infinity : +f.from, hi = f.to === '' ? Infinity : +f.to;
+        if (lo > hi) [lo, hi] = [hi, lo];
+        if (w < lo || w > hi) return false;
+      }
+      if (f.speed) { if (!('_sp' in c)) c._sp = speedMatch(getSpeed(c)); if (c._sp !== f.speed) return false; }
+      if (f.strength) { if (!('_str' in c)) c._str = strengthMatch(getAP(c)); if (c._str !== f.strength) return false; }
+      return true;
+    }
+
+    function updateFilterBadge() {
+      const f = filterState();
+      const n = ((f.from !== '' || f.to !== '') ? 1 : 0) + (f.speed ? 1 : 0) + (f.strength ? 1 : 0);
+      $('filter-badge').textContent = n ? ` (${n} active)` : '';
+    }
+
+    function initFilters() {
+      const any = '<option value="">Any</option>';
+      const tierOpts = any + exactTierSequence.map((t, i) => `<option value="${i}">${esc(prettyTier(t))}</option>`).join('');
+      $('f-from').innerHTML = tierOpts;
+      $('f-to').innerHTML = tierOpts;
+      $('f-speed').innerHTML = any + SPEED_NAMES.map((n) => `<option value="${esc(n.toLowerCase())}">${esc(n)}</option>`).join('');
+      $('f-strength').innerHTML = any + STRENGTH_LEVELS.map(([tier, level]) => `<option value="${esc(level.toLowerCase())}">${esc(level)} (${esc(tier)})</option>`).join('');
+      document.querySelectorAll('#filters select').forEach((el) => el.addEventListener('change', () => { updateFilterBadge(); filterAndSortRoster(); }));
+      $('f-clear').addEventListener('click', () => {
+        document.querySelectorAll('#filters select').forEach((el) => { el.value = ''; });
+        updateFilterBadge();
+        filterAndSortRoster();
+      });
+    }
+
     function filterAndSortRoster() {
       const query = $('search').value.toLowerCase();
       const sortValue = $('sort-select').value;
 
       const node = folderNode(currentPath) || (currentPath = [], folderRoot);
       const pool = query.trim() ? characterData : node.allChars;
+      const fs = filterState();
       const filtered = pool.filter((item) =>
         getCharName(item).toLowerCase().includes(query) ||
         getTier(item).toLowerCase().includes(query) ||
         getTags(item).toLowerCase().includes(query)
-      );
+      ).filter((item) => matchesFilters(item, fs));
 
       filtered.sort((a, b) => {
         if (sortValue === 'name-asc') return getCharName(a).toLowerCase().localeCompare(getCharName(b).toLowerCase());
@@ -628,6 +710,7 @@
       renderFolderBar(node, !!query.trim());
       $('character-count').textContent = query.trim()
         ? `${filtered.length} of ${characterData.length} characters match`
+        : filtersActive() ? `${filtered.length} characters match your filters`
         : (currentPath.length ? `${node.count} characters in ${node.name}` : `${characterData.length} characters loaded`);
     }
 
@@ -637,6 +720,7 @@
       showRoster();
     }
 
+    initFilters();
     loadDatabase();
 
   </script>
