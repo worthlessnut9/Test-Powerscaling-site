@@ -87,7 +87,7 @@
   </main>
 
   <script>
-    const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQWRS4v9F9SJ-Y4wUOO3efaf3UXCItz8EX4wK4QV6lnHX37MQMrchewnvjC9IcwYnehddX5VjBAzUxi/pub?output=csv';
+    const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQWRS4v9F9SJ-Y4wUOO3efaf3UXCItz8EX4wK4QV6lnHX37MQMrchewnvjC9IcwYnehddX5VjBAzUxi/pub?gid=2100327724&single=true&output=csv';
     const $ = (id) => document.getElementById(id);
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const FALLBACK_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="350"><rect width="100%" height="100%" fill="#000"/><text x="50%" y="50%" fill="#8b949e" font-family="sans-serif" font-size="16" text-anchor="middle">No image</text></svg>');
@@ -314,7 +314,7 @@
 
     // ---- Gauntlet Matchups tab: sets of characters listed in the "Gauntlet Matchups" tab of the Google Sheet ----
     // Paste the gid number of the "Gauntlet Matchups" tab here (the number after gid= in the address bar while that tab is open)
-    const SETS_GID = '';
+    const SETS_GID = '1150615926';
     const SETS_CSV_URL = SETS_GID ? `https://docs.google.com/spreadsheets/d/e/2PACX-1vQWRS4v9F9SJ-Y4wUOO3efaf3UXCItz8EX4wK4QV6lnHX37MQMrchewnvjC9IcwYnehddX5VjBAzUxi/pub?gid=${SETS_GID}&single=true&output=csv` : '';
     let SETS = null;        // null until the sets tab has loaded
     let setsError = false;
@@ -391,9 +391,9 @@
         complete: (r) => {
           const used = new Set();
           SETS = r.data.map((row) => {
-            const name = (row['Name'] || row['Set'] || row[Object.keys(row)[0]] || '').trim();
-            // Character names are separated by line breaks, semicolons or |
-            const names = (row['Characters'] || row['Character List'] || '').split(/\r?\n|;|\|/).map((x) => x.trim()).filter(Boolean);
+            const name = (row['Gauntlet Name'] || row['Name'] || row['Set'] || row[Object.keys(row)[0]] || '').trim();
+            // Character names can be separated by commas (not the ones inside parentheses), line breaks, semicolons or |
+            const names = (row['Characters'] || row['Character List'] || '').split(/\r?\n|;|\||,(?![^()]*\))/).map((x) => x.trim()).filter(Boolean);
             return { name, names };
           }).filter((x) => x.name && x.names.length).map((x) => {
             const base = x.name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'set';
