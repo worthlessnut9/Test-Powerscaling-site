@@ -61,6 +61,17 @@
     .set-card:hover { border-color: var(--accent); }
     .set-card span { color: var(--text-muted); font-size: 0.85rem; }
     .set-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+    .g-picker { margin: 14px 0; }
+    .g-result { margin-bottom: 18px; }
+    .g-card { border: 2px solid transparent; border-radius: 12px; padding: 8px; }
+    .g-card.win { border-color: #238636; }
+    .g-card.lose { border-color: #da3633; }
+    .g-card.tie { border-color: #d29922; }
+    .g-card.unk { border-color: var(--border-color); }
+    .g-badge { margin-top: 8px; font-weight: 600; font-size: 0.9rem; color: var(--text-muted); }
+    .g-card.win .g-badge { color: #3fb950; }
+    .g-card.lose .g-badge { color: #f85149; }
+    .g-card.tie .g-badge { color: #d29922; }
     @media (max-width: 700px) { .matchup { grid-template-columns: 1fr; } .vs { justify-self: center; } }
   </style>
 </head>
@@ -147,56 +158,64 @@
       });
     }
 
-    // ---- Compare tab: each side picks a character by browsing folders ----
+    // ---- Character picker: browse folders, search, or pick at random. Calls onPick(character). ----
+    function createPicker(host, label, onPick) {
+      host.innerHTML = `<div class="pick-row"><button type="button" class="pick-btn">${esc(label)} &#9662;</button><button type="button" class="btn rand-btn" title="Pick a random character">Random</button></div>
+        <div class="browser" hidden><input type="search" class="browser-search" placeholder="Search characters..." autocomplete="off" aria-label="Search characters"><div class="browser-list"></div></div>`;
+      const btn = host.querySelector('.pick-btn'), browser = host.querySelector('.browser');
+      const search = host.querySelector('.browser-search'), list = host.querySelector('.browser-list');
+      let path = [], shown = [];
+
+      function render() {
+        if (!root.count) { list.innerHTML = '<p class="muted">Loading characters...</p>'; return; }
+        // Typing searches every character, ignoring folders; clear the box to go back to the folders
+        const q = search.value.trim().toLowerCase();
+        if (q) {
+          const matches = allChars.filter((c) => nameOf(c).toLowerCase().includes(q)).sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
+          shown = matches.slice(0, 100);
+          list.innerHTML = `<div class="group muted">${matches.length ? matches.length + ' found' + (matches.length > 100 ? ' (showing 100)' : '') : 'No matches.'}</div>` +
+            (shown.length ? `<div class="group">${shown.map((c, i) => `<button type="button" class="opt char" data-i="${i}">${esc(nameOf(c))}</button>`).join('')}</div>` : '');
+          return;
+        }
+        let n = root;
+        const trail = [{ name: 'Home', path: [] }].concat(path.map((k, i) => { n = n.kids.get(k); return { name: n.name, path: path.slice(0, i + 1) }; }));
+        const crumbs = trail.map((t, i) => i === trail.length - 1
+          ? `<span class="crumb-cur">${esc(t.name)}</span>`
+          : `<button type="button" class="crumb-btn" data-path="${esc(JSON.stringify(t.path))}">${esc(t.name)}</button>`).join('<span class="muted">\u203A</span>');
+        const folders = [...n.kids.entries()].sort((a, b) => a[1].name.localeCompare(b[1].name))
+          .map(([k, f]) => `<button type="button" class="opt" data-path="${esc(JSON.stringify([...path, k]))}">${esc(f.name)}<span>${f.count}</span></button>`).join('');
+        shown = [...n.chars].sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
+        const chars = shown.map((c, i) => `<button type="button" class="opt char" data-i="${i}">${esc(nameOf(c))}</button>`).join('');
+        list.innerHTML = `<div class="group">${crumbs}</div>` + (folders ? `<div class="group">${folders}</div>` : '') + (chars ? `<div class="group">${chars}</div>` : '');
+      }
+
+      function choose(ch) {
+        search.value = '';
+        btn.textContent = nameOf(ch) + ' \u25BE';
+        browser.hidden = true;
+        onPick(ch);
+      }
+      host.querySelector('.rand-btn').addEventListener('click', () => {
+        if (allChars.length) choose(allChars[Math.floor(Math.random() * allChars.length)]);
+      });
+      btn.addEventListener('click', () => { browser.hidden = !browser.hidden; if (!browser.hidden) render(); });
+      browser.addEventListener('click', (e) => {
+        const f = e.target.closest('[data-path]');
+        if (f) { path = JSON.parse(f.dataset.path); return render(); }
+        const c = e.target.closest('[data-i]');
+        if (c) choose(shown[+c.dataset.i]);
+      });
+      search.addEventListener('input', render);
+      refreshers.push(() => { if (!browser.hidden) render(); });
+    }
+
+    // ---- Compare tab: two pickers, side by side ----
     function buildCompare(el) {
-      const side = (i) => `<div class="side"><div class="pick-row"><button type="button" class="pick-btn">Choose character ${i} &#9662;</button><button type="button" class="btn rand-btn" title="Pick a random character">Random</button></div><div class="browser" hidden><input type="search" class="browser-search" placeholder="Search characters..." autocomplete="off" aria-label="Search characters"><div class="browser-list"></div></div><div class="fighter"></div></div>`;
-      el.innerHTML = `<div class="matchup">${side(1)}<div class="vs">VS</div>${side(2)}</div>`;
-      el.querySelectorAll('.side').forEach((s) => {
-        const btn = s.querySelector('.pick-btn'), browser = s.querySelector('.browser'), box = s.querySelector('.fighter');
-        let path = [], shown = [];
-        const search = browser.querySelector('.browser-search'), list = browser.querySelector('.browser-list');
-
-        function render() {
-          if (!root.count) { list.innerHTML = '<p class="muted">Loading characters...</p>'; return; }
-          // Typing searches every character, ignoring folders; clear the box to go back to the folders
-          const q = search.value.trim().toLowerCase();
-          if (q) {
-            const matches = allChars.filter((c) => nameOf(c).toLowerCase().includes(q)).sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
-            shown = matches.slice(0, 100);
-            list.innerHTML = `<div class="group muted">${matches.length ? matches.length + ' found' + (matches.length > 100 ? ' (showing 100)' : '') : 'No matches.'}</div>` +
-              (shown.length ? `<div class="group">${shown.map((c, i) => `<button type="button" class="opt char" data-i="${i}">${esc(nameOf(c))}</button>`).join('')}</div>` : '');
-            return;
-          }
-          let n = root;
-          const trail = [{ name: 'Home', path: [] }].concat(path.map((k, i) => { n = n.kids.get(k); return { name: n.name, path: path.slice(0, i + 1) }; }));
-          const crumbs = trail.map((t, i) => i === trail.length - 1
-            ? `<span class="crumb-cur">${esc(t.name)}</span>`
-            : `<button type="button" class="crumb-btn" data-path="${esc(JSON.stringify(t.path))}">${esc(t.name)}</button>`).join('<span class="muted">\u203A</span>');
-          const folders = [...n.kids.entries()].sort((a, b) => a[1].name.localeCompare(b[1].name))
-            .map(([k, f]) => `<button type="button" class="opt" data-path="${esc(JSON.stringify([...path, k]))}">${esc(f.name)}<span>${f.count}</span></button>`).join('');
-          shown = [...n.chars].sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
-          const chars = shown.map((c, i) => `<button type="button" class="opt char" data-i="${i}">${esc(nameOf(c))}</button>`).join('');
-          list.innerHTML = `<div class="group">${crumbs}</div>` + (folders ? `<div class="group">${folders}</div>` : '') + (chars ? `<div class="group">${chars}</div>` : '');
-        }
-
-        function choose(ch) {
-          search.value = '';
-          btn.textContent = nameOf(ch) + ' \u25BE';
-          box.innerHTML = fighterHtml(ch);
-          browser.hidden = true;
-        }
-        s.querySelector('.rand-btn').addEventListener('click', () => {
-          if (allChars.length) choose(allChars[Math.floor(Math.random() * allChars.length)]);
-        });
-        btn.addEventListener('click', () => { browser.hidden = !browser.hidden; if (!browser.hidden) render(); });
-        browser.addEventListener('click', (e) => {
-          const f = e.target.closest('[data-path]');
-          if (f) { path = JSON.parse(f.dataset.path); return render(); }
-          const c = e.target.closest('[data-i]');
-          if (c) choose(shown[+c.dataset.i]);
-        });
-        search.addEventListener('input', render);
-        refreshers.push(() => { if (!browser.hidden) render(); });
+      const side = () => '<div class="side"><div class="picker"></div><div class="fighter"></div></div>';
+      el.innerHTML = `<div class="matchup">${side()}<div class="vs">VS</div>${side()}</div>`;
+      el.querySelectorAll('.side').forEach((s, i) => {
+        const box = s.querySelector('.fighter');
+        createPicker(s.querySelector('.picker'), `Choose character ${i + 1}`, (ch) => { box.innerHTML = fighterHtml(ch); });
       });
     }
 
@@ -318,6 +337,7 @@
     const SETS_CSV_URL = SETS_GID ? `https://docs.google.com/spreadsheets/d/e/2PACX-1vQWRS4v9F9SJ-Y4wUOO3efaf3UXCItz8EX4wK4QV6lnHX37MQMrchewnvjC9IcwYnehddX5VjBAzUxi/pub?gid=${SETS_GID}&single=true&output=csv` : '';
     let SETS = null;        // null until the sets tab has loaded
     let setsError = false;
+    const tierText = (c) => val(c, 'Tier / Tier range', 'Tier');
 
     function buildGauntlet(el) {
       el.innerHTML = '<div class="sets-list"></div><div class="set-view" hidden></div>';
@@ -343,7 +363,31 @@
         const missing = set.names.filter((n) => !byName.has(n.toLowerCase()));
         viewEl.innerHTML = `<div class="sec-head"><h2>${esc(set.name)}</h2><a class="btn small" href="#gauntlet">All sets</a></div>` +
           (missing.length ? `<p class="muted">Not found in the character sheet: ${esc(missing.join(', '))}</p>` : '') +
-          `<div class="set-grid">${found.map((c) => `<div class="fighter">${fighterHtml(c)}</div>`).join('')}</div>`;
+          `<p class="muted">Pick a character to see how many of these they can beat. Compared by tier: a higher tier wins, the same tier is a tie.</p>
+           <div class="g-picker"></div><div class="g-result"></div>
+           <div class="set-grid">${found.map((c) => `<div class="fighter g-card">${fighterHtml(c)}<div class="g-badge"></div></div>`).join('')}</div>`;
+
+        const cards = viewEl.querySelectorAll('.g-card'), result = viewEl.querySelector('.g-result');
+        createPicker(viewEl.querySelector('.g-picker'), 'Choose your character', (ch) => {
+          const mine = parseTierWeight(tierText(ch));
+          let wins = 0, ties = 0;
+          cards.forEach((card, i) => {
+            const theirs = parseTierWeight(tierText(found[i]));
+            let cls = 'unk', text = 'Can’t compare (no recognised tier)';
+            if (mine !== null && theirs !== null) {
+              if (mine > theirs) { cls = 'win'; text = 'Beaten'; wins++; }
+              else if (mine < theirs) { cls = 'lose'; text = 'Loses'; }
+              else { cls = 'tie'; text = 'Tie'; ties++; }
+              text += ' · their tier: ' + tierText(found[i]);
+            }
+            card.className = 'fighter g-card ' + cls;
+            card.querySelector('.g-badge').textContent = text;
+          });
+          result.innerHTML = mine === null
+            ? `<p class="muted">${esc(nameOf(ch))} doesn’t have a recognised tier, so there’s nothing to compare.</p>`
+            : `<div class="tier-out">${esc(nameOf(ch))} beats ${wins} of ${found.length}</div>
+               <p class="muted">Tier ${esc(tierText(ch))}${ties ? ` · ${ties} tie${ties > 1 ? 's' : ''}` : ''}${wins === found.length && found.length ? ' · cleared the gauntlet!' : ''}</p>`;
+        });
       }
       window.addEventListener('hashchange', render);
       refreshers.push(render);
