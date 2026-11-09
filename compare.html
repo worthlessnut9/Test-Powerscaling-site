@@ -55,6 +55,12 @@
     .guess-msg { text-align: center; font-weight: 600; min-height: 1.5em; margin: 14px 0 10px; }
     .guess-msg.ok { color: #3fb950; }
     .guess-msg.bad { color: #f85149; }
+    a.btn { text-decoration: none; display: inline-block; }
+    .sets-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+    .set-card { background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; color: var(--text-main); text-decoration: none; display: flex; flex-direction: column; gap: 4px; }
+    .set-card:hover { border-color: var(--accent); }
+    .set-card span { color: var(--text-muted); font-size: 0.85rem; }
+    .set-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
     @media (max-width: 700px) { .matchup { grid-template-columns: 1fr; } .vs { justify-self: center; } }
   </style>
 </head>
@@ -306,9 +312,48 @@
       newRound();
     }
 
+    // ---- Gauntlet Matchups tab: sets of characters listed in the "Gauntlet Matchups" tab of the Google Sheet ----
+    // Paste the gid number of the "Gauntlet Matchups" tab here (the number after gid= in the address bar while that tab is open)
+    const SETS_GID = '';
+    const SETS_CSV_URL = SETS_GID ? `https://docs.google.com/spreadsheets/d/e/2PACX-1vQWRS4v9F9SJ-Y4wUOO3efaf3UXCItz8EX4wK4QV6lnHX37MQMrchewnvjC9IcwYnehddX5VjBAzUxi/pub?gid=${SETS_GID}&single=true&output=csv` : '';
+    let SETS = null;        // null until the sets tab has loaded
+    let setsError = false;
+
+    function buildGauntlet(el) {
+      el.innerHTML = '<div class="sets-list"></div><div class="set-view" hidden></div>';
+      const listEl = el.querySelector('.sets-list'), viewEl = el.querySelector('.set-view');
+
+      function render() {
+        if (!SETS_CSV_URL) { listEl.hidden = false; viewEl.hidden = true; listEl.innerHTML = '<p class="muted">No sets yet. Put the gid of the Gauntlet Matchups tab into SETS_GID in compare.html.</p>'; return; }
+        if (SETS === null || !allChars.length) { listEl.hidden = false; viewEl.hidden = true; listEl.innerHTML = '<p class="muted">Loading...</p>'; return; }
+        const m = location.hash.match(/^#gauntlet\/(.+)$/);
+        let wanted = '';
+        try { wanted = m ? decodeURIComponent(m[1]) : ''; } catch (err) { wanted = ''; }
+        const set = SETS.find((x) => x.slug === wanted);
+        listEl.hidden = !!set;
+        viewEl.hidden = !set;
+        if (!set) {
+          listEl.innerHTML = SETS.length
+            ? SETS.map((x) => `<a class="set-card" href="#gauntlet/${esc(x.slug)}"><b>${esc(x.name)}</b><span>${x.names.length} characters</span></a>`).join('')
+            : `<p class="muted">${setsError ? "Couldn't load the sets sheet." : 'No sets in the sheet yet.'}</p>`;
+          return;
+        }
+        const byName = new Map(allChars.map((c) => [nameOf(c).toLowerCase(), c]));
+        const found = set.names.map((n) => byName.get(n.toLowerCase())).filter(Boolean);
+        const missing = set.names.filter((n) => !byName.has(n.toLowerCase()));
+        viewEl.innerHTML = `<div class="sec-head"><h2>${esc(set.name)}</h2><a class="btn small" href="#gauntlet">All sets</a></div>` +
+          (missing.length ? `<p class="muted">Not found in the character sheet: ${esc(missing.join(', '))}</p>` : '') +
+          `<div class="set-grid">${found.map((c) => `<div class="fighter">${fighterHtml(c)}</div>`).join('')}</div>`;
+      }
+      window.addEventListener('hashchange', render);
+      refreshers.push(render);
+      render();
+    }
+
     const TABS = [
       { id: 'compare', title: 'Compare', build: buildCompare },
-      { id: 'guess', title: 'Who’s Stronger?', build: buildGuess }
+      { id: 'guess', title: 'Who’s Stronger?', build: buildGuess },
+      { id: 'gauntlet', title: 'Gauntlet Matchups', build: buildGauntlet }
     ];
 
     TABS.forEach((t) => {
@@ -328,7 +373,8 @@
     });
 
     function showTab() {
-      const id = (TABS.find((t) => '#' + t.id === location.hash) || TABS[0]).id;
+      const first = location.hash.split('/')[0];
+      const id = (TABS.find((t) => '#' + t.id === first) || TABS[0]).id;
       TABS.forEach((t) => {
         $('panel-' + t.id).hidden = t.id !== id;
         $('tab-' + t.id).setAttribute('aria-selected', String(t.id === id));
@@ -336,6 +382,32 @@
     }
     window.addEventListener('hashchange', showTab);
     showTab();
+
+    // ---- Load the sets tab (name + list of characters per row) ----
+    function loadSets() {
+      if (!SETS_CSV_URL || typeof Papa === 'undefined') return;
+      Papa.parse(SETS_CSV_URL, {
+        download: true, header: true, skipEmptyLines: true,
+        complete: (r) => {
+          const used = new Set();
+          SETS = r.data.map((row) => {
+            const name = (row['Name'] || row['Set'] || row[Object.keys(row)[0]] || '').trim();
+            // Character names are separated by line breaks, semicolons or |
+            const names = (row['Characters'] || row['Character List'] || '').split(/\r?\n|;|\|/).map((x) => x.trim()).filter(Boolean);
+            return { name, names };
+          }).filter((x) => x.name && x.names.length).map((x) => {
+            const base = x.name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'set';
+            let slug = base, n = 2;
+            while (used.has(slug)) slug = `${base}-${n++}`;
+            used.add(slug);
+            return { ...x, slug };
+          });
+          refreshers.forEach((f) => f());
+        },
+        error: () => { SETS = []; setsError = true; refreshers.forEach((f) => f()); }
+      });
+    }
+    loadSets();
 
     // ---- Load characters from the sheet ----
     function fail(msg) { $('status').textContent = "Couldn't load characters. " + (msg || ''); }
