@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Powerscaling Database</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script src="tiers.js"></script>
   <link rel="stylesheet" href="site.css">
   <style>
     :root {
@@ -423,9 +424,9 @@
 
     // Link from a character's tier to its description on the Terms page ("+" tiers link to their base tier)
     function tierAnchor(tierStr) {
-      const m = normTier(String(tierStr || '')).match(tierRegex);
-      if (!m) return '';
-      const slug = m[1].replace(/\+$/, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      const r = parseTier(tierStr);
+      if (!r) return '';
+      const slug = r.family.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
       return 'terms.html#tiering-system/tier/' + slug;
     }
 
@@ -586,35 +587,6 @@
       if (card) location.hash = '#/' + card.dataset.slug;
     });
 
-    const exactTierSequence = [
-      "11-C", "11-C+", "11-B", "11-B+", "11-A", "11-A+", 
-      "LOW 10-C", "LOW 10-C+", "10-C", "10-C+", "10-B", "10-B+", "10-A", "10-A+", 
-      "9-C", "9-C+", "9-B", "9-B+", "9-A", "9-A+", 
-      "8-C", "8-C+", "HIGH 8-C", "HIGH 8-C+", "8-B", "8-B+", "8-A", "8-A+", 
-      "LOW 7-C", "LOW 7-C+", "7-C", "7-C+", "HIGH 7-C", "HIGH 7-C+", 
-      "LOW 7-B", "LOW 7-B+", "7-B", "7-B+", "7-A", "7-A+", "HIGH 7-A", "HIGH 7-A+", 
-      "6-C", "6-C+", "HIGH 6-C", "HIGH 6-C+", "LOW 6-B", "LOW 6-B+", "6-B", "6-B+", "HIGH 6-B", "HIGH 6-B+", "6-A", "6-A+", "HIGH 6-A", "HIGH 6-A+", 
-      "5-C", "5-C+", "LOW 5-B", "LOW 5-B+", "5-B", "5-B+", "5-A", "5-A+", "HIGH 5-A", "HIGH 5-A+", 
-      "LOW 4-C", "LOW 4-C+", "4-C", "4-C+", "HIGH 4-C", "HIGH 4-C+", "4-B", "4-B+", "4-A", "4-A+", 
-      "3-C", "3-C+", "3-B", "3-B+", "3-A", "3-A+", "HIGH 3-A", "HIGH 3-A+", 
-      "LOW 2-C", "LOW 2-C+", "2-C", "2-C+", "2-C (X UNIVERSES)", "2-C (X UNIVERSES)+", "2-B", "2-B+", "2-A", "2-A+", 
-      "LOW 1-C", "LOW 1-C+", "1-C (X DIMENSIONS)", "1-C (X DIMENSIONS)+", "HIGH 1-C (X DIMENSIONS)", "HIGH 1-C (X DIMENSIONS)+", "1-B (X DIMENSIONS)", "1-B (X DIMENSIONS)+", "HIGH 1-B", "HIGH 1-B+", 
-      "LOW 1-A", "LOW 1-A+", "1-A(X LAYERS)", "1-A(X LAYERS)+", "HIGH 1-A (X LAYERS)", "HIGH 1-A (X LAYERS)+", "0", "0+"
-    ];
-
-    const normTier = (s) => s.toUpperCase().replace(/\s+/g, ' ').replace(/ \(/g, '(');
-    const tierRankMap = {};
-    exactTierSequence.forEach((tier, i) => { tierRankMap[normTier(tier)] = i; });
-
-    const tierRegex = new RegExp('(?:^|[^\\w-])(' +
-      Object.keys(tierRankMap).sort((a, b) => b.length - a.length)
-        .map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')(?!\\w)');
-
-    function parseTierWeight(tierStr) {
-      const m = normTier(String(tierStr || '')).match(tierRegex);
-      return m ? tierRankMap[m[1]] : null;
-    }
-
     // ---- Filters: tier range, speed tier, strength tier ----
     const SPEED_NAMES = ["Immobile", "Below Average Human", "Average Human", "Athletic Human", "Peak Human", "Superhuman", "Subsonic (Faster than the Eye)", "Subsonic+", "Transonic", "Supersonic", "Supersonic+", "Hypersonic", "Hypersonic+", "High Hypersonic", "High Hypersonic+", "Massively Hypersonic", "Massively Hypersonic+", "Sub-Relativistic", "Sub-Relativistic+", "Relativistic", "Relativistic+", "Speed of Light", "FTL", "FTL+", "Massively FTL", "Massively FTL+"];
     const STRENGTH_LEVELS = [["10-C", "Below Average Human"], ["10-B", "Human"], ["10-A", "Athlete"], ["9-C", "Street"], ["9-B", "Wall"], ["9-A", "Small Building"], ["8-C", "Building"], ["High 8-C", "Large Building"], ["8-B", "City Block"], ["8-A", "Multi-City Block"], ["Low 7-C", "Small Town"], ["7-C", "Town"], ["High 7-C", "Large Town"], ["Low 7-B", "Small City"], ["7-B", "City"], ["7-A", "Mountain"], ["High 7-A", "Large Mountain"], ["6-C", "Island"], ["High 6-C", "Large Island"], ["Low 6-B", "Small Country"], ["6-B", "Country"], ["High 6-B", "Large Country"], ["6-A", "Continent"], ["High 6-A", "Multi-Continent"], ["5-C", "Moon"], ["Low 5-B", "Small Planet"], ["5-B", "Planet"], ["5-A", "Large Planet"], ["High 5-A", "Brown Dwarf"], ["Low 4-C", "Small Star"], ["4-C", "Star"], ["High 4-C", "Large Star"], ["4-B", "Solar System"], ["4-A", "Multi-Solar System"], ["3-C", "Galaxy"], ["3-B", "Multi-Galaxy"], ["3-A", "Universe"]];   // [tier, level]
@@ -651,8 +623,9 @@
       if (f.from !== '' || f.to !== '') {
         const w = parseTierWeight(getTier(c));
         if (w === null) return false;   // characters with an unrecognised tier can't match a tier range
-        let lo = f.from === '' ? -Infinity : +f.from, hi = f.to === '' ? Infinity : +f.to;
-        if (lo > hi) [lo, hi] = [hi, lo];
+        let a = f.from === '' ? null : +f.from, b = f.to === '' ? null : +f.to;
+        if (a !== null && b !== null && a > b) [a, b] = [b, a];
+        const lo = a === null ? -Infinity : tierLowRank(a), hi = b === null ? Infinity : tierHighRank(b);
         if (w < lo || w > hi) return false;
       }
       if (f.speed) { if (!('_sp' in c)) c._sp = speedMatch(getSpeed(c)); if (c._sp !== f.speed) return false; }

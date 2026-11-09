@@ -6,6 +6,7 @@
   <title>Compare - Powerscaling Database</title>
   <link rel="stylesheet" href="site.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script src="tiers.js"></script>
   <style>
     .sec-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
     .sec-head h2 { margin: 0; }
@@ -219,37 +220,6 @@
       });
     }
 
-    // ---- Tier order (same list as the character page): a higher number means a stronger tier ----
-    const exactTierSequence = [
-      "11-C", "11-C+", "11-B", "11-B+", "11-A", "11-A+", 
-      "LOW 10-C", "LOW 10-C+", "10-C", "10-C+", "10-B", "10-B+", "10-A", "10-A+", 
-      "9-C", "9-C+", "9-B", "9-B+", "9-A", "9-A+", 
-      "8-C", "8-C+", "HIGH 8-C", "HIGH 8-C+", "8-B", "8-B+", "8-A", "8-A+", 
-      "LOW 7-C", "LOW 7-C+", "7-C", "7-C+", "HIGH 7-C", "HIGH 7-C+", 
-      "LOW 7-B", "LOW 7-B+", "7-B", "7-B+", "7-A", "7-A+", "HIGH 7-A", "HIGH 7-A+", 
-      "6-C", "6-C+", "HIGH 6-C", "HIGH 6-C+", "LOW 6-B", "LOW 6-B+", "6-B", "6-B+", "HIGH 6-B", "HIGH 6-B+", "6-A", "6-A+", "HIGH 6-A", "HIGH 6-A+", 
-      "5-C", "5-C+", "LOW 5-B", "LOW 5-B+", "5-B", "5-B+", "5-A", "5-A+", "HIGH 5-A", "HIGH 5-A+", 
-      "LOW 4-C", "LOW 4-C+", "4-C", "4-C+", "HIGH 4-C", "HIGH 4-C+", "4-B", "4-B+", "4-A", "4-A+", 
-      "3-C", "3-C+", "3-B", "3-B+", "3-A", "3-A+", "HIGH 3-A", "HIGH 3-A+", 
-      "LOW 2-C", "LOW 2-C+", "2-C", "2-C+", "2-C (X UNIVERSES)", "2-C (X UNIVERSES)+", "2-B", "2-B+", "2-A", "2-A+", 
-      "LOW 1-C", "LOW 1-C+", "1-C (X DIMENSIONS)", "1-C (X DIMENSIONS)+", "HIGH 1-C (X DIMENSIONS)", "HIGH 1-C (X DIMENSIONS)+", "1-B (X DIMENSIONS)", "1-B (X DIMENSIONS)+", "HIGH 1-B", "HIGH 1-B+", 
-      "LOW 1-A", "LOW 1-A+", "1-A(X LAYERS)", "1-A(X LAYERS)+", "HIGH 1-A (X LAYERS)", "HIGH 1-A (X LAYERS)+", "0", "0+"
-    ];
-
-    const normTier = (s) => s.toUpperCase().replace(/\s+/g, ' ').replace(/ \(/g, '(');
-    const tierRankMap = {};
-    exactTierSequence.forEach((tier, i) => { tierRankMap[normTier(tier)] = i; });
-
-    const tierRegex = new RegExp('(?:^|[^\\w-])(' +
-      Object.keys(tierRankMap).sort((a, b) => b.length - a.length)
-        .map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')(?!\\w)');
-
-    function parseTierWeight(tierStr) {
-      const m = normTier(String(tierStr || '')).match(tierRegex);
-      return m ? tierRankMap[m[1]] : null;
-    }
-
-
     // ---- Guess tab: pick which of two random characters is stronger (by tier) ----
     function buildGuess(el) {
       el.innerHTML = `<div class="guess-head"><h2>Who’s stronger?</h2><div class="streak">Streak: <b class="streak-n">0</b> &nbsp;&middot;&nbsp; Best: <b class="best-n">0</b> &nbsp;&middot;&nbsp; Difficulty: <b class="gap-n">1</b></div></div>
@@ -277,11 +247,12 @@
         if (!allChars.length) { say('Loading characters...'); return; }
         const pool = allChars.filter((c) => tw(c) !== null);   // only characters with a recognised tier
         const w = new Map(pool.map((c) => [c, tw(c)]));
+        const st = new Map(pool.map((c) => [c, parseTierStep(tierOf(c))]));
         // Two characters whose tiers differ by at least 1 and at most `limit` steps in the tier list
         const findPair = (limit) => {
           for (let t = 0; t < 100; t++) {
             const x = pick(pool);
-            const near = pool.filter((c) => { const d = Math.abs(w.get(c) - w.get(x)); return d >= 1 && d <= limit; });
+            const near = pool.filter((c) => { if (w.get(c) === w.get(x)) return false; return Math.max(1, Math.abs(st.get(c) - st.get(x))) <= limit; });
             if (near.length) return [x, pick(near)];
           }
           return null;
