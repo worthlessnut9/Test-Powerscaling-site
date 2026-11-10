@@ -15,6 +15,7 @@
     .btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
     .btn:disabled { opacity: 0.5; cursor: default; }
     .btn.primary { background: var(--tier-badge); border-color: var(--tier-badge); color: #fff; font-weight: 600; }
+    .sort { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 10px; font-size: 0.85rem; }
     .btn.small { padding: 5px 10px; font-size: 0.8rem; }
     .tabs { display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; }
     .tab { background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; color: var(--text-muted); padding: 10px 16px; cursor: pointer; font-size: 0.95rem; }
@@ -94,6 +95,13 @@
     <section id="panel-collection" hidden>
       <div class="bar">
         <h2 class="sec" style="margin:0">Your collection <span class="muted" id="stats"></span></h2>
+        <select id="sort" class="sort" aria-label="Sort cards">
+          <option value="rarity">Sort: rarest first</option>
+          <option value="az">Sort: A to Z</option>
+          <option value="za">Sort: Z to A</option>
+          <option value="price-desc">Sort: price, high to low</option>
+          <option value="price-asc">Sort: price, low to high</option>
+        </select>
         <button class="btn small" id="sell-dupes">Sell all duplicates</button>
         <button class="btn small" id="reset" style="margin-left:auto">Reset everything</button>
       </div>
@@ -109,8 +117,9 @@
     const RARITY_DROP = 0.9;       // each tier step up makes a character this much as likely (smaller = rarer)
     const SELL_BASE = 5;           // sell price of a Common card...
     const SELL_STEP = 5;           // ...and every rarity above it sells for this much more
-    // Rarer versions. Each is rolled separately, so they can stack. Odds are "1 in N", and a card sells for N times more
-    // for each rarer version it has (so a Shiny Foil sells for 10 x 10 = 100 times the base price).
+    const SELL_VARIANT_SHARE = 0.25;   // a rarer version multiplies the sell price by its "1 in N" number times this (1/4)
+    // Rarer versions. Each is rolled separately, so they can stack. Odds are "1 in N", and a card sells for N x 1/4 times more
+    // for each rarer version it has (so a Shiny sells for 2.5 times the base price, a Shiny Foil for 6.25 times).
     const VARIANTS = [['s', 'Shiny', 10], ['f', 'Foil', 10], ['b', 'Gold Border', 10], ['g', 'Full Gold', 100]];
     // Rarity names by tier group (the number is the first tier group that gets the name)
     const RARITIES = [[0, 'Common'], [7, 'Uncommon'], [14, 'Rare'], [21, 'Epic'], [33, 'Legendary'], [42, 'Mythic']];
@@ -121,7 +130,6 @@
     const PACKS = [
       { id: 'basic', name: 'Basic Pack', desc: 'A free pack every minute.', size: 3, cost: 0, cooldown: 60 },
       { id: 'mega', name: 'Mega Pack', desc: 'Ten cards in one go.', size: 10, cost: 100, cooldown: 0 },
-      { id: 'super', name: 'Super Pack', desc: 'One Hundred cards in one go.', size: 100, cost: 1000, cooldown: 0 },
 
       // ---- ADD YOUR OWN PACKS HERE. Copy this example, remove the // at the start of each line, and edit it. ----
       // { id: 'dragon-ball', name: 'Dragon Ball Pack', desc: 'Only Dragon Ball characters.', size: 5, cost: 50, cooldown: 0,
@@ -153,8 +161,9 @@
     const rarityLevel = (fam) => RARITIES.reduce((lvl, [min], i) => fam >= min ? i : lvl, 0);
     const flagsOf = (key) => key.split('||')[1] || '';
     const variantMult = (flags) => VARIANTS.reduce((m, v) => flags.includes(v[0]) ? m * v[2] : m, 1);
-    // base price by rarity, times the odds number of every rarer version the card has
-    const sellPrice = (e, flags = '') => (SELL_BASE + SELL_STEP * rarityLevel(e.fam)) * variantMult(flags);
+    // base price by rarity, times (odds number x 1/4) for every rarer version the card has
+    const sellMult = (flags) => VARIANTS.reduce((m, v) => flags.includes(v[0]) ? m * v[2] * SELL_VARIANT_SHARE : m, 1);
+    const sellPrice = (e, flags = '') => Math.max(1, Math.round((SELL_BASE + SELL_STEP * rarityLevel(e.fam)) * sellMult(flags)));
     const fmtTime = (ms) => { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 
     // ---- Saved game (kept in this browser, survives refreshes) ----
@@ -236,7 +245,13 @@
         const [name, flags = ''] = key.split('||'), e = byName.get(name);
         // rarest first: how unlikely the character is, times the odds of each rarer version
         return e && { key, e, flags, n, score: (1 / e.w) * variantMult(flags) };
-      }).filter(Boolean).sort((a, b) => b.score - a.score);
+      }).filter(Boolean);
+      const mode = $('sort').value, nm = (r) => nameOf(r.e.c), byScore = (a, b) => b.score - a.score;
+      rows.sort(mode === 'az' ? (a, b) => nm(a).localeCompare(nm(b)) || byScore(a, b)
+        : mode === 'za' ? (a, b) => nm(b).localeCompare(nm(a)) || byScore(a, b)
+        : mode === 'price-desc' ? (a, b) => sellPrice(b.e, b.flags) - sellPrice(a.e, a.flags) || byScore(a, b)
+        : mode === 'price-asc' ? (a, b) => sellPrice(a.e, a.flags) - sellPrice(b.e, b.flags) || byScore(b, a)
+        : byScore);
       $('stats').textContent = rows.length ? `· ${rows.reduce((s, r) => s + r.n, 0)} cards, ${rows.length} unique` : '';
       $('collection').innerHTML = rows.length
         ? rows.map((r) => cardHtml(r.e, r.flags, r.n, false, `<button class="btn" data-sell="${esc(r.key)}">Sell 1 for ${sellPrice(r.e, r.flags).toLocaleString()} coins</button>`)).join('')
@@ -282,6 +297,7 @@
     $('packs').addEventListener('click', (e) => { const b = e.target.closest('[data-pack]'); if (b) openPack(PACKS.find((p) => p.id === b.dataset.pack)); });
     $('collection').addEventListener('click', (e) => { const b = e.target.closest('[data-sell]'); if (b) sellOne(b.dataset.sell); });
 
+    $('sort').addEventListener('change', renderCollection);
     $('sell-dupes').addEventListener('click', () => {
       let coins = 0, cards = 0;
       Object.entries(state.cards).forEach(([key, n]) => { const e = byName.get(key.split('||')[0]); if (e && n > 1) { coins += (n - 1) * sellPrice(e, flagsOf(key)); cards += n - 1; } });
