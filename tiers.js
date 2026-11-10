@@ -67,7 +67,8 @@ const BASE_TIERS = [
 const exactTierSequence = BASE_TIERS.flatMap((t) => [t, t + '+']);   // every tier and its "+" version, weakest to strongest
 const SLOT = 1e6;   // room inside each tier for the X number
 
-const normTier = (s) => String(s || '').toUpperCase().replace(/\s+/g, ' ')
+const normTier = (s) => String(s || '').toUpperCase().replace(/[\u2010-\u2015\u2212]/g, '-')   // fancy dashes from copy-paste -> plain "-"
+  .replace(/\s+/g, ' ')
   .replace(/\+\s*(\((?:\d+|X) ?(?:DIMENSION|UNIVERSE|LAYER)S?\))/g, '$1+')   // "1-C+ (7 dimensions)" -> "1-C (7 dimensions)+"
   .replace(/ \(/g, '(');
 
