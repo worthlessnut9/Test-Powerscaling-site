@@ -109,8 +109,9 @@
     const RARITY_DROP = 0.9;       // each tier step up makes a character this much as likely (smaller = rarer)
     const SELL_BASE = 5;           // sell price of a Common card...
     const SELL_STEP = 5;           // ...and every rarity above it sells for this much more
-    // Rarer versions. Each is rolled separately, so they can stack. Odds are "1 in N".
-    const VARIANTS = [['s', 'Shiny', 2], ['f', 'Foil', 2], ['b', 'Gold Border', 2], ['g', 'Full Gold', 10]];
+    // Rarer versions. Each is rolled separately, so they can stack. Odds are "1 in N", and a card sells for N times more
+    // for each rarer version it has (so a Shiny Foil sells for 10 x 10 = 100 times the base price).
+    const VARIANTS = [['s', 'Shiny', 10], ['f', 'Foil', 10], ['b', 'Gold Border', 10], ['g', 'Full Gold', 100]];
     // Rarity names by tier group (the number is the first tier group that gets the name)
     const RARITIES = [[0, 'Common'], [7, 'Uncommon'], [14, 'Rare'], [21, 'Epic'], [33, 'Legendary'], [42, 'Mythic']];
 
@@ -119,6 +120,7 @@
     // cost: coins to open (0 = free)                   cooldown: seconds before it can be opened again (0 = no wait)
     const PACKS = [
       { id: 'basic', name: 'Basic Pack', desc: 'A free pack every minute.', size: 3, cost: 0, cooldown: 60 },
+      { id: 'mega', name: 'Mega Pack', desc: 'Ten cards in one go.', size: 10, cost: 100, cooldown: 0 },
 
       // ---- ADD YOUR OWN PACKS HERE. Copy this example, remove the // at the start of each line, and edit it. ----
       // { id: 'dragon-ball', name: 'Dragon Ball Pack', desc: 'Only Dragon Ball characters.', size: 5, cost: 50, cooldown: 0,
@@ -148,7 +150,10 @@
     const folderOf = (c) => val(c, 'Folders', 'Folder').split(/\s*,\s*/).map((x) => x.toLowerCase());
     const famOf = (tierText) => { const r = parseTier(tierText); return r ? Math.floor(r.rank / SLOT) : null; };
     const rarityLevel = (fam) => RARITIES.reduce((lvl, [min], i) => fam >= min ? i : lvl, 0);
-    const sellPrice = (e) => SELL_BASE + SELL_STEP * rarityLevel(e.fam);
+    const flagsOf = (key) => key.split('||')[1] || '';
+    const variantMult = (flags) => VARIANTS.reduce((m, v) => flags.includes(v[0]) ? m * v[2] : m, 1);
+    // base price by rarity, times the odds number of every rarer version the card has
+    const sellPrice = (e, flags = '') => (SELL_BASE + SELL_STEP * rarityLevel(e.fam)) * variantMult(flags);
     const fmtTime = (ms) => { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 
     // ---- Saved game (kept in this browser, survives refreshes) ----
@@ -229,16 +234,16 @@
       const rows = Object.entries(state.cards).map(([key, n]) => {
         const [name, flags = ''] = key.split('||'), e = byName.get(name);
         // rarest first: how unlikely the character is, times the odds of each rarer version
-        return e && { key, e, flags, n, score: (1 / e.w) * VARIANTS.reduce((m, v) => flags.includes(v[0]) ? m * v[2] : m, 1) };
+        return e && { key, e, flags, n, score: (1 / e.w) * variantMult(flags) };
       }).filter(Boolean).sort((a, b) => b.score - a.score);
       $('stats').textContent = rows.length ? `· ${rows.reduce((s, r) => s + r.n, 0)} cards, ${rows.length} unique` : '';
       $('collection').innerHTML = rows.length
-        ? rows.map((r) => cardHtml(r.e, r.flags, r.n, false, `<button class="btn" data-sell="${esc(r.key)}">Sell 1 for ${sellPrice(r.e)} coins</button>`)).join('')
+        ? rows.map((r) => cardHtml(r.e, r.flags, r.n, false, `<button class="btn" data-sell="${esc(r.key)}">Sell 1 for ${sellPrice(r.e, r.flags).toLocaleString()} coins</button>`)).join('')
         : '<p class="muted">No cards yet. Open a pack!</p>';
     }
 
     function renderAll() {
-      $('coins').textContent = state.coins;
+      $('coins').textContent = state.coins.toLocaleString();
       refreshPacks();
       renderCollection();
     }
@@ -265,8 +270,9 @@
     function sellOne(key) {
       const n = state.cards[key], e = byName.get(key.split('||')[0]);
       if (!n || !e) return;
-      if (n === 1 && !confirm(`Sell your last copy of ${nameOf(e.c)} for ${sellPrice(e)} coins?`)) return;
-      state.coins += sellPrice(e);
+      const price = sellPrice(e, flagsOf(key));
+      if (n === 1 && !confirm(`Sell your last copy of ${nameOf(e.c)} for ${price.toLocaleString()} coins?`)) return;
+      state.coins += price;
       if (n === 1) delete state.cards[key]; else state.cards[key] = n - 1;
       save();
       renderAll();
@@ -277,9 +283,9 @@
 
     $('sell-dupes').addEventListener('click', () => {
       let coins = 0, cards = 0;
-      Object.entries(state.cards).forEach(([key, n]) => { const e = byName.get(key.split('||')[0]); if (e && n > 1) { coins += (n - 1) * sellPrice(e); cards += n - 1; } });
+      Object.entries(state.cards).forEach(([key, n]) => { const e = byName.get(key.split('||')[0]); if (e && n > 1) { coins += (n - 1) * sellPrice(e, flagsOf(key)); cards += n - 1; } });
       if (!cards) { alert('You have no duplicates to sell.'); return; }
-      if (!confirm(`Sell ${cards} duplicate cards for ${coins} coins? You keep one copy of each.`)) return;
+      if (!confirm(`Sell ${cards} duplicate cards for ${coins.toLocaleString()} coins? You keep one copy of each.`)) return;
       Object.keys(state.cards).forEach((key) => { if (byName.has(key.split('||')[0]) && state.cards[key] > 1) state.cards[key] = 1; });
       state.coins += coins;
       save();
