@@ -5,6 +5,54 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cards - Powerscaling Database</title>
   <link rel="stylesheet" href="site.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script src="tiers.js"></script>
+  <style>
+    .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .coins { font-size: 1.1rem; color: #fff; background: var(--card-bg); border: 1px solid #f5c518; border-radius: 8px; padding: 6px 14px; }
+    .coins b { color: #f5c518; }
+    .btn { background: var(--tag-bg); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 18px; cursor: pointer; font-size: 1rem; }
+    .btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    .btn:disabled { opacity: 0.5; cursor: default; }
+    .btn.primary { background: var(--tier-badge); border-color: var(--tier-badge); color: #fff; font-weight: 600; }
+    .btn.small { padding: 5px 10px; font-size: 0.8rem; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; }
+    .tab { background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; color: var(--text-muted); padding: 10px 16px; cursor: pointer; font-size: 0.95rem; }
+    .tab:hover { color: var(--text-main); }
+    .tab[aria-selected="true"] { color: #fff; border-bottom-color: var(--accent); }
+    h2.sec { color: #fff; font-size: 1.15rem; margin: 6px 0 14px; }
+    .cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 18px; margin-bottom: 28px; }
+    .packs { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+    .pack-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+    .pack-card h3 { margin: 0; color: #fff; }
+    .pack-card .btn { margin-top: auto; }
+
+    /* Every card has a white border */
+    .tcard { position: relative; overflow: hidden; background: var(--card-bg); border: 4px solid #fff; border-radius: 14px; padding: 8px; color: var(--text-main); }
+    .art { aspect-ratio: 4 / 5; background: #000; border-radius: 8px; overflow: hidden; }
+    .art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .tcard h3 { color: #fff; margin: 10px 2px 6px; font-size: 1.05rem; }
+    .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+    .chip { background: var(--tag-bg); border: 1px solid var(--border-color); border-radius: 5px; padding: 1px 7px; font-size: 0.7rem; }
+    .stat { background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 6px; padding: 5px 8px; margin-top: 5px; font-size: 0.85rem; color: #fff; }
+    .stat span { display: block; font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); }
+    .count, .new { position: absolute; top: 12px; z-index: 2; border-radius: 6px; padding: 2px 8px; font-size: 0.8rem; font-weight: 700; background: rgba(0,0,0,0.75); color: #fff; }
+    .count { right: 12px; }
+    .new { left: 12px; background: #238636; }
+    .tcard .btn { width: 100%; margin-top: 8px; padding: 7px; font-size: 0.85rem; }
+
+    /* Rarer versions (they stack) */
+    .tcard.shiny img { filter: invert(1); }
+    .tcard.foil { box-shadow: 0 0 12px 2px rgba(120,210,255,0.7), 0 0 26px 6px rgba(200,120,255,0.45); }
+    .tcard.foil::after { content: ''; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; background-size: 250% 100%; animation: sheen 3s linear infinite;
+      background-image: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.28) 45%, rgba(120,220,255,0.25) 50%, rgba(255,120,255,0.25) 55%, transparent 70%); }
+    @keyframes sheen { from { background-position: 150% 0; } to { background-position: -100% 0; } }
+    .tcard.goldborder { border-color: #f5c518; }
+    .tcard.fullgold { border-color: #f5c518; background: linear-gradient(135deg, #e0b030, #9a6f0a); text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+    .tcard.fullgold .stat, .tcard.fullgold .chip { background: rgba(255,215,90,0.55); border-color: #f5c518; }
+    .pack .tcard { animation: pop 0.35s ease both; }
+    @keyframes pop { from { transform: scale(0.85); opacity: 0; } to { transform: none; opacity: 1; } }
+  </style>
 </head>
 <body>
   <nav class="site-nav">
@@ -18,11 +66,264 @@
       <a href="terms.html">Terms</a>
     </div>
   </nav>
+
   <main class="container">
     <header>
       <h1>Cards</h1>
-      <p class="muted">Coming soon.</p>
+      <p class="muted">Open packs to collect character cards. The stronger the character, the rarer the card.</p>
     </header>
+
+    <div class="bar">
+      <div class="coins">Coins: <b id="coins">0</b></div>
+      <span class="muted" id="status">Loading characters...</span>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" id="tab-packs" role="tab">Open Packs</button>
+      <button class="tab" id="tab-collection" role="tab">My Collection</button>
+    </div>
+
+    <section id="panel-packs">
+      <div class="cgrid packs" id="packs"></div>
+      <div id="pack-box" hidden>
+        <h2 class="sec">Latest pack</h2>
+        <div class="cgrid pack" id="pack"></div>
+      </div>
+    </section>
+
+    <section id="panel-collection" hidden>
+      <div class="bar">
+        <h2 class="sec" style="margin:0">Your collection <span class="muted" id="stats"></span></h2>
+        <button class="btn small" id="sell-dupes">Sell all duplicates</button>
+        <button class="btn small" id="reset" style="margin-left:auto">Reset everything</button>
+      </div>
+      <div class="cgrid" id="collection"></div>
+    </section>
   </main>
+
+  <script>
+    const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQWRS4v9F9SJ-Y4wUOO3efaf3UXCItz8EX4wK4QV6lnHX37MQMrchewnvjC9IcwYnehddX5VjBAzUxi/pub?gid=2100327724&single=true&output=csv';
+
+    // =====================  SETTINGS YOU CAN CHANGE  =====================
+    const START_COINS = 100;       // coins a new player starts with
+    const RARITY_DROP = 0.9;       // each tier step up makes a character this much as likely (smaller = rarer)
+    const SELL_BASE = 5;           // sell price of a Common card...
+    const SELL_STEP = 5;           // ...and every rarity above it sells for this much more
+    // Rarer versions. Each is rolled separately, so they can stack. Odds are "1 in N".
+    const VARIANTS = [['s', 'Shiny', 2], ['f', 'Foil', 2], ['b', 'Gold Border', 2], ['g', 'Full Gold', 10]];
+    // Rarity names by tier group (the number is the first tier group that gets the name)
+    const RARITIES = [[0, 'Common'], [7, 'Uncommon'], [14, 'Rare'], [21, 'Epic'], [33, 'Legendary'], [42, 'Mythic']];
+
+    // =====================  PACKS  =====================
+    // id: unique short name (letters/numbers/dashes)   size: how many cards you get
+    // cost: coins to open (0 = free)                   cooldown: seconds before it can be opened again (0 = no wait)
+    const PACKS = [
+      { id: 'basic', name: 'Basic Pack', desc: 'A free pack every minute.', size: 3, cost: 0, cooldown: 60 },
+
+      // ---- ADD YOUR OWN PACKS HERE. Copy this example, remove the // at the start of each line, and edit it. ----
+      // { id: 'dragon-ball', name: 'Dragon Ball Pack', desc: 'Only Dragon Ball characters.', size: 5, cost: 50, cooldown: 0,
+      //   folder: 'Dragon Ball',                   // optional: only characters filed in this folder (from the Folders column)
+      //   characters: ['Goku (Raditz Saga)'],      // optional: only these characters (names must match the sheet)
+      //   minTier: '7-C', maxTier: '4-B',          // optional: only tiers from this one up to this one (from your tier list)
+      //   rarityDrop: 0.95 },                      // optional: closer to 1 = strong characters appear more often
+    ];
+    // ======================================================================
+
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const FALLBACK_IMG = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="350"><rect width="100%" height="100%" fill="#000"/><text x="50%" y="50%" fill="#8b949e" font-family="sans-serif" font-size="16" text-anchor="middle">No image</text></svg>');
+    document.addEventListener('error', (e) => {
+      const el = e.target;
+      if (el.tagName === 'IMG' && !el.dataset.fb) { el.dataset.fb = '1'; el.src = FALLBACK_IMG; }
+    }, true);
+
+    const val = (item, ...keys) => { for (const k of keys) { const v = (item[k] || '').trim(); if (v) return v; } return ''; };
+    const nameOf = (c) => val(c, 'Character Name', 'Character');
+    const imageOf = (c) => {
+      const raw = val(c, 'Image Link / Name', 'Image Link');
+      if (!raw) return '';
+      if (/^https?:\/\//i.test(raw)) return raw;
+      return './Images/' + raw.replace(/^(\.\/)?images\//i, '').replace(/[#?]/g, (x) => encodeURIComponent(x));
+    };
+    const folderOf = (c) => val(c, 'Folders', 'Folder').split(/\s*,\s*/).map((x) => x.toLowerCase());
+    const famOf = (tierText) => { const r = parseTier(tierText); return r ? Math.floor(r.rank / SLOT) : null; };
+    const rarityLevel = (fam) => RARITIES.reduce((lvl, [min], i) => fam >= min ? i : lvl, 0);
+    const sellPrice = (e) => SELL_BASE + SELL_STEP * rarityLevel(e.fam);
+    const fmtTime = (ms) => { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+
+    // ---- Saved game (kept in this browser, survives refreshes) ----
+    const KEY = 'powerscaling-cards-v2';
+    let state = { coins: START_COINS, cards: {}, ready: {} };   // cards: "Name||flags" -> copies; ready: pack id -> time it can be opened again
+    try {
+      const saved = JSON.parse(localStorage.getItem(KEY));
+      if (saved && typeof saved.coins === 'number') state = { coins: saved.coins, cards: saved.cards || {}, ready: saved.ready || {} };
+      else { const old = JSON.parse(localStorage.getItem('powerscaling-cards-v1')); if (old) state.cards = old; }   // keep cards from the first version
+    } catch (err) { /* start fresh */ }
+    const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (err) { /* storage unavailable */ } };
+
+    // ---- Characters and pulling ----
+    let loaded = false;
+    const byName = new Map();   // name -> { c, fam, w }
+    const poolCache = {};
+
+    function prepare(chars) {
+      chars.forEach((c) => {
+        const name = nameOf(c), fam = famOf(val(c, 'Tier / Tier range', 'Tier'));
+        if (fam === null || !name || byName.has(name)) return;   // characters without a recognised tier can't be pulled
+        byName.set(name, { c, fam, w: Math.pow(RARITY_DROP, fam) });
+      });
+    }
+
+    function poolFor(pack) {
+      if (poolCache[pack.id]) return poolCache[pack.id];
+      const names = pack.characters && new Set(pack.characters.map((n) => n.toLowerCase()));
+      const lo = (pack.minTier && famOf(pack.minTier)) ?? -Infinity, hi = (pack.maxTier && famOf(pack.maxTier)) ?? Infinity;
+      const drop = pack.rarityDrop || RARITY_DROP;
+      const pool = [...byName.values()]
+        .filter((e) => e.fam >= lo && e.fam <= hi && (!names || names.has(nameOf(e.c).toLowerCase())) && (!pack.folder || folderOf(e.c).includes(pack.folder.toLowerCase())))
+        .map((e) => ({ e, w: Math.pow(drop, e.fam) }));   // stronger tier = smaller weight = rarer
+      return (poolCache[pack.id] = { pool, sum: pool.reduce((s, p) => s + p.w, 0) });
+    }
+
+    function pullOne({ pool, sum }) {
+      let r = Math.random() * sum, pick = pool[pool.length - 1];
+      for (const p of pool) { r -= p.w; if (r <= 0) { pick = p; break; } }
+      const flags = VARIANTS.filter((v) => Math.random() < 1 / v[2]).map((v) => v[0]).join('');
+      return { e: pick.e, flags };
+    }
+
+    // ---- Drawing ----
+    function cardHtml(e, flags, count, isNew, extra = '') {
+      const c = e.c, has = (k) => flags.includes(k);
+      const cls = ['tcard', has('s') && 'shiny', has('f') && 'foil', has('b') && 'goldborder', has('g') && 'fullgold'].filter(Boolean).join(' ');
+      const chips = [RARITIES[rarityLevel(e.fam)][1]].concat(VARIANTS.filter((v) => has(v[0])).map((v) => v[1])).map((t) => `<span class="chip">${t}</span>`).join('');
+      return `<div class="${cls}">${isNew ? '<div class="new">NEW</div>' : ''}${count > 1 ? `<div class="count">&times;${count}</div>` : ''}
+        <div class="art"><img src="${esc(imageOf(c) || FALLBACK_IMG)}" alt="${esc(nameOf(c))}" loading="lazy"></div>
+        <h3>${esc(nameOf(c))}</h3><div class="chips">${chips}</div>
+        <div class="stat"><span>Tier</span>${esc(val(c, 'Tier / Tier range', 'Tier') || '—')}</div>
+        <div class="stat"><span>AP</span>${esc(val(c, 'AP (Attack Potency)', 'AP') || '—')}</div>
+        <div class="stat"><span>Speed</span>${esc(val(c, 'Speed') || '—')}</div>${extra}</div>`;
+    }
+
+    function renderPacks() {
+      $('packs').innerHTML = PACKS.map((p) => `<div class="pack-card"><h3>${esc(p.name)}</h3><p class="muted">${esc(p.desc || '')}</p>
+        <div>${p.size} cards &middot; ${p.cost ? p.cost + ' coins' : 'Free'}${p.cooldown ? ' every ' + (p.cooldown % 60 ? p.cooldown + ' sec' : p.cooldown / 60 + ' min') : ''}</div>
+        <button class="btn primary" data-pack="${esc(p.id)}" disabled>Open</button></div>`).join('');
+    }
+
+    function refreshPacks() {
+      const now = Date.now();
+      document.querySelectorAll('[data-pack]').forEach((btn) => {
+        const p = PACKS.find((x) => x.id === btn.dataset.pack), wait = Math.max(0, (state.ready[p.id] || 0) - now);
+        let label = p.cost ? `Open (${p.cost} coins)` : 'Open (free)', off = false;
+        if (!loaded) { label = 'Loading...'; off = true; }
+        else if (!poolFor(p).pool.length) { label = 'No characters match'; off = true; }
+        else if (wait > 0) { label = 'Ready in ' + fmtTime(wait); off = true; }
+        else if (state.coins < p.cost) { label = `Need ${p.cost} coins`; off = true; }
+        btn.textContent = label;
+        btn.disabled = off;
+      });
+    }
+
+    function renderCollection() {
+      const rows = Object.entries(state.cards).map(([key, n]) => {
+        const [name, flags = ''] = key.split('||'), e = byName.get(name);
+        // rarest first: how unlikely the character is, times the odds of each rarer version
+        return e && { key, e, flags, n, score: (1 / e.w) * VARIANTS.reduce((m, v) => flags.includes(v[0]) ? m * v[2] : m, 1) };
+      }).filter(Boolean).sort((a, b) => b.score - a.score);
+      $('stats').textContent = rows.length ? `· ${rows.reduce((s, r) => s + r.n, 0)} cards, ${rows.length} unique` : '';
+      $('collection').innerHTML = rows.length
+        ? rows.map((r) => cardHtml(r.e, r.flags, r.n, false, `<button class="btn" data-sell="${esc(r.key)}">Sell 1 for ${sellPrice(r.e)} coins</button>`)).join('')
+        : '<p class="muted">No cards yet. Open a pack!</p>';
+    }
+
+    function renderAll() {
+      $('coins').textContent = state.coins;
+      refreshPacks();
+      renderCollection();
+    }
+
+    // ---- Actions ----
+    function openPack(p) {
+      if (!loaded || (state.ready[p.id] || 0) > Date.now() || state.coins < p.cost) return;
+      const pool = poolFor(p);
+      if (!pool.pool.length) return;
+      state.coins -= p.cost;
+      if (p.cooldown) state.ready[p.id] = Date.now() + p.cooldown * 1000;
+      const html = [];
+      for (let i = 0; i < p.size; i++) {
+        const { e, flags } = pullOne(pool), key = nameOf(e.c) + '||' + flags, isNew = !state.cards[key];
+        state.cards[key] = (state.cards[key] || 0) + 1;
+        html.push(cardHtml(e, flags, 0, isNew));
+      }
+      save();
+      $('pack').innerHTML = html.join('');
+      $('pack-box').hidden = false;
+      renderAll();
+    }
+
+    function sellOne(key) {
+      const n = state.cards[key], e = byName.get(key.split('||')[0]);
+      if (!n || !e) return;
+      if (n === 1 && !confirm(`Sell your last copy of ${nameOf(e.c)} for ${sellPrice(e)} coins?`)) return;
+      state.coins += sellPrice(e);
+      if (n === 1) delete state.cards[key]; else state.cards[key] = n - 1;
+      save();
+      renderAll();
+    }
+
+    $('packs').addEventListener('click', (e) => { const b = e.target.closest('[data-pack]'); if (b) openPack(PACKS.find((p) => p.id === b.dataset.pack)); });
+    $('collection').addEventListener('click', (e) => { const b = e.target.closest('[data-sell]'); if (b) sellOne(b.dataset.sell); });
+
+    $('sell-dupes').addEventListener('click', () => {
+      let coins = 0, cards = 0;
+      Object.entries(state.cards).forEach(([key, n]) => { const e = byName.get(key.split('||')[0]); if (e && n > 1) { coins += (n - 1) * sellPrice(e); cards += n - 1; } });
+      if (!cards) { alert('You have no duplicates to sell.'); return; }
+      if (!confirm(`Sell ${cards} duplicate cards for ${coins} coins? You keep one copy of each.`)) return;
+      Object.keys(state.cards).forEach((key) => { if (byName.has(key.split('||')[0]) && state.cards[key] > 1) state.cards[key] = 1; });
+      state.coins += coins;
+      save();
+      renderAll();
+    });
+
+    $('reset').addEventListener('click', () => {
+      if (!confirm(`Reset everything? This deletes all your cards and sets your coins back to ${START_COINS}. It can\u2019t be undone.`)) return;
+      state = { coins: START_COINS, cards: {}, ready: {} };
+      save();
+      $('pack-box').hidden = true;
+      renderAll();
+    });
+
+    // ---- Tabs (#packs / #collection) ----
+    function showTab() {
+      const col = location.hash === '#collection';
+      $('panel-packs').hidden = col;
+      $('panel-collection').hidden = !col;
+      $('tab-packs').setAttribute('aria-selected', String(!col));
+      $('tab-collection').setAttribute('aria-selected', String(col));
+    }
+    $('tab-packs').addEventListener('click', () => { location.hash = '#packs'; });
+    $('tab-collection').addEventListener('click', () => { location.hash = '#collection'; });
+    window.addEventListener('hashchange', showTab);
+
+    // ---- Start ----
+    renderPacks();
+    showTab();
+    renderAll();
+    save();   // a brand-new player's starting coins are saved straight away
+    setInterval(refreshPacks, 1000);
+
+    if (typeof Papa === 'undefined' || typeof parseTier === 'undefined') $('status').textContent = 'Couldn\u2019t load the card game files.';
+    else Papa.parse(SHEET_CSV_URL, {
+      download: true, header: true, skipEmptyLines: true,
+      complete: (r) => {
+        prepare(r.data.filter((i) => nameOf(i)));
+        loaded = true;
+        $('status').textContent = `${byName.size} characters can be pulled.`;
+        renderAll();
+      },
+      error: () => { $('status').textContent = 'Couldn\u2019t load the characters.'; }
+    });
+  </script>
 </body>
 </html>
