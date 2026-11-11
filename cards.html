@@ -317,6 +317,15 @@
       renderAll();
     });
 
+    // Coins can also be earned on the Compare page (Who's Stronger?), so pick up changes made in another tab
+    window.addEventListener('storage', (e) => {
+      if (e.key !== KEY) return;
+      try {
+        const s = JSON.parse(e.newValue);
+        if (s && typeof s.coins === 'number') { state = { coins: s.coins, cards: s.cards || {}, ready: s.ready || {} }; renderAll(); }
+      } catch (err) { /* ignore */ }
+    });
+
     // ---- Tabs (#packs / #collection) ----
     function showTab() {
       const col = location.hash === '#collection';

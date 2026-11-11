@@ -224,6 +224,7 @@
     // ---- Guess tab: pick which of two random characters is stronger (by tier) ----
     function buildGuess(el) {
       el.innerHTML = `<div class="guess-head"><h2>Who’s stronger?</h2><div class="streak">Streak: <b class="streak-n">0</b> &nbsp;&middot;&nbsp; Best: <b class="best-n">0</b> &nbsp;&middot;&nbsp; Difficulty: <b class="gap-n">1</b></div></div>
+        <p class="muted" style="margin: 0 0 14px;">Every correct guess earns coins for the Cards game, equal to your current difficulty level.</p>
         <div class="matchup"><div class="gcard"></div><div class="vs">VS</div><div class="gcard"></div></div>
         <p class="guess-msg muted"></p>
         <div style="text-align:center"><button type="button" class="btn next-btn" hidden>Next matchup</button></div>`;
@@ -231,6 +232,18 @@
       const nextBtn = el.querySelector('.next-btn'), streakEl = el.querySelector('.streak-n'), bestEl = el.querySelector('.best-n'), gapEl = el.querySelector('.gap-n');
       let pair = [], answered = false, streak = 0;
       // Personal best is saved in this browser so it survives a refresh
+      // Coins go into the Cards game's saved data (same browser), so they show up on the Cards page
+      const COINS_PER_LEVEL = 1;
+      function addCoins(n) {
+        try {
+          const KEY = 'powerscaling-cards-v2';
+          let s = JSON.parse(localStorage.getItem(KEY));
+          if (!s || typeof s.coins !== 'number') s = { coins: 100, cards: JSON.parse(localStorage.getItem('powerscaling-cards-v1')) || {}, ready: {} };
+          s.coins += n;
+          localStorage.setItem(KEY, JSON.stringify(s));
+        } catch (err) { /* storage unavailable: no coins this time */ }
+        return n;
+      }
       const BEST_KEY = 'powerscaling-guess-best';
       let best = 0;
       try { best = parseInt(localStorage.getItem(BEST_KEY), 10) || 0; } catch (err) { best = 0; }
@@ -279,6 +292,7 @@
         const win = tw(pair[0]) > tw(pair[1]) ? 0 : 1;
         const correct = +g.dataset.i === win;
         const before = streak;
+        const reward = correct ? addCoins(Math.min(50, Math.floor(before / 5) + 1) * COINS_PER_LEVEL) : 0;   // harder questions pay more
         streak = correct ? streak + 1 : 0;   // a wrong guess resets the counter
         streakEl.textContent = streak;
         showGap();
@@ -295,7 +309,7 @@
           card.querySelector('.reveal').textContent = 'Tier ' + tierOf(pair[k]) + (isEmpty(ap) ? '' : '\nAP: ' + ap);
           card.querySelector('.guess-btn').disabled = true;
         });
-        say(correct ? 'Correct! Streak: ' + streak + (newBest ? ' (new personal best!)' : '') : 'Wrong. Your streak of ' + before + ' was reset to 0.', correct ? 'ok' : 'bad');
+        say(correct ? 'Correct! Streak: ' + streak + ' \u00b7 +' + reward + (reward === 1 ? ' coin' : ' coins') + (newBest ? ' (new personal best!)' : '') : 'Wrong. Your streak of ' + before + ' was reset to 0.', correct ? 'ok' : 'bad');
         nextBtn.hidden = false;
       });
       nextBtn.addEventListener('click', newRound);
