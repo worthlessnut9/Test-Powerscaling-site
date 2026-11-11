@@ -224,7 +224,7 @@
     // ---- Guess tab: pick which of two random characters is stronger (by tier) ----
     function buildGuess(el) {
       el.innerHTML = `<div class="guess-head"><h2>Who’s stronger?</h2><div class="streak">Streak: <b class="streak-n">0</b> &nbsp;&middot;&nbsp; Best: <b class="best-n">0</b> &nbsp;&middot;&nbsp; Difficulty: <b class="gap-n">1</b></div></div>
-        <p class="muted" style="margin: 0 0 14px;">Every correct guess earns coins for the Cards game, equal to your current difficulty level.</p>
+        <p class="muted" style="margin: 0 0 14px;">Every correct guess earns coins for the Cards game, equal to your current streak.</p>
         <div class="matchup"><div class="gcard"></div><div class="vs">VS</div><div class="gcard"></div></div>
         <p class="guess-msg muted"></p>
         <div style="text-align:center"><button type="button" class="btn next-btn" hidden>Next matchup</button></div>`;
@@ -233,7 +233,7 @@
       let pair = [], answered = false, streak = 0;
       // Personal best is saved in this browser so it survives a refresh
       // Coins go into the Cards game's saved data (same browser), so they show up on the Cards page
-      const COINS_PER_LEVEL = 1;
+      const COINS_PER_STREAK = 1;   // coins earned per point of streak (1 = a correct guess at streak 6 pays 6 coins)
       function addCoins(n) {
         try {
           const KEY = 'powerscaling-cards-v2';
@@ -292,7 +292,7 @@
         const win = tw(pair[0]) > tw(pair[1]) ? 0 : 1;
         const correct = +g.dataset.i === win;
         const before = streak;
-        const reward = correct ? addCoins(Math.min(50, Math.floor(before / 5) + 1) * COINS_PER_LEVEL) : 0;   // harder questions pay more
+        const reward = correct ? addCoins((before + 1) * COINS_PER_STREAK) : 0;   // the longer the streak, the more it pays
         streak = correct ? streak + 1 : 0;   // a wrong guess resets the counter
         streakEl.textContent = streak;
         showGap();
