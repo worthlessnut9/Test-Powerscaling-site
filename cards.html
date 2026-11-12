@@ -163,17 +163,20 @@
     const RARITY_DROP = 0.9;        // each tier step up makes a character this much as likely to be pulled (smaller = rarer)
     const DIVINE_CHANCE = 0.00002;  // chance a pulled card is Divine (a Tier 0 character): 0.002%
 
-    // Rarities: [name, coin value, first tier it covers]. Each one runs up to just before the next.
+    const BASE_VALUE = 2;           // what a Common card sells for
+    const VALUE_GROWTH = 2;         // each rarity step up sells for this many times more (2 = doubles)
+
+    // Rarities: [name, first tier it covers]. Each one runs up to just before the next. Sell value = BASE_VALUE x VALUE_GROWTH per step.
     // Everything except Divine is pulled by tier: the stronger the character, the rarer the card.
     const RARITIES = [
-      ['Common',    5,     null],       // 11-C to 10-A
-      ['Uncommon',  10,    '9-C'],      // 9-C to 8-A
-      ['Rare',      15,    'Low 7-C'],  // Tier 7
-      ['Epic',      20,    '6-C'],      // Tier 6 to High 5-A
-      ['Legendary', 25,    'Low 4-C'],  // Low 4-C to High 3-A
-      ['Mythic',    30,    'Low 2-C'],  // Low 2-C and up (except Tier 0)
-      ['Divine',    50000, '0'],        // Tier 0
-    ].map(([name, value, from]) => ({ name, value, min: from ? parseTierWeight(from) : 0 }));
+      ['Common',    null],       // 11-C to 10-A
+      ['Uncommon',  '9-C'],      // 9-C to 8-A
+      ['Rare',      'Low 7-C'],  // Tier 7
+      ['Epic',      '6-C'],      // Tier 6 to High 5-A
+      ['Legendary', 'Low 4-C'],  // Low 4-C to High 3-A
+      ['Mythic',    'Low 2-C'],  // Low 2-C and up (except Tier 0)
+      ['Divine',    '0'],        // Tier 0
+    ].map(([name, from], i) => ({ name, value: BASE_VALUE * Math.pow(VALUE_GROWTH, i), min: from ? parseTierWeight(from) : 0 }));
     const DIVINE = RARITIES.length - 1;
 
     // Finishes: [code, name, chance each card gets it (%), sell value multiplier]. Each is rolled separately, so they can stack
