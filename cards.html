@@ -95,7 +95,8 @@
     .flip.glow-5 .face.back { box-shadow: 0 0 18px 5px #ff9f2e; }
     .flip.glow-6 .face.back { box-shadow: 0 0 20px 6px #ff4d4d; }
     .flip.glow-7 .face.back { box-shadow: 0 0 24px 8px #ff4db8; }
-    .flip.glow-8 .face.back { box-shadow: 0 0 28px 10px #ff4dff; animation: rainbow 2s linear infinite; }
+    .flip.glow-8 .face.back { box-shadow: 0 0 26px 9px #fff3b0; }
+    .flip.glow-9 .face.back { box-shadow: 0 0 28px 10px #ff4dff; animation: rainbow 2s linear infinite; }
     @keyframes rainbow { to { filter: hue-rotate(360deg); } }
     .flip.glow-gold .face.back { box-shadow: 0 0 22px 7px #ffd24a; }
     .flip.flipped[class*="glow-"] .face.front .tcard { animation: hit 0.9s ease-out; }
@@ -216,7 +217,8 @@
       ['Epic',       '5-C'],        // Tier 5
       ['Legendary',  'Low 4-C'],    // Tier 4
       ['Mythic',     '3-C'],        // Tier 3
-      ['Celestial',  'Low 2-C'],    // Tier 2 and Tier 1 (everything up to, but not including, Tier 0)
+      ['Celestial',  'Low 2-C'],    // Tier 2
+      ['Transcendent', 'Low 1-C'],  // Tier 1
       ['Divine',     '0'],          // Tier 0
     ].map(([name, from], i) => ({ name, value: BASE_VALUE * Math.pow(VALUE_GROWTH, i), min: from ? parseTierWeight(from) : 0 }));
     const DIVINE = RARITIES.length - 1;
