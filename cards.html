@@ -23,10 +23,24 @@
     .tab[aria-selected="true"] { color: #fff; border-bottom-color: var(--accent); }
     h2.sec { color: #fff; font-size: 1.15rem; margin: 6px 0 14px; }
     .cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 18px; margin-bottom: 28px; }
-    .packs { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
-    .pack-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
-    .pack-card h3 { margin: 0; color: #fff; }
-    .pack-card .btn { margin-top: auto; }
+    .packs { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+    .shop-item, .own-item { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+    .shop-item .btn, .own-item .btn { width: 100%; max-width: 220px; }
+
+    /* A card pack: foil wrapper with crimped top and bottom edges */
+    .pk { --c1: #2b5cff; --c2: #7a2bff; position: relative; width: 100%; max-width: 190px; aspect-ratio: 5 / 7; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(160deg, var(--c1), var(--c2)); box-shadow: 0 8px 20px rgba(0,0,0,0.55), inset 0 0 0 3px rgba(255,255,255,0.5); }
+    .pk::before, .pk::after { content: ''; position: absolute; left: 0; right: 0; height: 16px; background: repeating-linear-gradient(90deg, rgba(0,0,0,0.35) 0 2px, rgba(255,255,255,0.25) 2px 4px); }
+    .pk::before { top: 0; }
+    .pk::after { bottom: 0; }
+    .pk-shine { position: absolute; inset: 0; background-size: 250% 100%; animation: sheen 4s linear infinite;
+      background-image: linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.35) 48%, transparent 60%); }
+    .pk-label { position: relative; width: 82%; text-align: center; color: #fff; padding: 10px 12px; background: rgba(0,0,0,0.35); border: 2px solid rgba(255,255,255,0.7); border-radius: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.6); }
+    .pk-star { font-size: 1.6rem; color: #ffe27a; line-height: 1; }
+    .pk-name { font-weight: 800; font-size: 1.1rem; line-height: 1.15; margin: 4px 0; text-transform: uppercase; letter-spacing: 0.03em; }
+    .pk-size { font-size: 0.72rem; letter-spacing: 0.12em; opacity: 0.9; }
+    .pk-count { position: absolute; top: 22px; right: 8px; z-index: 3; background: rgba(0,0,0,0.75); color: #fff; border-radius: 6px; padding: 2px 8px; font-weight: 700; font-size: 0.85rem; }
+    .pk.shake { animation: shake 1s ease-in-out both; }
 
     /* Every card has a white border */
     .tcard { position: relative; overflow: hidden; background: var(--card-bg); border: 4px solid #fff; border-radius: 14px; padding: 8px; color: var(--text-main); }
@@ -49,12 +63,10 @@
       background-image: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.28) 45%, rgba(120,220,255,0.25) 50%, rgba(255,120,255,0.25) 55%, transparent 70%); }
     @keyframes sheen { from { background-position: 150% 0; } to { background-position: -100% 0; } }
     .tcard.goldborder { border-color: #f5c518; }
-    .tcard.fullgold { border-color: #f5c518; background: linear-gradient(135deg, #e0b030, #9a6f0a); text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+    .tcard.fullgold { background: linear-gradient(135deg, #e0b030, #9a6f0a); text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
     .tcard.fullgold .stat, .tcard.fullgold .chip { background: rgba(255,215,90,0.55); border-color: #f5c518; }
     /* Pack opening: the pack shakes, then cards are dealt face down and flip when clicked */
     .pack-wrap { grid-column: 1 / -1; display: flex; justify-content: center; padding: 20px 0; }
-    .pack-art { width: 190px; height: 260px; border-radius: 14px; border: 4px solid #fff; display: flex; align-items: center; justify-content: center; text-align: center; color: #fff; font-weight: 800; font-size: 1.3rem; padding: 14px;
-      background: linear-gradient(160deg, #2b5cff, #7a2bff 60%, #ff2bb0); box-shadow: 0 0 30px rgba(122,43,255,0.6); animation: shake 1s ease-in-out both; }
     @keyframes shake { 0%, 100% { transform: rotate(0); } 10% { transform: rotate(-4deg); } 20% { transform: rotate(4deg); } 30% { transform: rotate(-5deg); } 40% { transform: rotate(5deg); }
       50% { transform: rotate(-6deg) scale(1.05); } 60% { transform: rotate(6deg) scale(1.08); } 80% { transform: scale(1.15); filter: brightness(1.6); } 100% { transform: scale(1.3); opacity: 0; filter: brightness(2.5); } }
     .flip { perspective: 900px; cursor: pointer; animation: deal 0.4s ease both; animation-delay: calc(var(--i) * 90ms); }
@@ -67,9 +79,14 @@
       background: repeating-linear-gradient(45deg, #1b2a52, #1b2a52 10px, #22366b 10px, #22366b 20px); }
     /* the back of a card hints at how good it is */
     .flip.glow-2 .face.back { box-shadow: 0 0 16px 4px #4da3ff; }
-    .flip.glow-3 .face.back { box-shadow: 0 0 16px 4px #b46bff; }
-    .flip.glow-4 .face.back { box-shadow: 0 0 18px 5px #ff9f2e; }
-    .flip.glow-5 .face.back { box-shadow: 0 0 20px 6px #ff4d6d; }
+    .flip.glow-3 .face.back { box-shadow: 0 0 16px 4px #2bd6c0; }
+    .flip.glow-4 .face.back { box-shadow: 0 0 16px 4px #b46bff; }
+    .flip.glow-5 .face.back { box-shadow: 0 0 18px 5px #ff9f2e; }
+    .flip.glow-6 .face.back { box-shadow: 0 0 18px 5px #ff4d4d; }
+    .flip.glow-7 .face.back { box-shadow: 0 0 20px 6px #ff4db8; }
+    .flip.glow-8 .face.back { box-shadow: 0 0 24px 8px #fff3b0; }
+    .flip.glow-9 .face.back { box-shadow: 0 0 28px 10px #ff4dff; animation: rainbow 2s linear infinite; }
+    @keyframes rainbow { to { filter: hue-rotate(360deg); } }
     .flip.glow-gold .face.back { box-shadow: 0 0 22px 7px #ffd24a; }
     .flip.flipped[class*="glow-"] .face.front .tcard { animation: hit 0.9s ease-out; }
     @keyframes hit { 0% { filter: brightness(2.6) saturate(1.6); } 100% { filter: none; } }
@@ -91,7 +108,7 @@
   <main class="container">
     <header>
       <h1>Cards</h1>
-      <p class="muted">Open packs to collect character cards. The stronger the character, the rarer the card.</p>
+      <p class="muted">Buy packs in the Shop, open them, and collect character cards. The stronger the character, the rarer the card.</p>
     </header>
 
     <div class="bar">
@@ -100,12 +117,20 @@
     </div>
 
     <div class="tabs" role="tablist">
+      <button class="tab" id="tab-shop" role="tab">Shop</button>
       <button class="tab" id="tab-packs" role="tab">Open Packs</button>
       <button class="tab" id="tab-collection" role="tab">My Collection</button>
     </div>
 
-    <section id="panel-packs">
-      <div class="cgrid packs" id="packs"></div>
+    <section id="panel-shop">
+      <h2 class="sec">Packs</h2>
+      <div class="cgrid packs" id="shop-packs"></div>
+      <h2 class="sec">Cards <span class="muted" id="card-timer" style="font-size:0.85rem"></span></h2>
+      <div class="cgrid" id="shop-cards"></div>
+    </section>
+
+    <section id="panel-packs" hidden>
+      <div class="cgrid packs" id="owned"></div>
       <div id="pack-box" hidden>
         <div class="bar"><h2 class="sec" style="margin:0">Latest pack <span class="muted" style="font-size:0.85rem">click a card to flip it</span></h2><button class="btn small" id="reveal" hidden>Reveal all</button></div>
         <div class="cgrid pack" id="pack"></div>
@@ -134,21 +159,36 @@
 
     // =====================  SETTINGS YOU CAN CHANGE  =====================
     const START_COINS = 100;       // coins a new player starts with
-    const RARITY_DROP = 0.9;       // each tier step up makes a character this much as likely (smaller = rarer)
-    const SELL_BASE = 5;           // sell price of a Common card...
-    const SELL_STEP = 5;           // ...and every rarity above it sells for this much more
-    const SELL_VARIANT_SHARE = 0.25;   // a rarer version multiplies the sell price by its "1 in N" number times this (1/4)
-    // Rarer versions. Each is rolled separately, so they can stack. Odds are "1 in N", and a card sells for N x 1/4 times more
-    // for each rarer version it has (so a Shiny sells for 2.5 times the base price, a Shiny Foil for 6.25 times).
-    const VARIANTS = [['s', 'Shiny', 10], ['f', 'Foil', 10], ['b', 'Gold Border', 10], ['g', 'Full Gold', 100]];
-    // Rarity names by tier group (the number is the first tier group that gets the name)
-    const RARITIES = [[0, 'Common'], [7, 'Uncommon'], [14, 'Rare'], [21, 'Epic'], [33, 'Legendary'], [42, 'Mythic']];
+    const CARD_SHOP_SIZE = 6;      // how many cards are for sale in the Shop at a time
+    const CARD_SHOP_MINUTES = 30;  // the cards for sale change this often
+    const CARD_BUY_MARKUP = 4;     // buying a card in the Shop costs this many times what it sells for
+
+    // Rarities: [name, short name, chance a pulled card is this rarity (%), coin value, first tier it covers]
+    // A character's rarity comes from its tier: each rarity runs from its "first tier" up to just before the next one.
+    const RARITIES = [
+      ['Common',     'C',  70,    2,     null],           // Wall level and below
+      ['Uncommon',   'UC', 18,    6,     '9-B+'],         // Wall+ up to Large Building level
+      ['Rare',       'R',  8.3,   16,    'High 8-C+'],    // Large Building+ up to Multi-City Block+
+      ['Super Rare', 'SR', 2.5,   40,    'Low 7-C'],      // Tier 7
+      ['Epic',       'E',  0.9,   100,   '6-C'],          // Tier 6
+      ['Legendary',  'L',  0.2,   350,   '5-C'],          // Tier 5
+      ['Mythic',     'M',  0.083, 1000,  'Low 4-C'],      // Tiers 4 and 3
+      ['Beyond',     'B',  0.033, 2500,  'Low 2-C'],      // Tier 2
+      ['Celestial',  'CE', 0.010, 10000, 'Low 1-C'],      // Tier 1 (all the outerversal tiers)
+      ['Divine',     'D',  0.002, 50000, '0'],            // Tier 0
+    ].map(([name, abbr, chance, value, from]) => ({ name, abbr, chance: chance / 100, value, min: from ? parseTierWeight(from) : 0 }));
+
+    // Finishes: [code, name, chance each card gets it (%), sell value multiplier]. Each is rolled separately, so they can stack
+    // (and their multipliers multiply together).
+    const VARIANTS = [['s', 'Shiny', 4, 3], ['f', 'Foil', 12, 1.5], ['b', 'Gold Border', 1.5, 6], ['g', 'Full Gold', 0.3, 20]].map(([c, n, pct, mult]) => [c, n, pct / 100, mult]);
 
     // =====================  PACKS  =====================
     // id: unique short name (letters/numbers/dashes)   size: how many cards you get
-    // cost: coins to open (0 = free)                   cooldown: seconds before it can be opened again (0 = no wait)
+    // cost: coins to buy it (0 = free)                 cooldown: for a FREE pack, a new one arrives this often (seconds);
+    //                                                   for a paid pack, the wait before you can buy another (0 = no wait)
+    // hold: the most of this pack you can keep in Open Packs. Leave it out for unlimited (paid packs) or 1 (free packs with a wait).
     const PACKS = [
-      { id: 'basic', name: 'Basic Pack', desc: 'A free pack every minute.', size: 3, cost: 0, cooldown: 60 },
+      { id: 'basic', name: 'Basic Pack', desc: 'A free pack every minute. Holds up to 3.', size: 3, cost: 0, cooldown: 60, hold: 3 },
       { id: 'mega', name: 'Mega Pack', desc: 'Ten cards in one go.', size: 10, cost: 100, cooldown: 0 },
 
       // ---- ADD YOUR OWN PACKS HERE. Copy this example, remove the // at the start of each line, and edit it. ----
@@ -157,8 +197,10 @@
       //   // folder: ['Marvel', 'DC'],             // ...or a list of folders. Use 'Not Sorted' for characters with no folder
       //   characters: ['Goku (Raditz Saga)'],      // optional: only these characters (names must match the sheet)
       //   minTier: '7-C', maxTier: '4-B',          // optional: only tiers from this one up to this one (from your tier list)
-      //   rarityDrop: 0.95 },                      // optional: closer to 1 = strong characters appear more often
+      //   colors: ['#e5392e', '#ff9f2e'],            // optional: the two colours of the pack artwork
+      //   luck: 1.5 },                             // optional: above 1 = rarer cards show up more often (1 = normal)
     ];
+    const PALETTE = [['#2b5cff', '#7a2bff'], ['#e5392e', '#ff9f2e'], ['#13a67b', '#2bd1ff'], ['#b32bff', '#ff2b8a'], ['#c9971c', '#ffe27a']];   // pack colours when a pack has no colors
     // ======================================================================
 
     const $ = (id) => document.getElementById(id);
@@ -182,20 +224,21 @@
     // True if the folder spec ("Dragon Ball" or a path like "Marvel, MCU") appears in the character's path
     const inFolder = (path, spec) => { const want = String(spec).split(/\s*,\s*/).filter(Boolean).map((x) => x.toLowerCase()); return want.length > 0 && path.some((_, i) => want.every((w, j) => path[i + j] === w)); };
     const famOf = (tierText) => { const r = parseTier(tierText); return r ? Math.floor(r.rank / SLOT) : null; };
-    const rarityLevel = (fam) => RARITIES.reduce((lvl, [min], i) => fam >= min ? i : lvl, 0);
     const flagsOf = (key) => key.split('||')[1] || '';
-    const variantMult = (flags) => VARIANTS.reduce((m, v) => flags.includes(v[0]) ? m * v[2] : m, 1);
-    // base price by rarity, times (odds number x 1/4) for every rarer version the card has
-    const sellMult = (flags) => VARIANTS.reduce((m, v) => flags.includes(v[0]) ? m * v[2] * SELL_VARIANT_SHARE : m, 1);
-    const sellPrice = (e, flags = '') => Math.max(1, Math.round((SELL_BASE + SELL_STEP * rarityLevel(e.fam)) * sellMult(flags)));
+    const levelOfRank = (rank) => RARITIES.reduce((lvl, r, i) => rank >= r.min ? i : lvl, 0);
+    // what a card sells for: its rarity's coin value times the multiplier of every finish it has
+    const sellMult = (flags) => VARIANTS.reduce((m, v) => flags.includes(v[0]) ? m * v[3] : m, 1);
+    const sellPrice = (e, flags = '') => Math.max(1, Math.round(RARITIES[e.level].value * sellMult(flags)));
+    // how rare a card is overall (used for "rarest first")
+    const rarityScore = (e, flags) => VARIANTS.reduce((m, v) => flags.includes(v[0]) ? m / v[2] : m, 1 / RARITIES[e.level].chance);
     const fmtTime = (ms) => { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 
     // ---- Saved game (kept in this browser, survives refreshes) ----
     const KEY = 'powerscaling-cards-v2';
-    let state = { coins: START_COINS, cards: {}, ready: {} };   // cards: "Name||flags" -> copies; ready: pack id -> time it can be opened again
+    let state = { coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {} };   // cards: "Name||flags" -> copies; ready: pack id -> time it can be opened again
     try {
       const saved = JSON.parse(localStorage.getItem(KEY));
-      if (saved && typeof saved.coins === 'number') state = { coins: saved.coins, cards: saved.cards || {}, ready: saved.ready || {} };
+      if (saved && typeof saved.coins === 'number') state = { coins: saved.coins, cards: saved.cards || {}, ready: saved.ready || {}, packs: saved.packs || {}, next: saved.next || {} };
       else { const old = JSON.parse(localStorage.getItem('powerscaling-cards-v1')); if (old) state.cards = old; }   // keep cards from the first version
     } catch (err) { /* start fresh */ }
     const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (err) { /* storage unavailable */ } };
@@ -207,36 +250,42 @@
 
     function prepare(chars) {
       chars.forEach((c) => {
-        const name = nameOf(c), fam = famOf(val(c, 'Tier / Tier range', 'Tier'));
-        if (fam === null || !name || byName.has(name)) return;   // characters without a recognised tier can't be pulled
-        byName.set(name, { c, fam, w: Math.pow(RARITY_DROP, fam) });
+        const name = nameOf(c), t = parseTier(val(c, 'Tier / Tier range', 'Tier'));
+        if (!t || !name || byName.has(name)) return;   // characters without a recognised tier can't be pulled
+        byName.set(name, { c, fam: Math.floor(t.rank / SLOT), level: levelOfRank(t.rank) });
       });
     }
 
+    // Which characters a pack can give, grouped by rarity, with the chance of each rarity
     function poolFor(pack) {
       if (poolCache[pack.id]) return poolCache[pack.id];
       const names = pack.characters && new Set(pack.characters.map((n) => n.toLowerCase()));
       const lo = (pack.minTier && famOf(pack.minTier)) ?? -Infinity, hi = (pack.maxTier && famOf(pack.maxTier)) ?? Infinity;
-      const drop = pack.rarityDrop || RARITY_DROP;
       const folders = [].concat(pack.folders || pack.folder || []);   // one folder, or several
-      const pool = [...byName.values()]
+      const luck = pack.luck || 1;                                    // above 1 = rarer cards show up more often
+      const groups = RARITIES.map(() => []);
+      [...byName.values()]
         .filter((e) => e.fam >= lo && e.fam <= hi && (!names || names.has(nameOf(e.c).toLowerCase())) && (!folders.length || folders.some((f) => inFolder(folderPath(e.c), f))))
-        .map((e) => ({ e, w: Math.pow(drop, e.fam) }));   // stronger tier = smaller weight = rarer
-      return (poolCache[pack.id] = { pool, sum: pool.reduce((s, p) => s + p.w, 0) });
+        .forEach((e) => groups[e.level].push(e));
+      // a rarity with no characters in this pack is skipped, and the others share its chance
+      const odds = RARITIES.map((r, i) => groups[i].length ? r.chance * Math.pow(luck, i) : 0);
+      return (poolCache[pack.id] = { groups, odds, sum: odds.reduce((a, b) => a + b, 0), pool: groups.flat() });
     }
 
-    function pullOne({ pool, sum }) {
-      let r = Math.random() * sum, pick = pool[pool.length - 1];
-      for (const p of pool) { r -= p.w; if (r <= 0) { pick = p; break; } }
-      const flags = VARIANTS.filter((v) => Math.random() < 1 / v[2]).map((v) => v[0]).join('');
-      return { e: pick.e, flags };
+    function pullOne({ groups, odds, sum }) {
+      let r = Math.random() * sum, i = 0;
+      for (; i < odds.length - 1; i++) { r -= odds[i]; if (r < 0) break; }
+      while (!groups[i].length) i--;
+      const e = groups[i][Math.floor(Math.random() * groups[i].length)];
+      const flags = VARIANTS.filter((v) => Math.random() < v[2]).map((v) => v[0]).join('');
+      return { e, flags };
     }
 
     // ---- Drawing ----
     function cardHtml(e, flags, count, isNew, extra = '') {
       const c = e.c, has = (k) => flags.includes(k);
       const cls = ['tcard', has('s') && 'shiny', has('f') && 'foil', has('b') && 'goldborder', has('g') && 'fullgold'].filter(Boolean).join(' ');
-      const chips = [RARITIES[rarityLevel(e.fam)][1]].concat(VARIANTS.filter((v) => has(v[0])).map((v) => v[1])).map((t) => `<span class="chip">${t}</span>`).join('');
+      const chips = [RARITIES[e.level].name].concat(VARIANTS.filter((v) => has(v[0])).map((v) => v[1])).map((t) => `<span class="chip">${t}</span>`).join('');
       return `<div class="${cls}">${isNew ? '<div class="new">NEW</div>' : ''}${count > 1 ? `<div class="count">&times;${count}</div>` : ''}
         <div class="art"><img src="${esc(imageOf(c) || FALLBACK_IMG)}" alt="${esc(nameOf(c))}" loading="lazy"></div>
         <h3>${esc(nameOf(c))}</h3><div class="chips">${chips}</div>
@@ -255,29 +304,94 @@
 
     // One card as it is dealt in a pack: face down, with a glow on the back for the good ones
     function flipHtml(e, flags, isNew, i, packName) {
-      const lvl = rarityLevel(e.fam), glow = flags.includes('g') ? 'glow-gold' : lvl >= 2 ? 'glow-' + lvl : '';
+      const lvl = e.level, glow = flags.includes('g') ? 'glow-gold' : lvl >= 2 ? 'glow-' + lvl : '';
       return `<div class="flip ${glow}" style="--i:${i}"><div class="flip-inner"><div class="face back">${esc(packName)}</div><div class="face front">${cardHtml(e, flags, 0, isNew)}</div></div></div>`;
     }
 
-    function renderPacks() {
-      $('packs').innerHTML = PACKS.map((p) => `<div class="pack-card"><h3>${esc(p.name)}</h3><p class="muted">${esc(p.desc || '')}</p>
-        <div class="muted">Pulls from: ${esc(sourceText(p))}</div>
-        <div>${p.size} cards &middot; ${p.cost ? p.cost + ' coins' : 'Free'}${p.cooldown ? ' every ' + (p.cooldown % 60 ? p.cooldown + ' sec' : p.cooldown / 60 + ' min') : ''}</div>
-        <button class="btn primary" data-pack="${esc(p.id)}" disabled>Open</button></div>`).join('');
+    // The pack artwork
+    function packHtml(p, cls = '', count = 0) {
+      const [c1, c2] = p.colors || PALETTE[PACKS.indexOf(p) % PALETTE.length];
+      return `<div class="pk ${cls}" style="--c1:${esc(c1)};--c2:${esc(c2)}"><div class="pk-shine"></div>${count > 1 ? `<div class="pk-count">&times;${count}</div>` : ''}
+        <div class="pk-label"><div class="pk-star">&#9733;</div><div class="pk-name">${esc(p.name)}</div><div class="pk-size">${p.size} CARDS</div></div></div>`;
+    }
+
+    const everyText = (p) => p.cooldown ? ' every ' + (p.cooldown % 60 ? p.cooldown + ' sec' : p.cooldown / 60 + ' min') : '';
+
+    // The Shop sells packs that cost coins. Free packs live in the Open tab.
+    function renderShop() {
+      const paid = PACKS.filter((p) => p.cost > 0);
+      $('shop-packs').innerHTML = paid.length ? paid.map((p) => `<div class="shop-item">${packHtml(p)}
+        <p class="muted" style="margin:0">${esc(p.desc || '')}</p><div class="muted">Pulls from: ${esc(sourceText(p))}</div>
+        <div>${p.cost} coins${everyText(p)}${isFinite(holdOf(p)) ? ' \u00b7 holds up to ' + holdOf(p) : ''}</div>
+        <button class="btn primary" data-buy="${esc(p.id)}" disabled>Buy</button></div>`).join('') : '<p class="muted">No packs for sale right now.</p>';
+    }
+
+    // Open tab: the free packs (always here) plus any packs you bought
+    const holdOf = (p) => p.hold ?? (p.cost ? Infinity : 1);   // how many of this pack you can keep
+    const isRegen = (p) => !p.cost && p.cooldown > 0;           // a free pack that refills over time
+
+    // Gives free packs earned since last time (also while the page was closed), up to the hold limit.
+    // Returns true if the number of packs you hold changed.
+    function updateRegen() {
+      const now = Date.now();
+      let gained = false, changed = false;
+      PACKS.filter(isRegen).forEach((p) => {
+        const hold = holdOf(p), cd = p.cooldown * 1000;
+        if (state.packs[p.id] === undefined) {   // first time: start with one ready (or carry over the old timer)
+          const old = state.ready[p.id] || 0;
+          state.packs[p.id] = old > now ? 0 : 1;
+          state.next[p.id] = old > now ? old : now + cd;
+          gained = changed = true;
+        }
+        let n = state.packs[p.id];
+        if (n > hold) { n = state.packs[p.id] = hold; gained = changed = true; }
+        if (n >= hold) { if (state.next[p.id] != null) { delete state.next[p.id]; changed = true; } return; }   // full: the timer stops
+        if (state.next[p.id] == null) { state.next[p.id] = now + cd; changed = true; }
+        while (n < hold && now >= state.next[p.id]) { n++; state.next[p.id] += cd; gained = changed = true; }
+        if (n >= hold) delete state.next[p.id];
+        state.packs[p.id] = n;
+      });
+      if (changed) save();
+      return gained;
+    }
+
+    // Open tab: the free packs (always listed) plus any packs you bought
+    function renderOwned() {
+      const items = PACKS.filter((p) => !p.cost || (state.packs[p.id] || 0) > 0);
+      $('owned').innerHTML = items.length
+        ? items.map((p) => `<div class="own-item">${packHtml(p, '', p.cost || isRegen(p) ? state.packs[p.id] : 0)}
+            <div class="muted">Pulls from: ${esc(sourceText(p))}</div>
+            ${p.cost ? '' : isRegen(p) ? `<div class="muted" data-regen="${esc(p.id)}"></div>` : '<div>Free, no wait</div>'}
+            <button class="btn primary" data-open="${esc(p.id)}">Open</button></div>`).join('')
+        : '<p class="muted">You don\u2019t own any packs. Get some in the Shop!</p>';
     }
 
     function refreshPacks() {
       const now = Date.now();
-      document.querySelectorAll('[data-pack]').forEach((btn) => {
-        const p = PACKS.find((x) => x.id === btn.dataset.pack), wait = Math.max(0, (state.ready[p.id] || 0) - now);
-        let label = p.cost ? `Open (${p.cost} coins)` : 'Open (free)', off = false;
+      document.querySelectorAll('[data-buy]').forEach((btn) => {
+        const p = PACKS.find((x) => x.id === btn.dataset.buy), wait = Math.max(0, (state.ready[p.id] || 0) - now);
+        let label = `Buy (${p.cost} coins)`, off = false;
         if (!loaded) { label = 'Loading...'; off = true; }
-        else if (busy) { label = 'Opening...'; off = true; }
         else if (!poolFor(p).pool.length) { label = 'No characters match'; off = true; }
+        else if ((state.packs[p.id] || 0) >= holdOf(p)) { label = 'Pack full'; off = true; }
         else if (wait > 0) { label = 'Ready in ' + fmtTime(wait); off = true; }
         else if (state.coins < p.cost) { label = `Need ${p.cost} coins`; off = true; }
         btn.textContent = label;
         btn.disabled = off;
+      });
+      document.querySelectorAll('[data-open]').forEach((btn) => {
+        const p = PACKS.find((x) => x.id === btn.dataset.open), stock = p.cost || isRegen(p), n = state.packs[p.id] || 0;
+        let label = stock ? 'Open' : 'Open (free)', off = false;
+        if (!loaded) { label = 'Loading...'; off = true; }
+        else if (busy) { label = 'Opening...'; off = true; }
+        else if (!poolFor(p).pool.length) { label = 'No characters match'; off = true; }
+        else if (stock && n <= 0) { label = state.next[p.id] ? 'Next in ' + fmtTime(state.next[p.id] - now) : 'None left'; off = true; }
+        btn.textContent = label;
+        btn.disabled = off;
+      });
+      document.querySelectorAll('[data-regen]').forEach((el) => {
+        const p = PACKS.find((x) => x.id === el.dataset.regen), n = state.packs[p.id] || 0, hold = holdOf(p), nx = state.next[p.id];
+        el.textContent = n >= hold ? `Full (${n}/${hold})` : `${n}/${hold} stored` + (nx ? ` \u00b7 next in ${fmtTime(Math.max(0, nx - now))}` : '');
       });
     }
 
@@ -285,7 +399,7 @@
       const rows = Object.entries(state.cards).map(([key, n]) => {
         const [name, flags = ''] = key.split('||'), e = byName.get(name);
         // rarest first: how unlikely the character is, times the odds of each rarer version
-        return e && { key, e, flags, n, score: (1 / e.w) * variantMult(flags) };
+        return e && { key, e, flags, n, score: rarityScore(e, flags) };
       }).filter(Boolean);
       const mode = $('sort').value, nm = (r) => nameOf(r.e.c), byScore = (a, b) => b.score - a.score;
       rows.sort(mode === 'az' ? (a, b) => nm(a).localeCompare(nm(b)) || byScore(a, b)
@@ -299,19 +413,83 @@
         : '<p class="muted">No cards yet. Open a pack!</p>';
     }
 
+    // ---- Card shop: a small selection of cards you can buy outright. It changes every CARD_SHOP_MINUTES. ----
+    let stockSlot = null, stock = [];
+    const buyPrice = (e) => sellPrice(e, '') * CARD_BUY_MARKUP;
+    const currentSlot = () => Math.floor(Date.now() / (CARD_SHOP_MINUTES * 60000));
+
+    function makeStock(slot) {
+      let a = (slot * 2654435761) >>> 0;   // same time slot = same cards (in every tab and on every visit)
+      const rnd = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+      const groups = RARITIES.map(() => []), picks = [];
+      [...byName.values()].forEach((e) => groups[e.level].push(e));
+      while (picks.length < CARD_SHOP_SIZE && groups.some((g) => g.length)) {
+        const odds = RARITIES.map((r, i) => groups[i].length ? r.chance : 0);
+        let r = rnd() * odds.reduce((x, y) => x + y, 0), i = 0;
+        for (; i < odds.length - 1; i++) { r -= odds[i]; if (r < 0) break; }
+        while (!groups[i].length) i--;
+        picks.push(groups[i].splice(Math.floor(rnd() * groups[i].length), 1)[0]);
+      }
+      return picks;
+    }
+
+    function renderCardShop() {
+      if (!loaded) { $('shop-cards').innerHTML = '<p class="muted">Loading...</p>'; return; }
+      if (currentSlot() !== stockSlot) { stockSlot = currentSlot(); stock = makeStock(stockSlot); }
+      $('shop-cards').innerHTML = stock.map((e) => cardHtml(e, '', 0, false, `<button class="btn primary" data-buycard="${esc(nameOf(e.c))}">Buy</button>`)).join('');
+      refreshCardShop();
+    }
+
+    function refreshCardShop() {
+      if (!loaded) return;
+      if (currentSlot() !== stockSlot) { renderCardShop(); return; }
+      $('card-timer').textContent = '\u00b7 new cards in ' + fmtTime((stockSlot + 1) * CARD_SHOP_MINUTES * 60000 - Date.now());
+      document.querySelectorAll('[data-buycard]').forEach((btn) => {
+        const price = buyPrice(byName.get(btn.dataset.buycard));
+        btn.textContent = state.coins < price ? `Need ${price.toLocaleString()} coins` : `Buy for ${price.toLocaleString()} coins`;
+        btn.disabled = state.coins < price;
+      });
+    }
+
     function renderAll() {
       $('coins').textContent = state.coins.toLocaleString();
+      const owned = PACKS.reduce((t, p) => t + (state.packs[p.id] || 0), 0);
+      $('tab-packs').textContent = 'Open Packs' + (owned ? ` (${owned})` : '');
+      renderOwned();
       refreshPacks();
+      refreshCardShop();
       renderCollection();
     }
 
     // ---- Actions ----
-    function openPack(p) {
-      if (!loaded || busy || (state.ready[p.id] || 0) > Date.now() || state.coins < p.cost) return;
-      const pool = poolFor(p);
-      if (!pool.pool.length) return;
+    function buyPack(p) {
+      if (!loaded || (state.ready[p.id] || 0) > Date.now() || state.coins < p.cost || !poolFor(p).pool.length || (state.packs[p.id] || 0) >= holdOf(p)) return;
       state.coins -= p.cost;
       if (p.cooldown) state.ready[p.id] = Date.now() + p.cooldown * 1000;
+      state.packs[p.id] = (state.packs[p.id] || 0) + 1;
+      save();
+      renderAll();
+    }
+
+    function buyCard(name) {
+      const e = byName.get(name);
+      if (!e || state.coins < buyPrice(e)) return;
+      state.coins -= buyPrice(e);
+      const key = name + '||';
+      state.cards[key] = (state.cards[key] || 0) + 1;
+      save();
+      renderAll();
+    }
+
+    function openPack(p) {
+      if (!loaded || busy) return;
+      const pool = poolFor(p);
+      if (!pool.pool.length) return;
+      if (p.cost || isRegen(p)) {   // a pack you own (bought, or earned for free over time)
+        if (!(state.packs[p.id] > 0)) return;
+        state.packs[p.id]--;
+        updateRegen();   // starts the refill timer if a free pack was full
+      }                  // a free pack with no wait can always be opened
       const pulls = [];
       for (let i = 0; i < p.size; i++) {
         const { e, flags } = pullOne(pool), key = nameOf(e.c) + '||' + flags;
@@ -323,8 +501,9 @@
       renderAll();
       // the pack shakes, then the cards are dealt face down for you to flip
       $('pack-box').hidden = false;
+      $('pack-box').scrollIntoView({ behavior: 'smooth', block: 'start' });
       $('reveal').hidden = true;
-      $('pack').innerHTML = `<div class="pack-wrap"><div class="pack-art"><div>${esc(p.name)}</div></div></div>`;
+      $('pack').innerHTML = `<div class="pack-wrap">${packHtml(p, 'shake')}</div>`;
       setTimeout(() => {
         $('pack').innerHTML = pulls.map((x, i) => flipHtml(x.e, x.flags, x.isNew, i, p.name)).join('');
         $('reveal').hidden = false;
@@ -344,7 +523,9 @@
       renderAll();
     }
 
-    $('packs').addEventListener('click', (e) => { const b = e.target.closest('[data-pack]'); if (b) openPack(PACKS.find((p) => p.id === b.dataset.pack)); });
+    $('shop-packs').addEventListener('click', (e) => { const b = e.target.closest('[data-buy]'); if (b) buyPack(PACKS.find((p) => p.id === b.dataset.buy)); });
+    $('shop-cards').addEventListener('click', (e) => { const b = e.target.closest('[data-buycard]'); if (b) buyCard(b.dataset.buycard); });
+    $('owned').addEventListener('click', (e) => { const b = e.target.closest('[data-open]'); if (b) openPack(PACKS.find((p) => p.id === b.dataset.open)); });
     $('pack').addEventListener('click', (e) => { const f = e.target.closest('.flip'); if (f) f.classList.add('flipped'); });
     $('reveal').addEventListener('click', () => {
       document.querySelectorAll('#pack .flip:not(.flipped)').forEach((f, i) => setTimeout(() => f.classList.add('flipped'), i * 200));
@@ -365,7 +546,7 @@
 
     $('reset').addEventListener('click', () => {
       if (!confirm(`Reset everything? This deletes all your cards and sets your coins back to ${START_COINS}. It can\u2019t be undone.`)) return;
-      state = { coins: START_COINS, cards: {}, ready: {} };
+      state = { coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {} };
       save();
       $('pack-box').hidden = true;
       renderAll();
@@ -376,28 +557,31 @@
       if (e.key !== KEY) return;
       try {
         const s = JSON.parse(e.newValue);
-        if (s && typeof s.coins === 'number') { state = { coins: s.coins, cards: s.cards || {}, ready: s.ready || {} }; renderAll(); }
+        if (s && typeof s.coins === 'number') { state = { coins: s.coins, cards: s.cards || {}, ready: s.ready || {}, packs: s.packs || {}, next: s.next || {} }; updateRegen(); renderAll(); }
       } catch (err) { /* ignore */ }
     });
 
-    // ---- Tabs (#packs / #collection) ----
+    // ---- Tabs: #shop, #packs (open your packs), #collection ----
+    const TABS = ['shop', 'packs', 'collection'];
     function showTab() {
-      const col = location.hash === '#collection';
-      $('panel-packs').hidden = col;
-      $('panel-collection').hidden = !col;
-      $('tab-packs').setAttribute('aria-selected', String(!col));
-      $('tab-collection').setAttribute('aria-selected', String(col));
+      let id = location.hash.slice(1);
+      if (!TABS.includes(id)) id = 'packs';   // the Open tab is home (the free pack lives there)
+      TABS.forEach((t) => {
+        $('panel-' + t).hidden = t !== id;
+        $('tab-' + t).setAttribute('aria-selected', String(t === id));
+      });
     }
-    $('tab-packs').addEventListener('click', () => { location.hash = '#packs'; });
-    $('tab-collection').addEventListener('click', () => { location.hash = '#collection'; });
+    TABS.forEach((t) => $('tab-' + t).addEventListener('click', () => { location.hash = '#' + t; }));
     window.addEventListener('hashchange', showTab);
 
     // ---- Start ----
-    renderPacks();
+    updateRegen();
+    renderShop();
+    renderCardShop();
     showTab();
     renderAll();
     save();   // a brand-new player's starting coins are saved straight away
-    setInterval(refreshPacks, 1000);
+    setInterval(() => { if (updateRegen()) renderAll(); refreshPacks(); refreshCardShop(); }, 1000);   // a free pack arrived? update the Open tab
 
     if (typeof Papa === 'undefined' || typeof parseTier === 'undefined') $('status').textContent = 'Couldn\u2019t load the card game files.';
     else Papa.parse(SHEET_CSV_URL, {
@@ -405,6 +589,7 @@
       complete: (r) => {
         prepare(r.data.filter((i) => nameOf(i)));
         loaded = true;
+        renderCardShop();
         $('status').textContent = `${byName.size} characters can be pulled.`;
         renderAll();
       },
