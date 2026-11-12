@@ -54,6 +54,17 @@
     .count, .new { position: absolute; top: 12px; z-index: 2; border-radius: 6px; padding: 2px 8px; font-size: 0.8rem; font-weight: 700; background: rgba(0,0,0,0.75); color: #fff; }
     .count { right: 12px; }
     .new { left: 12px; background: #238636; }
+    .filters { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px; }
+    .frow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .frow > .lbl { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; min-width: 52px; }
+    .frow input[type="search"] { min-width: 180px; }
+    .fchip { background: var(--tag-bg); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 999px; padding: 4px 12px; font-size: 0.8rem; cursor: pointer; }
+    .fchip:hover { border-color: var(--accent); }
+    .fchip.on { background: var(--accent); border-color: var(--accent); color: #0d1117; font-weight: 600; }
+    .frow label.chk { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer; }
+    .fav-badge { position: absolute; top: 12px; left: 12px; z-index: 2; background: rgba(0,0,0,0.75); color: #ffd24a; border-radius: 6px; padding: 0 7px; font-size: 1rem; }
+    .ghost .tcard { opacity: 0.45; filter: grayscale(1); }
+    .tcard .btn.fav.on { border-color: #ffd24a; color: #ffd24a; }
     .tcard .btn { width: 100%; margin-top: 8px; padding: 7px; font-size: 0.85rem; }
 
     /* Rarer versions (they stack) */
@@ -147,6 +158,26 @@
         <button class="btn small" id="sell-dupes">Sell all duplicates</button>
         <button class="btn small" id="reset" style="margin-left:auto">Reset everything</button>
       </div>
+      <div class="filters" id="filters">
+        <div class="frow">
+          <select id="f-view" class="sort" aria-label="Which cards to show">
+            <option value="owned">Show: my cards</option>
+            <option value="fav">Show: favorites only</option>
+            <option value="missing">Show: not owned yet</option>
+          </select>
+          <input id="f-q" class="sort" type="search" placeholder="Search by name..." autocomplete="off" aria-label="Search by name">
+          <select id="f-folder" class="sort" aria-label="Folder"><option value="">All folders</option></select>
+        </div>
+        <div class="frow"><span class="lbl">Tier</span>
+          <select id="f-from" class="sort" aria-label="Tier from"></select><span class="muted">to</span><select id="f-to" class="sort" aria-label="Tier to"></select>
+        </div>
+        <div class="frow"><span class="lbl">Rarity</span><span id="f-rarity" class="frow"></span></div>
+        <div class="frow"><span class="lbl">Finish</span><span id="f-finish" class="frow"></span>
+          <label class="chk"><input type="checkbox" id="f-dupes"> Duplicates only</label>
+          <button class="btn small" id="f-clear" style="margin-left:auto">Clear filters</button>
+        </div>
+      </div>
+      <p class="muted" id="shown" style="margin: 0 0 12px;"></p>
       <div class="cgrid" id="collection"></div>
     </section>
   </main>
@@ -156,7 +187,8 @@
 
     // =====================  SETTINGS YOU CAN CHANGE  =====================
     const START_COINS = 100;       // coins a new player starts with
-    const CARD_SHOP_SIZE = 6;      // how many cards are for sale in the Shop at a time
+    const CARD_SHOP_SIZE = 8;      // how many cards are for sale in the Shop at a time
+    const CARD_SHOP_FINISHES = 2;  // at least this many of them always have a finish (Shiny, Foil, Gold Border or Full Gold)
     const CARD_SHOP_MINUTES = 30;  // the cards for sale change this often
     const CARD_BUY_MARKUP = 4;     // buying a card in the Shop costs this many times what it sells for
 
@@ -236,10 +268,10 @@
 
     // ---- Saved game (kept in this browser, survives refreshes) ----
     const KEY = 'powerscaling-cards-v2';
-    let state = { coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {} };   // cards: "Name||flags" -> copies; ready: pack id -> time it can be opened again
+    let state = { coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {}, fav: {} };   // cards: "Name||flags" -> copies; ready: pack id -> time it can be opened again
     try {
       const saved = JSON.parse(localStorage.getItem(KEY));
-      if (saved && typeof saved.coins === 'number') state = { coins: saved.coins, cards: saved.cards || {}, ready: saved.ready || {}, packs: saved.packs || {}, next: saved.next || {} };
+      if (saved && typeof saved.coins === 'number') state = { coins: saved.coins, cards: saved.cards || {}, ready: saved.ready || {}, packs: saved.packs || {}, next: saved.next || {}, fav: saved.fav || {} };
       else { const old = JSON.parse(localStorage.getItem('powerscaling-cards-v1')); if (old) state.cards = old; }   // keep cards from the first version
     } catch (err) { /* start fresh */ }
     const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (err) { /* storage unavailable */ } };
@@ -254,7 +286,7 @@
         const name = nameOf(c), t = parseTier(val(c, 'Tier / Tier range', 'Tier'));
         if (!t || !name || byName.has(name)) return;   // characters without a recognised tier can't be pulled
         const fam = Math.floor(t.rank / SLOT);
-        byName.set(name, { c, fam, level: levelOfRank(t.rank), w: Math.pow(RARITY_DROP, fam) });   // stronger tier = smaller weight = rarer
+        byName.set(name, { c, fam, rank: t.rank, level: levelOfRank(t.rank), w: Math.pow(RARITY_DROP, fam) });   // stronger tier = smaller weight = rarer
       });
     }
 
@@ -284,11 +316,11 @@
     }
 
     // ---- Drawing ----
-    function cardHtml(e, flags, count, isNew, extra = '') {
+    function cardHtml(e, flags, count, isNew, extra = '', fav = false) {
       const c = e.c, has = (k) => flags.includes(k);
       const cls = ['tcard', has('s') && 'shiny', has('f') && 'foil', has('b') && 'goldborder', has('g') && 'fullgold'].filter(Boolean).join(' ');
       const chips = [RARITIES[e.level].name].concat(VARIANTS.filter((v) => has(v[0])).map((v) => v[1])).map((t) => `<span class="chip">${t}</span>`).join('');
-      return `<div class="${cls}">${isNew ? '<div class="new">NEW</div>' : ''}${count > 1 ? `<div class="count">&times;${count}</div>` : ''}
+      return `<div class="${cls}">${isNew ? '<div class="new">NEW</div>' : ''}${fav ? '<div class="fav-badge" title="Favorited">&#9733;</div>' : ''}${count > 1 ? `<div class="count">&times;${count}</div>` : ''}
         <div class="art"><img src="${esc(imageOf(c) || FALLBACK_IMG)}" alt="${esc(nameOf(c))}" loading="lazy"></div>
         <h3>${esc(nameOf(c))}</h3><div class="chips">${chips}</div>
         <div class="stat"><span>Tier</span>${esc(val(c, 'Tier / Tier range', 'Tier') || '—')}</div>
@@ -397,27 +429,96 @@
       });
     }
 
+    // ---- Collection filters ----
+    const F = { view: 'owned', q: '', folder: '', from: '', to: '', rarity: new Set(), finish: new Set(), plain: false, dupes: false };
+
+    function buildFilters() {
+      const tiers = '<option value="">Any</option>' + exactTierSequence.map((t, i) => `<option value="${i}">${esc(t.replace(/^LOW /i, 'Low ').replace(/^HIGH /i, 'High '))}</option>`).join('');
+      $('f-from').innerHTML = tiers;
+      $('f-to').innerHTML = tiers;
+      $('f-rarity').innerHTML = RARITIES.map((r, i) => `<button type="button" class="fchip" data-rarity="${i}">${esc(r.name)}</button>`).join('');
+      $('f-finish').innerHTML = VARIANTS.map((v) => `<button type="button" class="fchip" data-finish="${v[0]}">${esc(v[1])}</button>`).join('') + '<button type="button" class="fchip" data-plain="1">Plain only</button>';
+    }
+
+    // Folder dropdown: every folder and sub-folder found in the character sheet
+    function fillFolders() {
+      const seen = new Map();
+      byName.forEach((e) => {
+        const raw = val(e.c, 'Folders', 'Folder').split(/\s*,\s*/).filter(Boolean);
+        const path = raw.length ? raw : ['Not Sorted'];
+        path.forEach((_, i) => { const key = path.slice(0, i + 1).map((x) => x.toLowerCase()).join(', '); if (!seen.has(key)) seen.set(key, { depth: i, name: path[i] }); });
+      });
+      $('f-folder').innerHTML = '<option value="">All folders</option>' + [...seen.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([key, f]) => `<option value="${esc(key)}">${'  '.repeat(f.depth)}${esc(f.name)}</option>`).join('');
+    }
+
+    function syncFilterUI() {
+      $('f-view').value = F.view; $('f-q').value = F.q; $('f-folder').value = F.folder; $('f-from').value = F.from; $('f-to').value = F.to; $('f-dupes').checked = F.dupes;
+      document.querySelectorAll('[data-rarity]').forEach((b) => b.classList.toggle('on', F.rarity.has(+b.dataset.rarity)));
+      document.querySelectorAll('[data-finish]').forEach((b) => b.classList.toggle('on', F.finish.has(b.dataset.finish)));
+      document.querySelector('[data-plain]').classList.toggle('on', F.plain);
+      // finish, duplicates and favorites only make sense for cards you own
+      const owned = F.view !== 'missing';
+      document.querySelectorAll('[data-finish], [data-plain], #f-dupes').forEach((el) => { el.disabled = !owned; });
+    }
+
+    function matchesFilters(e, flags, n, key) {
+      if (F.rarity.size && !F.rarity.has(e.level)) return false;
+      if (F.q && !nameOf(e.c).toLowerCase().includes(F.q)) return false;
+      if (F.folder && !inFolder(folderPath(e.c), F.folder)) return false;
+      if (F.from !== '' || F.to !== '') {
+        let a = F.from === '' ? null : +F.from, b = F.to === '' ? null : +F.to;
+        if (a !== null && b !== null && a > b) [a, b] = [b, a];
+        if (e.rank < (a === null ? -Infinity : tierLowRank(a)) || e.rank > (b === null ? Infinity : tierHighRank(b))) return false;
+      }
+      if (F.view === 'missing') return true;
+      if (F.view === 'fav' && !state.fav[key]) return false;
+      if (F.plain && flags !== '') return false;
+      for (const f of F.finish) if (!flags.includes(f)) return false;
+      if (F.dupes && n < 2) return false;
+      return true;
+    }
+
     function renderCollection() {
-      const rows = Object.entries(state.cards).map(([key, n]) => {
-        const [name, flags = ''] = key.split('||'), e = byName.get(name);
-        // rarest first: how unlikely the character is, times the odds of each rarer version
-        return e && { key, e, flags, n, score: rarityScore(e, flags) };
-      }).filter(Boolean);
+      const ownedNames = new Set(Object.keys(state.cards).map((k) => k.split('||')[0]));
+      let all, rows;
+      if (F.view === 'missing') {
+        all = [...byName.values()].filter((e) => !ownedNames.has(nameOf(e.c))).map((e) => ({ key: '', e, flags: '', n: 0, score: rarityScore(e, '') }));
+        rows = all.filter((r) => matchesFilters(r.e, '', 0, ''));
+      } else {
+        all = Object.entries(state.cards).map(([key, n]) => {
+          const [name, flags = ''] = key.split('||'), e = byName.get(name);
+          return e && { key, e, flags, n, score: rarityScore(e, flags) };   // rarest first: how unlikely the character is, times the odds of each finish
+        }).filter(Boolean);
+        if (F.view === 'fav') all = all.filter((r) => state.fav[r.key]);
+        rows = all.filter((r) => matchesFilters(r.e, r.flags, r.n, r.key));
+      }
       const mode = $('sort').value, nm = (r) => nameOf(r.e.c), byScore = (a, b) => b.score - a.score;
       rows.sort(mode === 'az' ? (a, b) => nm(a).localeCompare(nm(b)) || byScore(a, b)
         : mode === 'za' ? (a, b) => nm(b).localeCompare(nm(a)) || byScore(a, b)
         : mode === 'price-desc' ? (a, b) => sellPrice(b.e, b.flags) - sellPrice(a.e, a.flags) || byScore(a, b)
         : mode === 'price-asc' ? (a, b) => sellPrice(a.e, a.flags) - sellPrice(b.e, b.flags) || byScore(b, a)
         : byScore);
-      $('stats').textContent = rows.length ? `· ${rows.reduce((s, r) => s + r.n, 0)} cards, ${rows.length} unique` : '';
-      $('collection').innerHTML = rows.length
-        ? rows.map((r) => cardHtml(r.e, r.flags, r.n, false, `<button class="btn" data-sell="${esc(r.key)}">Sell 1 for ${sellPrice(r.e, r.flags).toLocaleString()} coins</button>`)).join('')
-        : '<p class="muted">No cards yet. Open a pack!</p>';
+
+      const total = Object.values(state.cards).reduce((t, n) => t + n, 0);
+      $('stats').textContent = total ? `· ${total} cards, ${Object.keys(state.cards).length} unique` : '';
+      const filtering = F.q || F.folder || F.from !== '' || F.to !== '' || F.rarity.size || F.finish.size || F.plain || F.dupes;
+      $('shown').textContent = F.view === 'missing' ? `${rows.length} of ${all.length} characters you don’t own yet`
+        : total ? `Showing ${rows.length} of ${all.length} ${F.view === 'fav' ? 'favorited ' : ''}card types${filtering ? ' (filters on)' : ''}` : '';
+
+      $('collection').innerHTML = rows.length ? rows.map((r) => {
+        if (F.view === 'missing') return `<div class="ghost">${cardHtml(r.e, '', 0, false, '<div class="muted" style="text-align:center;margin-top:8px">Not owned yet</div>')}</div>`;
+        const fav = !!state.fav[r.key];
+        return cardHtml(r.e, r.flags, r.n, false,
+          `<button class="btn fav${fav ? ' on' : ''}" data-fav="${esc(r.key)}">${fav ? '★ Favorited' : '☆ Favorite'}</button>
+           <button class="btn" data-sell="${esc(r.key)}"${fav ? ' disabled title="Unfavorite this card to sell it"' : ''}>${fav ? 'Locked (favorited)' : `Sell 1 for ${sellPrice(r.e, r.flags).toLocaleString()} coins`}</button>`, fav);
+      }).join('')
+        : `<p class="muted">${F.view === 'missing' ? (all.length ? 'No characters match your filters.' : 'You own every character!') : total ? 'No cards match your filters.' : 'No cards yet. Open a pack!'}</p>`;
     }
 
     // ---- Card shop: a small selection of cards you can buy outright. It changes every CARD_SHOP_MINUTES. ----
     let stockSlot = null, stock = [];
-    const buyPrice = (e) => sellPrice(e, '') * CARD_BUY_MARKUP;
+    const buyPrice = (e, flags = '') => sellPrice(e, flags) * CARD_BUY_MARKUP;   // finishes make a card cost more, same as they make it sell for more
     const currentSlot = () => Math.floor(Date.now() / (CARD_SHOP_MINUTES * 60000));
 
     function makeStock(slot) {
@@ -430,13 +531,22 @@
         for (; i < regular.length - 1; i++) { r -= regular[i].w; if (r <= 0) break; }
         picks.push(regular.splice(i, 1)[0]);
       }
-      return picks;
+      // each card rolls its finishes at the normal odds; if fewer than CARD_SHOP_FINISHES came up, some plain cards get one for free
+      const items = picks.map((e) => ({ e, flags: VARIANTS.filter((v) => rnd() < v[2]).map((v) => v[0]).join('') }));
+      const total = VARIANTS.reduce((sum, v) => sum + v[2], 0);
+      while (items.filter((x) => x.flags).length < Math.min(CARD_SHOP_FINISHES, items.length)) {
+        const plain = items.filter((x) => !x.flags), target = plain[Math.floor(rnd() * plain.length)];
+        let r = rnd() * total, k = 0;
+        for (; k < VARIANTS.length - 1; k++) { r -= VARIANTS[k][2]; if (r < 0) break; }   // the more common finishes are the more likely ones
+        target.flags = VARIANTS[k][0];
+      }
+      return items;
     }
 
     function renderCardShop() {
       if (!loaded) { $('shop-cards').innerHTML = '<p class="muted">Loading...</p>'; return; }
       if (currentSlot() !== stockSlot) { stockSlot = currentSlot(); stock = makeStock(stockSlot); }
-      $('shop-cards').innerHTML = stock.map((e) => cardHtml(e, '', 0, false, `<button class="btn primary" data-buycard="${esc(nameOf(e.c))}">Buy</button>`)).join('');
+      $('shop-cards').innerHTML = stock.map((x, i) => cardHtml(x.e, x.flags, 0, false, `<button class="btn primary" data-buycard="${i}">Buy</button>`)).join('');
       refreshCardShop();
     }
 
@@ -445,7 +555,7 @@
       if (currentSlot() !== stockSlot) { renderCardShop(); return; }
       $('card-timer').textContent = '\u00b7 new cards in ' + fmtTime((stockSlot + 1) * CARD_SHOP_MINUTES * 60000 - Date.now());
       document.querySelectorAll('[data-buycard]').forEach((btn) => {
-        const price = buyPrice(byName.get(btn.dataset.buycard));
+        const item = stock[+btn.dataset.buycard], price = buyPrice(item.e, item.flags);
         btn.textContent = state.coins < price ? `Need ${price.toLocaleString()} coins` : `Buy for ${price.toLocaleString()} coins`;
         btn.disabled = state.coins < price;
       });
@@ -471,11 +581,11 @@
       renderAll();
     }
 
-    function buyCard(name) {
-      const e = byName.get(name);
-      if (!e || state.coins < buyPrice(e)) return;
-      state.coins -= buyPrice(e);
-      const key = name + '||';
+    function buyCard(i) {
+      const item = stock[+i];
+      if (!item || state.coins < buyPrice(item.e, item.flags)) return;
+      state.coins -= buyPrice(item.e, item.flags);
+      const key = nameOf(item.e.c) + '||' + item.flags;
       state.cards[key] = (state.cards[key] || 0) + 1;
       save();
       renderAll();
@@ -514,11 +624,11 @@
 
     function sellOne(key) {
       const n = state.cards[key], e = byName.get(key.split('||')[0]);
-      if (!n || !e) return;
+      if (!n || !e || state.fav[key]) return;   // favorited cards can't be sold
       const price = sellPrice(e, flagsOf(key));
       if (n === 1 && !confirm(`Sell your last copy of ${nameOf(e.c)} for ${price.toLocaleString()} coins?`)) return;
       state.coins += price;
-      if (n === 1) delete state.cards[key]; else state.cards[key] = n - 1;
+      if (n === 1) { delete state.cards[key]; delete state.fav[key]; } else state.cards[key] = n - 1;
       save();
       renderAll();
     }
@@ -530,15 +640,42 @@
     $('reveal').addEventListener('click', () => {
       document.querySelectorAll('#pack .flip:not(.flipped)').forEach((f, i) => setTimeout(() => f.classList.add('flipped'), i * 200));
     });
-    $('collection').addEventListener('click', (e) => { const b = e.target.closest('[data-sell]'); if (b) sellOne(b.dataset.sell); });
+    $('collection').addEventListener('click', (e) => {
+      const f = e.target.closest('[data-fav]');
+      if (f) { const k = f.dataset.fav; if (state.fav[k]) delete state.fav[k]; else state.fav[k] = true; save(); renderCollection(); return; }
+      const b = e.target.closest('[data-sell]');
+      if (b && !b.disabled) sellOne(b.dataset.sell);
+    });
+
+    $('filters').addEventListener('click', (e) => {
+      const r = e.target.closest('[data-rarity]'), f = e.target.closest('[data-finish]'), pl = e.target.closest('[data-plain]');
+      if (r) { const i = +r.dataset.rarity; F.rarity.has(i) ? F.rarity.delete(i) : F.rarity.add(i); }
+      else if (f) { const c = f.dataset.finish; F.finish.has(c) ? F.finish.delete(c) : F.finish.add(c); F.plain = false; }
+      else if (pl) { F.plain = !F.plain; if (F.plain) F.finish.clear(); }
+      else return;
+      syncFilterUI(); renderCollection();
+    });
+    const onFilterInput = () => {
+      F.view = $('f-view').value; F.q = $('f-q').value.trim().toLowerCase(); F.folder = $('f-folder').value;
+      F.from = $('f-from').value; F.to = $('f-to').value; F.dupes = $('f-dupes').checked;
+      syncFilterUI(); renderCollection();
+    };
+    ['f-view', 'f-folder', 'f-from', 'f-to', 'f-dupes'].forEach((id) => $(id).addEventListener('change', onFilterInput));
+    $('f-q').addEventListener('input', onFilterInput);
+    $('f-clear').addEventListener('click', () => {
+      Object.assign(F, { view: 'owned', q: '', folder: '', from: '', to: '', dupes: false, plain: false });
+      F.rarity.clear(); F.finish.clear();
+      syncFilterUI(); renderCollection();
+    });
 
     $('sort').addEventListener('change', renderCollection);
     $('sell-dupes').addEventListener('click', () => {
       let coins = 0, cards = 0;
-      Object.entries(state.cards).forEach(([key, n]) => { const e = byName.get(key.split('||')[0]); if (e && n > 1) { coins += (n - 1) * sellPrice(e, flagsOf(key)); cards += n - 1; } });
-      if (!cards) { alert('You have no duplicates to sell.'); return; }
-      if (!confirm(`Sell ${cards} duplicate cards for ${coins.toLocaleString()} coins? You keep one copy of each.`)) return;
-      Object.keys(state.cards).forEach((key) => { if (byName.has(key.split('||')[0]) && state.cards[key] > 1) state.cards[key] = 1; });
+      // favorited cards are never sold
+      Object.entries(state.cards).forEach(([key, n]) => { const e = byName.get(key.split('||')[0]); if (e && n > 1 && !state.fav[key]) { coins += (n - 1) * sellPrice(e, flagsOf(key)); cards += n - 1; } });
+      if (!cards) { alert('You have no duplicates to sell (favorited cards are skipped).'); return; }
+      if (!confirm(`Sell ${cards} duplicate cards for ${coins.toLocaleString()} coins? You keep one copy of each, and favorited cards are skipped.`)) return;
+      Object.keys(state.cards).forEach((key) => { if (byName.has(key.split('||')[0]) && state.cards[key] > 1 && !state.fav[key]) state.cards[key] = 1; });
       state.coins += coins;
       save();
       renderAll();
@@ -546,7 +683,7 @@
 
     $('reset').addEventListener('click', () => {
       if (!confirm(`Reset everything? This deletes all your cards and sets your coins back to ${START_COINS}. It can\u2019t be undone.`)) return;
-      state = { coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {} };
+      state = { coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {}, fav: {} };
       save();
       $('pack-box').hidden = true;
       renderAll();
@@ -557,7 +694,7 @@
       if (e.key !== KEY) return;
       try {
         const s = JSON.parse(e.newValue);
-        if (s && typeof s.coins === 'number') { state = { coins: s.coins, cards: s.cards || {}, ready: s.ready || {}, packs: s.packs || {}, next: s.next || {} }; updateRegen(); renderAll(); }
+        if (s && typeof s.coins === 'number') { state = { coins: s.coins, cards: s.cards || {}, ready: s.ready || {}, packs: s.packs || {}, next: s.next || {}, fav: s.fav || {} }; updateRegen(); renderAll(); }
       } catch (err) { /* ignore */ }
     });
 
@@ -575,6 +712,8 @@
     window.addEventListener('hashchange', showTab);
 
     // ---- Start ----
+    buildFilters();
+    syncFilterUI();
     updateRegen();
     renderShop();
     renderCardShop();
@@ -589,6 +728,7 @@
       complete: (r) => {
         prepare(r.data.filter((i) => nameOf(i)));
         loaded = true;
+        fillFolders();
         renderCardShop();
         $('status').textContent = `${byName.size} characters can be pulled.`;
         renderAll();
