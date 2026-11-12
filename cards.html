@@ -217,8 +217,8 @@
       ['Epic',       '5-C'],        // Tier 5
       ['Legendary',  'Low 4-C'],    // Tier 4
       ['Mythic',     '3-C'],        // Tier 3
-      ['Celestial',  'Low 2-C'],    // Tier 2
-      ['Transcendent', 'Low 1-C'],  // Tier 1
+      ['Celestial',  'Low 2-C'],    // Tier 2, plus Tier 1-C and 1-B (everything below the outerversal tiers)
+      ['Transcendent', 'Low 1-A'],  // The outerversal tiers (Tier 1-A)
       ['Divine',     '0'],          // Tier 0
     ].map(([name, from], i) => ({ name, value: BASE_VALUE * Math.pow(VALUE_GROWTH, i), min: from ? parseTierWeight(from) : 0 }));
     const DIVINE = RARITIES.length - 1;
