@@ -90,10 +90,12 @@
       background: repeating-linear-gradient(45deg, #1b2a52, #1b2a52 10px, #22366b 10px, #22366b 20px); }
     /* the back of a card hints at how good it is */
     .flip.glow-2 .face.back { box-shadow: 0 0 16px 4px #4da3ff; }
-    .flip.glow-3 .face.back { box-shadow: 0 0 16px 4px #b46bff; }
-    .flip.glow-4 .face.back { box-shadow: 0 0 18px 5px #ff9f2e; }
-    .flip.glow-5 .face.back { box-shadow: 0 0 20px 6px #ff4d6d; }
-    .flip.glow-6 .face.back { box-shadow: 0 0 28px 10px #ff4dff; animation: rainbow 2s linear infinite; }
+    .flip.glow-3 .face.back { box-shadow: 0 0 16px 4px #2bd6c0; }
+    .flip.glow-4 .face.back { box-shadow: 0 0 16px 4px #b46bff; }
+    .flip.glow-5 .face.back { box-shadow: 0 0 18px 5px #ff9f2e; }
+    .flip.glow-6 .face.back { box-shadow: 0 0 20px 6px #ff4d4d; }
+    .flip.glow-7 .face.back { box-shadow: 0 0 24px 8px #ff4db8; }
+    .flip.glow-8 .face.back { box-shadow: 0 0 28px 10px #ff4dff; animation: rainbow 2s linear infinite; }
     @keyframes rainbow { to { filter: hue-rotate(360deg); } }
     .flip.glow-gold .face.back { box-shadow: 0 0 22px 7px #ffd24a; }
     .flip.flipped[class*="glow-"] .face.front .tcard { animation: hit 0.9s ease-out; }
@@ -185,6 +187,12 @@
   <script>
     const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQWRS4v9F9SJ-Y4wUOO3efaf3UXCItz8EX4wK4QV6lnHX37MQMrchewnvjC9IcwYnehddX5VjBAzUxi/pub?gid=2100327724&single=true&output=csv';
 
+    // tiers.js holds the tier order for the whole site. It has to be uploaded in the same folder as this page.
+    if (typeof parseTierWeight === 'undefined') {
+      document.getElementById('status').textContent = 'tiers.js didn\u2019t load. Upload tiers.js to the same folder as cards.html (and open the page from your site, not a file preview).';
+      throw new Error('tiers.js is missing: upload it next to cards.html');
+    }
+
     // =====================  SETTINGS YOU CAN CHANGE  =====================
     const START_COINS = 100;       // coins a new player starts with
     const CARD_SHOP_SIZE = 8;      // how many cards are for sale in the Shop at a time
@@ -201,13 +209,15 @@
     // Rarities: [name, first tier it covers]. Each one runs up to just before the next. Sell value = BASE_VALUE x VALUE_GROWTH per step.
     // Everything except Divine is pulled by tier: the stronger the character, the rarer the card.
     const RARITIES = [
-      ['Common',    null],       // 11-C to 10-A
-      ['Uncommon',  '9-C'],      // 9-C to 8-A
-      ['Rare',      'Low 7-C'],  // Tier 7
-      ['Epic',      '6-C'],      // Tier 6 to High 5-A
-      ['Legendary', 'Low 4-C'],  // Low 4-C to High 3-A
-      ['Mythic',    'Low 2-C'],  // Low 2-C and up (except Tier 0)
-      ['Divine',    '0'],        // Tier 0
+      ['Common',     null],         // 11-C to 10-A
+      ['Uncommon',   '9-C'],        // 9-C to 8-A
+      ['Rare',       'Low 7-C'],    // Tier 7
+      ['Super Rare', '6-C'],        // Tier 6
+      ['Epic',       '5-C'],        // Tier 5
+      ['Legendary',  'Low 4-C'],    // Tier 4
+      ['Mythic',     '3-C'],        // Tier 3
+      ['Celestial',  'Low 2-C'],    // Tier 2 and Tier 1 (everything up to, but not including, Tier 0)
+      ['Divine',     '0'],          // Tier 0
     ].map(([name, from], i) => ({ name, value: BASE_VALUE * Math.pow(VALUE_GROWTH, i), min: from ? parseTierWeight(from) : 0 }));
     const DIVINE = RARITIES.length - 1;
 
