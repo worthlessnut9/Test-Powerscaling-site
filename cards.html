@@ -79,13 +79,10 @@
       background: repeating-linear-gradient(45deg, #1b2a52, #1b2a52 10px, #22366b 10px, #22366b 20px); }
     /* the back of a card hints at how good it is */
     .flip.glow-2 .face.back { box-shadow: 0 0 16px 4px #4da3ff; }
-    .flip.glow-3 .face.back { box-shadow: 0 0 16px 4px #2bd6c0; }
-    .flip.glow-4 .face.back { box-shadow: 0 0 16px 4px #b46bff; }
-    .flip.glow-5 .face.back { box-shadow: 0 0 18px 5px #ff9f2e; }
-    .flip.glow-6 .face.back { box-shadow: 0 0 18px 5px #ff4d4d; }
-    .flip.glow-7 .face.back { box-shadow: 0 0 20px 6px #ff4db8; }
-    .flip.glow-8 .face.back { box-shadow: 0 0 24px 8px #fff3b0; }
-    .flip.glow-9 .face.back { box-shadow: 0 0 28px 10px #ff4dff; animation: rainbow 2s linear infinite; }
+    .flip.glow-3 .face.back { box-shadow: 0 0 16px 4px #b46bff; }
+    .flip.glow-4 .face.back { box-shadow: 0 0 18px 5px #ff9f2e; }
+    .flip.glow-5 .face.back { box-shadow: 0 0 20px 6px #ff4d6d; }
+    .flip.glow-6 .face.back { box-shadow: 0 0 28px 10px #ff4dff; animation: rainbow 2s linear infinite; }
     @keyframes rainbow { to { filter: hue-rotate(360deg); } }
     .flip.glow-gold .face.back { box-shadow: 0 0 22px 7px #ffd24a; }
     .flip.flipped[class*="glow-"] .face.front .tcard { animation: hit 0.9s ease-out; }
@@ -163,20 +160,21 @@
     const CARD_SHOP_MINUTES = 30;  // the cards for sale change this often
     const CARD_BUY_MARKUP = 4;     // buying a card in the Shop costs this many times what it sells for
 
-    // Rarities: [name, short name, chance a pulled card is this rarity (%), coin value, first tier it covers]
-    // A character's rarity comes from its tier: each rarity runs from its "first tier" up to just before the next one.
+    const RARITY_DROP = 0.9;        // each tier step up makes a character this much as likely to be pulled (smaller = rarer)
+    const DIVINE_CHANCE = 0.00002;  // chance a pulled card is Divine (a Tier 0 character): 0.002%
+
+    // Rarities: [name, coin value, first tier it covers]. Each one runs up to just before the next.
+    // Everything except Divine is pulled by tier: the stronger the character, the rarer the card.
     const RARITIES = [
-      ['Common',     'C',  70,    2,     null],           // Wall level and below
-      ['Uncommon',   'UC', 18,    6,     '9-B+'],         // Wall+ up to Large Building level
-      ['Rare',       'R',  8.3,   16,    'High 8-C+'],    // Large Building+ up to Multi-City Block+
-      ['Super Rare', 'SR', 2.5,   40,    'Low 7-C'],      // Tier 7
-      ['Epic',       'E',  0.9,   100,   '6-C'],          // Tier 6
-      ['Legendary',  'L',  0.2,   350,   '5-C'],          // Tier 5
-      ['Mythic',     'M',  0.083, 1000,  'Low 4-C'],      // Tiers 4 and 3
-      ['Beyond',     'B',  0.033, 2500,  'Low 2-C'],      // Tier 2
-      ['Celestial',  'CE', 0.010, 10000, 'Low 1-C'],      // Tier 1 (all the outerversal tiers)
-      ['Divine',     'D',  0.002, 50000, '0'],            // Tier 0
-    ].map(([name, abbr, chance, value, from]) => ({ name, abbr, chance: chance / 100, value, min: from ? parseTierWeight(from) : 0 }));
+      ['Common',    5,     null],       // 11-C to 10-A
+      ['Uncommon',  10,    '9-C'],      // 9-C to 8-A
+      ['Rare',      15,    'Low 7-C'],  // Tier 7
+      ['Epic',      20,    '6-C'],      // Tier 6 to High 5-A
+      ['Legendary', 25,    'Low 4-C'],  // Low 4-C to High 3-A
+      ['Mythic',    30,    'Low 2-C'],  // Low 2-C and up (except Tier 0)
+      ['Divine',    50000, '0'],        // Tier 0
+    ].map(([name, value, from]) => ({ name, value, min: from ? parseTierWeight(from) : 0 }));
+    const DIVINE = RARITIES.length - 1;
 
     // Finishes: [code, name, chance each card gets it (%), sell value multiplier]. Each is rolled separately, so they can stack
     // (and their multipliers multiply together).
@@ -198,7 +196,7 @@
       //   characters: ['Goku (Raditz Saga)'],      // optional: only these characters (names must match the sheet)
       //   minTier: '7-C', maxTier: '4-B',          // optional: only tiers from this one up to this one (from your tier list)
       //   colors: ['#e5392e', '#ff9f2e'],            // optional: the two colours of the pack artwork
-      //   luck: 1.5 },                             // optional: above 1 = rarer cards show up more often (1 = normal)
+      //   rarityDrop: 0.95 },                      // optional: closer to 1 = strong characters appear more often
     ];
     const PALETTE = [['#2b5cff', '#7a2bff'], ['#e5392e', '#ff9f2e'], ['#13a67b', '#2bd1ff'], ['#b32bff', '#ff2b8a'], ['#c9971c', '#ffe27a']];   // pack colours when a pack has no colors
     // ======================================================================
@@ -230,7 +228,7 @@
     const sellMult = (flags) => VARIANTS.reduce((m, v) => flags.includes(v[0]) ? m * v[3] : m, 1);
     const sellPrice = (e, flags = '') => Math.max(1, Math.round(RARITIES[e.level].value * sellMult(flags)));
     // how rare a card is overall (used for "rarest first")
-    const rarityScore = (e, flags) => VARIANTS.reduce((m, v) => flags.includes(v[0]) ? m / v[2] : m, 1 / RARITIES[e.level].chance);
+    const rarityScore = (e, flags) => VARIANTS.reduce((m, v) => flags.includes(v[0]) ? m / v[2] : m, 1 / e.w);
     const fmtTime = (ms) => { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 
     // ---- Saved game (kept in this browser, survives refreshes) ----
@@ -252,31 +250,32 @@
       chars.forEach((c) => {
         const name = nameOf(c), t = parseTier(val(c, 'Tier / Tier range', 'Tier'));
         if (!t || !name || byName.has(name)) return;   // characters without a recognised tier can't be pulled
-        byName.set(name, { c, fam: Math.floor(t.rank / SLOT), level: levelOfRank(t.rank) });
+        const fam = Math.floor(t.rank / SLOT);
+        byName.set(name, { c, fam, level: levelOfRank(t.rank), w: Math.pow(RARITY_DROP, fam) });   // stronger tier = smaller weight = rarer
       });
     }
 
-    // Which characters a pack can give, grouped by rarity, with the chance of each rarity
+    // Which characters a pack can give. Divine (Tier 0) characters are kept apart: they come up at DIVINE_CHANCE.
     function poolFor(pack) {
       if (poolCache[pack.id]) return poolCache[pack.id];
       const names = pack.characters && new Set(pack.characters.map((n) => n.toLowerCase()));
       const lo = (pack.minTier && famOf(pack.minTier)) ?? -Infinity, hi = (pack.maxTier && famOf(pack.maxTier)) ?? Infinity;
       const folders = [].concat(pack.folders || pack.folder || []);   // one folder, or several
-      const luck = pack.luck || 1;                                    // above 1 = rarer cards show up more often
-      const groups = RARITIES.map(() => []);
-      [...byName.values()]
-        .filter((e) => e.fam >= lo && e.fam <= hi && (!names || names.has(nameOf(e.c).toLowerCase())) && (!folders.length || folders.some((f) => inFolder(folderPath(e.c), f))))
-        .forEach((e) => groups[e.level].push(e));
-      // a rarity with no characters in this pack is skipped, and the others share its chance
-      const odds = RARITIES.map((r, i) => groups[i].length ? r.chance * Math.pow(luck, i) : 0);
-      return (poolCache[pack.id] = { groups, odds, sum: odds.reduce((a, b) => a + b, 0), pool: groups.flat() });
+      const drop = pack.rarityDrop || RARITY_DROP;
+      const entries = [...byName.values()]
+        .filter((e) => e.fam >= lo && e.fam <= hi && (!names || names.has(nameOf(e.c).toLowerCase())) && (!folders.length || folders.some((f) => inFolder(folderPath(e.c), f))));
+      const items = entries.filter((e) => e.level !== DIVINE).map((e) => ({ e, w: Math.pow(drop, e.fam) }));
+      return (poolCache[pack.id] = { items, sum: items.reduce((t, x) => t + x.w, 0), divine: entries.filter((e) => e.level === DIVINE), pool: entries });
     }
 
-    function pullOne({ groups, odds, sum }) {
-      let r = Math.random() * sum, i = 0;
-      for (; i < odds.length - 1; i++) { r -= odds[i]; if (r < 0) break; }
-      while (!groups[i].length) i--;
-      const e = groups[i][Math.floor(Math.random() * groups[i].length)];
+    function pullOne({ items, sum, divine }) {
+      let e;
+      if (divine.length && (!items.length || Math.random() < DIVINE_CHANCE)) e = divine[Math.floor(Math.random() * divine.length)];
+      else {
+        let r = Math.random() * sum, pick = items[items.length - 1];
+        for (const x of items) { r -= x.w; if (r <= 0) { pick = x; break; } }
+        e = pick.e;
+      }
       const flags = VARIANTS.filter((v) => Math.random() < v[2]).map((v) => v[0]).join('');
       return { e, flags };
     }
@@ -421,14 +420,12 @@
     function makeStock(slot) {
       let a = (slot * 2654435761) >>> 0;   // same time slot = same cards (in every tab and on every visit)
       const rnd = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-      const groups = RARITIES.map(() => []), picks = [];
-      [...byName.values()].forEach((e) => groups[e.level].push(e));
-      while (picks.length < CARD_SHOP_SIZE && groups.some((g) => g.length)) {
-        const odds = RARITIES.map((r, i) => groups[i].length ? r.chance : 0);
-        let r = rnd() * odds.reduce((x, y) => x + y, 0), i = 0;
-        for (; i < odds.length - 1; i++) { r -= odds[i]; if (r < 0) break; }
-        while (!groups[i].length) i--;
-        picks.push(groups[i].splice(Math.floor(rnd() * groups[i].length), 1)[0]);
+      const all = [...byName.values()], regular = all.filter((e) => e.level !== DIVINE), divine = all.filter((e) => e.level === DIVINE), picks = [];
+      while (picks.length < CARD_SHOP_SIZE && (regular.length || divine.length)) {
+        if (divine.length && (!regular.length || rnd() < DIVINE_CHANCE)) { picks.push(divine.splice(Math.floor(rnd() * divine.length), 1)[0]); continue; }
+        let r = rnd() * regular.reduce((sum, e) => sum + e.w, 0), i = 0;   // stronger characters are rarer in the shop too
+        for (; i < regular.length - 1; i++) { r -= regular[i].w; if (r <= 0) break; }
+        picks.push(regular.splice(i, 1)[0]);
       }
       return picks;
     }
