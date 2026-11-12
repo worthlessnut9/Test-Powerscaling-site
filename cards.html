@@ -134,8 +134,12 @@
     </div>
 
     <section id="panel-shop">
-      <h2 class="sec">Packs</h2>
+      <h2 class="sec">Packs <span class="muted" id="pack-timer" style="font-size:0.85rem"></span></h2>
       <div class="cgrid packs" id="shop-packs"></div>
+      <h2 class="sec">Rarity Packs <span class="muted" style="font-size:0.85rem">· every card is the same rarity</span></h2>
+      <div class="cgrid packs" id="shop-rarity"></div>
+      <h2 class="sec">Finish Packs <span class="muted" style="font-size:0.85rem">· every card has the finish</span></h2>
+      <div class="cgrid packs" id="shop-finish"></div>
       <h2 class="sec">Cards <span class="muted" id="card-timer" style="font-size:0.85rem"></span></h2>
       <div class="cgrid" id="shop-cards"></div>
     </section>
@@ -198,7 +202,7 @@
     const START_COINS = 100;       // coins a new player starts with
     const CARD_SHOP_SIZE = 8;      // how many cards are for sale in the Shop at a time
     const CARD_SHOP_FINISHES = 2;  // at least this many of them always have a finish (Shiny, Foil, Gold Border or Full Gold)
-    const CARD_SHOP_MINUTES = 30;  // the cards for sale change this often
+    const CARD_SHOP_MINUTES = 10;  // the cards for sale change this often
     const CARD_BUY_MARKUP = 4;     // buying a card in the Shop costs this many times what it sells for
 
     const RARITY_DROP = 0.9;        // each tier step up makes a character this much as likely to be pulled (smaller = rarer)
@@ -232,9 +236,10 @@
     // cost: coins to buy it (0 = free)                 cooldown: for a FREE pack, a new one arrives this often (seconds);
     //                                                   for a paid pack, the wait before you can buy another (0 = no wait)
     // hold: the most of this pack you can keep in Open Packs. Leave it out for unlimited (paid packs) or 1 (free packs with a wait).
-    const PACKS = [
-      { id: 'basic', name: 'Basic Pack', desc: 'A free pack every minute. Holds up to 3.', size: 3, cost: 0, cooldown: 60, hold: 3 },
-      { id: 'mega', name: 'Mega Pack', desc: 'Ten cards in one go.', size: 10, cost: 100, cooldown: 0 },
+    const FIXED_PACKS = [   // packs that are always available (the Free Pack in Open Packs, paid packs always in the Shop)
+      // (the ids 'basic' and 'mega' are kept from older versions so players keep their saved packs; only the names changed)
+      { id: 'basic', name: 'Free Pack', desc: 'A free pack every minute. Holds up to 3.', size: 4, cost: 0, cooldown: 60, hold: 3 },
+      { id: 'mega', name: 'Basic Pack', desc: 'Eight cards in one go.', size: 8, cost: 100, cooldown: 0 },
 
       // ---- ADD YOUR OWN PACKS HERE. Copy this example, remove the // at the start of each line, and edit it. ----
       // { id: 'dragon-ball', name: 'Dragon Ball Pack', desc: 'Only Dragon Ball characters.', size: 5, cost: 50, cooldown: 0,
@@ -245,6 +250,37 @@
       //   colors: ['#e5392e', '#ff9f2e'],            // optional: the two colours of the pack artwork
       //   rarityDrop: 0.95 },                      // optional: closer to 1 = strong characters appear more often
     ];
+
+    // =====================  ROTATING PACKS  =====================
+    // The Shop has ROTATING_SLOTS extra pack slots. Each one shows a random pack from the list below, and they change every
+    // PACK_ROTATION_MINUTES. Add as many as you like. They use the same settings as the packs above (they must cost coins,
+    // and each needs its own unique id). The three below are just examples: edit or delete them.
+    const ROTATING_SLOTS = 2;
+    const PACK_ROTATION_MINUTES = 10;
+    const ROTATING_PACKS = [
+      { id: 'rot-power',  name: 'Power Pack',    desc: 'Only strong characters (Tier 7 and up).', size: 5, cost: 250, cooldown: 0, minTier: 'Low 7-C' },
+      { id: 'rot-lucky',  name: 'Lucky Pack',    desc: 'Rarer cards show up more often.',          size: 6, cost: 200, cooldown: 0, rarityDrop: 0.97 },
+      { id: 'rot-heavy',  name: 'Heavy Hitters', desc: 'Tier 5 and up. Big cards only.',           size: 4, cost: 400, cooldown: 0, minTier: '5-C' },
+      // ---- ADD YOUR OWN HERE (same options as the packs above: folder, characters, minTier, maxTier, colors, rarityDrop, hold) ----
+    ];
+
+    // =====================  RARITY AND FINISH PACKS (made automatically)  =====================
+    // One pack per rarity: every card in it is that rarity. The price goes up RARITY_PACK_STEP coins per rarity.
+    const RARITY_PACK_SIZE = 8, RARITY_PACK_BASE = 100, RARITY_PACK_STEP = 100;
+    // One pack per finish: every card in it has that finish (other finishes can still stack on top by chance).
+    // Prices: rarer finishes cost more. Change the numbers here.
+    const FINISH_PACK_SIZE = 5;
+    const FINISH_PACK_COST = { f: 300, s: 500, b: 800, g: 1500 };   // f = Foil, s = Shiny, b = Gold Border, g = Full Gold
+    const slug = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const RARITY_COLORS = [['#8a8f99', '#c9ced6'], ['#13a67b', '#7be0b4'], ['#2b5cff', '#2bd1ff'], ['#7a2bff', '#b98aff'], ['#b32bff', '#ff2b8a'],
+      ['#e5392e', '#ff9f2e'], ['#ff6a00', '#ffd23f'], ['#00b3a4', '#7affd9'], ['#1b1f3a', '#6a5cff'], ['#c9971c', '#fff3b0']];
+    const FINISH_COLORS = { f: ['#2bd1ff', '#e9f7ff'], s: ['#ff2bd6', '#2bd1ff'], b: ['#c9971c', '#ffe27a'], g: ['#a87400', '#ffd34a'] };
+    const RARITY_PACKS = RARITIES.map((r, i) => ({ id: 'rarity-' + slug(r.name), name: r.name + ' Pack', desc: RARITY_PACK_SIZE + ' cards, every one ' + r.name + '.',
+      size: RARITY_PACK_SIZE, cost: RARITY_PACK_BASE + RARITY_PACK_STEP * i, cooldown: 0, rarity: i, colors: RARITY_COLORS[i % RARITY_COLORS.length] }));
+    const FINISH_PACKS = VARIANTS.map(([c, n]) => ({ id: 'finish-' + c, name: n + ' Pack', desc: 'Every card has the ' + n + ' finish.',
+      size: FINISH_PACK_SIZE, cost: FINISH_PACK_COST[c], cooldown: 0, finish: c, colors: FINISH_COLORS[c] })).sort((a, b) => a.cost - b.cost);
+    const PACKS = FIXED_PACKS.concat(ROTATING_PACKS, RARITY_PACKS, FINISH_PACKS);   // every pack in the game
+
     const PALETTE = [['#2b5cff', '#7a2bff'], ['#e5392e', '#ff9f2e'], ['#13a67b', '#2bd1ff'], ['#b32bff', '#ff2b8a'], ['#c9971c', '#ffe27a']];   // pack colours when a pack has no colors
     // ======================================================================
 
@@ -310,12 +346,12 @@
       const folders = [].concat(pack.folders || pack.folder || []);   // one folder, or several
       const drop = pack.rarityDrop || RARITY_DROP;
       const entries = [...byName.values()]
-        .filter((e) => e.fam >= lo && e.fam <= hi && (!names || names.has(nameOf(e.c).toLowerCase())) && (!folders.length || folders.some((f) => inFolder(folderPath(e.c), f))));
+        .filter((e) => e.fam >= lo && e.fam <= hi && (pack.rarity == null || e.level === pack.rarity) && (!names || names.has(nameOf(e.c).toLowerCase())) && (!folders.length || folders.some((f) => inFolder(folderPath(e.c), f))));
       const items = entries.filter((e) => e.level !== DIVINE).map((e) => ({ e, w: Math.pow(drop, e.fam) }));
-      return (poolCache[pack.id] = { items, sum: items.reduce((t, x) => t + x.w, 0), divine: entries.filter((e) => e.level === DIVINE), pool: entries });
+      return (poolCache[pack.id] = { items, sum: items.reduce((t, x) => t + x.w, 0), divine: entries.filter((e) => e.level === DIVINE), pool: entries, finish: pack.finish });
     }
 
-    function pullOne({ items, sum, divine }) {
+    function pullOne({ items, sum, divine, finish }) {
       let e;
       if (divine.length && (!items.length || Math.random() < DIVINE_CHANCE)) e = divine[Math.floor(Math.random() * divine.length)];
       else {
@@ -323,7 +359,7 @@
         for (const x of items) { r -= x.w; if (r <= 0) { pick = x; break; } }
         e = pick.e;
       }
-      const flags = VARIANTS.filter((v) => Math.random() < v[2]).map((v) => v[0]).join('');
+      const flags = VARIANTS.filter((v) => v[0] === finish || Math.random() < v[2]).map((v) => v[0]).join('');
       return { e, flags };
     }
 
@@ -345,6 +381,8 @@
       const parts = [].concat(p.folders || p.folder || []);
       if (p.characters && p.characters.length) parts.push(p.characters.length + ' chosen characters');
       if (p.minTier || p.maxTier) parts.push('tiers ' + (p.minTier || 'lowest') + ' to ' + (p.maxTier || 'highest'));
+      if (p.rarity != null) parts.push(RARITIES[p.rarity].name + ' cards only');
+      if (p.finish) parts.push(VARIANTS.find((v) => v[0] === p.finish)[1] + ' on every card');
       return parts.length ? parts.join(', ') : 'Everything';
     }
 
@@ -363,13 +401,39 @@
 
     const everyText = (p) => p.cooldown ? ' every ' + (p.cooldown % 60 ? p.cooldown + ' sec' : p.cooldown / 60 + ' min') : '';
 
+    // The packs in the rotating slots right now (the same for everyone during the same time window)
+    const rotSlot = () => Math.floor(Date.now() / (PACK_ROTATION_MINUTES * 60000));
+    let shownSlot = null, rotating = [];
+
+    function pickRotating(slot) {
+      if (!loaded) return [];
+      let a = ((slot * 2246822519) ^ 0x9E3779B9) >>> 0;
+      const rnd = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+      const left = ROTATING_PACKS.filter((p) => p.cost > 0 && poolFor(p).pool.length), out = [];   // skips packs that would have no characters
+      while (out.length < ROTATING_SLOTS && left.length) out.push(left.splice(Math.floor(rnd() * left.length), 1)[0]);
+      return out;
+    }
+
     // The Shop sells packs that cost coins. Free packs live in the Open tab.
     function renderShop() {
-      const paid = PACKS.filter((p) => p.cost > 0);
-      $('shop-packs').innerHTML = paid.length ? paid.map((p) => `<div class="shop-item">${packHtml(p)}
+      shownSlot = rotSlot();
+      rotating = pickRotating(shownSlot);
+      const item = (p, tag) => `<div class="shop-item">${packHtml(p)}${tag ? `<div class="chip">${tag}</div>` : ''}
         <p class="muted" style="margin:0">${esc(p.desc || '')}</p><div class="muted">Pulls from: ${esc(sourceText(p))}</div>
         <div>${p.cost} coins${everyText(p)}${isFinite(holdOf(p)) ? ' \u00b7 holds up to ' + holdOf(p) : ''}</div>
-        <button class="btn primary" data-buy="${esc(p.id)}" disabled>Buy</button></div>`).join('') : '<p class="muted">No packs for sale right now.</p>';
+        <button class="btn primary" data-buy="${esc(p.id)}" disabled>Buy</button></div>`;
+      const fixed = FIXED_PACKS.filter((p) => p.cost > 0);
+      const html = fixed.map((p) => item(p)).join('') + rotating.map((p) => item(p, 'Rotating')).join('');
+      $('shop-packs').innerHTML = html || '<p class="muted">No packs for sale right now.</p>';
+      $('shop-rarity').innerHTML = RARITY_PACKS.map((p) => item(p)).join('');
+      $('shop-finish').innerHTML = FINISH_PACKS.map((p) => item(p)).join('');
+      refreshRotation();
+      refreshPacks();
+    }
+
+    function refreshRotation() {
+      if (shownSlot !== null && rotSlot() !== shownSlot) { renderShop(); return; }
+      $('pack-timer').textContent = ROTATING_PACKS.length ? '\u00b7 new rotating packs in ' + fmtTime((shownSlot + 1) * PACK_ROTATION_MINUTES * 60000 - Date.now()) : '';
     }
 
     // Open tab: the free packs (always here) plus any packs you bought
@@ -645,7 +709,7 @@
       renderAll();
     }
 
-    $('shop-packs').addEventListener('click', (e) => { const b = e.target.closest('[data-buy]'); if (b) buyPack(PACKS.find((p) => p.id === b.dataset.buy)); });
+    $('panel-shop').addEventListener('click', (e) => { const b = e.target.closest('[data-buy]'); if (b) buyPack(PACKS.find((p) => p.id === b.dataset.buy)); });
     $('shop-cards').addEventListener('click', (e) => { const b = e.target.closest('[data-buycard]'); if (b) buyCard(b.dataset.buycard); });
     $('owned').addEventListener('click', (e) => { const b = e.target.closest('[data-open]'); if (b) openPack(PACKS.find((p) => p.id === b.dataset.open)); });
     $('pack').addEventListener('click', (e) => { const f = e.target.closest('.flip'); if (f) f.classList.add('flipped'); });
@@ -732,7 +796,7 @@
     showTab();
     renderAll();
     save();   // a brand-new player's starting coins are saved straight away
-    setInterval(() => { if (updateRegen()) renderAll(); refreshPacks(); refreshCardShop(); }, 1000);   // a free pack arrived? update the Open tab
+    setInterval(() => { if (updateRegen()) renderAll(); refreshRotation(); refreshPacks(); refreshCardShop(); }, 1000);   // a free pack arrived? update the Open tab
 
     if (typeof Papa === 'undefined' || typeof parseTier === 'undefined') $('status').textContent = 'Couldn\u2019t load the card game files.';
     else Papa.parse(SHEET_CSV_URL, {
@@ -741,6 +805,7 @@
         prepare(r.data.filter((i) => nameOf(i)));
         loaded = true;
         fillFolders();
+        renderShop();   // now the rotating packs can be picked
         renderCardShop();
         $('status').textContent = `${byName.size} characters can be pulled.`;
         renderAll();
