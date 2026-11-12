@@ -552,6 +552,15 @@
       return true;
     }
 
+    // Chance that ONE pull from an "everything" pack (the Free and Basic packs) is this character, shown as "1 in N"
+    function oddsText(e) {
+      const pool = poolFor(PACKS.find((p) => p.id === 'mega'));
+      const prob = e.level === DIVINE ? DIVINE_CHANCE / (pool.divine.length || 1) : (1 - (pool.divine.length ? DIVINE_CHANCE : 0)) * Math.pow(RARITY_DROP, e.fam) / pool.sum;
+      if (!(prob > 0)) return '';
+      const n = 1 / prob;
+      return '1 in ' + (n >= 100 ? Math.round(n) : n.toFixed(1)).toLocaleString() + ' pulls';
+    }
+
     function renderCollection() {
       const ownedNames = new Set(Object.keys(state.cards).map((k) => k.split('||')[0]));
       let all, rows;
@@ -580,7 +589,7 @@
         : total ? `Showing ${rows.length} of ${all.length} ${F.view === 'fav' ? 'favorited ' : ''}card types${filtering ? ' (filters on)' : ''}` : '';
 
       $('collection').innerHTML = rows.length ? rows.map((r) => {
-        if (F.view === 'missing') return `<div class="ghost">${cardHtml(r.e, '', 0, false, '<div class="muted" style="text-align:center;margin-top:8px">Not owned yet</div>')}</div>`;
+        if (F.view === 'missing') return `<div class="ghost">${cardHtml(r.e, '', 0, false, `<div class="muted" style="text-align:center;margin-top:8px">Not owned yet<br><b style="color:#fff">Odds: ${oddsText(r.e)}</b></div>`)}</div>`;
         const fav = !!state.fav[r.key];
         return cardHtml(r.e, r.flags, r.n, false,
           `<button class="btn fav${fav ? ' on' : ''}" data-fav="${esc(r.key)}">${fav ? '★ Favorited' : '☆ Favorite'}</button>
