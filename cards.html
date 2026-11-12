@@ -51,8 +51,28 @@
     .tcard.goldborder { border-color: #f5c518; }
     .tcard.fullgold { border-color: #f5c518; background: linear-gradient(135deg, #e0b030, #9a6f0a); text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
     .tcard.fullgold .stat, .tcard.fullgold .chip { background: rgba(255,215,90,0.55); border-color: #f5c518; }
-    .pack .tcard { animation: pop 0.35s ease both; }
-    @keyframes pop { from { transform: scale(0.85); opacity: 0; } to { transform: none; opacity: 1; } }
+    /* Pack opening: the pack shakes, then cards are dealt face down and flip when clicked */
+    .pack-wrap { grid-column: 1 / -1; display: flex; justify-content: center; padding: 20px 0; }
+    .pack-art { width: 190px; height: 260px; border-radius: 14px; border: 4px solid #fff; display: flex; align-items: center; justify-content: center; text-align: center; color: #fff; font-weight: 800; font-size: 1.3rem; padding: 14px;
+      background: linear-gradient(160deg, #2b5cff, #7a2bff 60%, #ff2bb0); box-shadow: 0 0 30px rgba(122,43,255,0.6); animation: shake 1s ease-in-out both; }
+    @keyframes shake { 0%, 100% { transform: rotate(0); } 10% { transform: rotate(-4deg); } 20% { transform: rotate(4deg); } 30% { transform: rotate(-5deg); } 40% { transform: rotate(5deg); }
+      50% { transform: rotate(-6deg) scale(1.05); } 60% { transform: rotate(6deg) scale(1.08); } 80% { transform: scale(1.15); filter: brightness(1.6); } 100% { transform: scale(1.3); opacity: 0; filter: brightness(2.5); } }
+    .flip { perspective: 900px; cursor: pointer; animation: deal 0.4s ease both; animation-delay: calc(var(--i) * 90ms); }
+    @keyframes deal { from { transform: translateY(-40px) scale(0.8); opacity: 0; } to { transform: none; opacity: 1; } }
+    .flip-inner { display: grid; transition: transform 0.6s; transform-style: preserve-3d; }
+    .flip.flipped .flip-inner { transform: rotateY(180deg); }
+    .face { grid-area: 1 / 1; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+    .face.front { transform: rotateY(180deg); }
+    .face.back { display: flex; align-items: center; justify-content: center; text-align: center; padding: 10px; color: #fff; font-weight: 700; border-radius: 14px; border: 4px solid #fff;
+      background: repeating-linear-gradient(45deg, #1b2a52, #1b2a52 10px, #22366b 10px, #22366b 20px); }
+    /* the back of a card hints at how good it is */
+    .flip.glow-2 .face.back { box-shadow: 0 0 16px 4px #4da3ff; }
+    .flip.glow-3 .face.back { box-shadow: 0 0 16px 4px #b46bff; }
+    .flip.glow-4 .face.back { box-shadow: 0 0 18px 5px #ff9f2e; }
+    .flip.glow-5 .face.back { box-shadow: 0 0 20px 6px #ff4d6d; }
+    .flip.glow-gold .face.back { box-shadow: 0 0 22px 7px #ffd24a; }
+    .flip.flipped[class*="glow-"] .face.front .tcard { animation: hit 0.9s ease-out; }
+    @keyframes hit { 0% { filter: brightness(2.6) saturate(1.6); } 100% { filter: none; } }
   </style>
 </head>
 <body>
@@ -87,7 +107,7 @@
     <section id="panel-packs">
       <div class="cgrid packs" id="packs"></div>
       <div id="pack-box" hidden>
-        <h2 class="sec">Latest pack</h2>
+        <div class="bar"><h2 class="sec" style="margin:0">Latest pack <span class="muted" style="font-size:0.85rem">click a card to flip it</span></h2><button class="btn small" id="reveal" hidden>Reveal all</button></div>
         <div class="cgrid pack" id="pack"></div>
       </div>
     </section>
@@ -133,7 +153,8 @@
 
       // ---- ADD YOUR OWN PACKS HERE. Copy this example, remove the // at the start of each line, and edit it. ----
       // { id: 'dragon-ball', name: 'Dragon Ball Pack', desc: 'Only Dragon Ball characters.', size: 5, cost: 50, cooldown: 0,
-      //   folder: 'Dragon Ball',                   // optional: only characters filed in this folder (from the Folders column)
+      //   folder: 'Dragon Ball',                   // optional: only characters in this folder. Use a path for a sub-folder: 'Dragon Ball, Saiyan Saga'
+      //   // folder: ['Marvel', 'DC'],             // ...or a list of folders. Use 'Not Sorted' for characters with no folder
       //   characters: ['Goku (Raditz Saga)'],      // optional: only these characters (names must match the sheet)
       //   minTier: '7-C', maxTier: '4-B',          // optional: only tiers from this one up to this one (from your tier list)
       //   rarityDrop: 0.95 },                      // optional: closer to 1 = strong characters appear more often
@@ -156,7 +177,10 @@
       if (/^https?:\/\//i.test(raw)) return raw;
       return './Images/' + raw.replace(/^(\.\/)?images\//i, '').replace(/[#?]/g, (x) => encodeURIComponent(x));
     };
-    const folderOf = (c) => val(c, 'Folders', 'Folder').split(/\s*,\s*/).map((x) => x.toLowerCase());
+    // A character's folder path from the Folders column. Characters with no folder are in "Not Sorted".
+    const folderPath = (c) => { const parts = val(c, 'Folders', 'Folder').split(/\s*,\s*/).filter(Boolean).map((x) => x.toLowerCase()); return parts.length ? parts : ['not sorted']; };
+    // True if the folder spec ("Dragon Ball" or a path like "Marvel, MCU") appears in the character's path
+    const inFolder = (path, spec) => { const want = String(spec).split(/\s*,\s*/).filter(Boolean).map((x) => x.toLowerCase()); return want.length > 0 && path.some((_, i) => want.every((w, j) => path[i + j] === w)); };
     const famOf = (tierText) => { const r = parseTier(tierText); return r ? Math.floor(r.rank / SLOT) : null; };
     const rarityLevel = (fam) => RARITIES.reduce((lvl, [min], i) => fam >= min ? i : lvl, 0);
     const flagsOf = (key) => key.split('||')[1] || '';
@@ -177,7 +201,7 @@
     const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (err) { /* storage unavailable */ } };
 
     // ---- Characters and pulling ----
-    let loaded = false;
+    let loaded = false, busy = false;
     const byName = new Map();   // name -> { c, fam, w }
     const poolCache = {};
 
@@ -194,8 +218,9 @@
       const names = pack.characters && new Set(pack.characters.map((n) => n.toLowerCase()));
       const lo = (pack.minTier && famOf(pack.minTier)) ?? -Infinity, hi = (pack.maxTier && famOf(pack.maxTier)) ?? Infinity;
       const drop = pack.rarityDrop || RARITY_DROP;
+      const folders = [].concat(pack.folders || pack.folder || []);   // one folder, or several
       const pool = [...byName.values()]
-        .filter((e) => e.fam >= lo && e.fam <= hi && (!names || names.has(nameOf(e.c).toLowerCase())) && (!pack.folder || folderOf(e.c).includes(pack.folder.toLowerCase())))
+        .filter((e) => e.fam >= lo && e.fam <= hi && (!names || names.has(nameOf(e.c).toLowerCase())) && (!folders.length || folders.some((f) => inFolder(folderPath(e.c), f))))
         .map((e) => ({ e, w: Math.pow(drop, e.fam) }));   // stronger tier = smaller weight = rarer
       return (poolCache[pack.id] = { pool, sum: pool.reduce((s, p) => s + p.w, 0) });
     }
@@ -220,8 +245,23 @@
         <div class="stat"><span>Speed</span>${esc(val(c, 'Speed') || '—')}</div>${extra}</div>`;
     }
 
+    // Text shown on a pack: where its cards come from
+    function sourceText(p) {
+      const parts = [].concat(p.folders || p.folder || []);
+      if (p.characters && p.characters.length) parts.push(p.characters.length + ' chosen characters');
+      if (p.minTier || p.maxTier) parts.push('tiers ' + (p.minTier || 'lowest') + ' to ' + (p.maxTier || 'highest'));
+      return parts.length ? parts.join(', ') : 'Everything';
+    }
+
+    // One card as it is dealt in a pack: face down, with a glow on the back for the good ones
+    function flipHtml(e, flags, isNew, i, packName) {
+      const lvl = rarityLevel(e.fam), glow = flags.includes('g') ? 'glow-gold' : lvl >= 2 ? 'glow-' + lvl : '';
+      return `<div class="flip ${glow}" style="--i:${i}"><div class="flip-inner"><div class="face back">${esc(packName)}</div><div class="face front">${cardHtml(e, flags, 0, isNew)}</div></div></div>`;
+    }
+
     function renderPacks() {
       $('packs').innerHTML = PACKS.map((p) => `<div class="pack-card"><h3>${esc(p.name)}</h3><p class="muted">${esc(p.desc || '')}</p>
+        <div class="muted">Pulls from: ${esc(sourceText(p))}</div>
         <div>${p.size} cards &middot; ${p.cost ? p.cost + ' coins' : 'Free'}${p.cooldown ? ' every ' + (p.cooldown % 60 ? p.cooldown + ' sec' : p.cooldown / 60 + ' min') : ''}</div>
         <button class="btn primary" data-pack="${esc(p.id)}" disabled>Open</button></div>`).join('');
     }
@@ -232,6 +272,7 @@
         const p = PACKS.find((x) => x.id === btn.dataset.pack), wait = Math.max(0, (state.ready[p.id] || 0) - now);
         let label = p.cost ? `Open (${p.cost} coins)` : 'Open (free)', off = false;
         if (!loaded) { label = 'Loading...'; off = true; }
+        else if (busy) { label = 'Opening...'; off = true; }
         else if (!poolFor(p).pool.length) { label = 'No characters match'; off = true; }
         else if (wait > 0) { label = 'Ready in ' + fmtTime(wait); off = true; }
         else if (state.coins < p.cost) { label = `Need ${p.cost} coins`; off = true; }
@@ -266,21 +307,30 @@
 
     // ---- Actions ----
     function openPack(p) {
-      if (!loaded || (state.ready[p.id] || 0) > Date.now() || state.coins < p.cost) return;
+      if (!loaded || busy || (state.ready[p.id] || 0) > Date.now() || state.coins < p.cost) return;
       const pool = poolFor(p);
       if (!pool.pool.length) return;
       state.coins -= p.cost;
       if (p.cooldown) state.ready[p.id] = Date.now() + p.cooldown * 1000;
-      const html = [];
+      const pulls = [];
       for (let i = 0; i < p.size; i++) {
-        const { e, flags } = pullOne(pool), key = nameOf(e.c) + '||' + flags, isNew = !state.cards[key];
+        const { e, flags } = pullOne(pool), key = nameOf(e.c) + '||' + flags;
+        pulls.push({ e, flags, isNew: !state.cards[key] });
         state.cards[key] = (state.cards[key] || 0) + 1;
-        html.push(cardHtml(e, flags, 0, isNew));
       }
+      busy = true;
       save();
-      $('pack').innerHTML = html.join('');
-      $('pack-box').hidden = false;
       renderAll();
+      // the pack shakes, then the cards are dealt face down for you to flip
+      $('pack-box').hidden = false;
+      $('reveal').hidden = true;
+      $('pack').innerHTML = `<div class="pack-wrap"><div class="pack-art"><div>${esc(p.name)}</div></div></div>`;
+      setTimeout(() => {
+        $('pack').innerHTML = pulls.map((x, i) => flipHtml(x.e, x.flags, x.isNew, i, p.name)).join('');
+        $('reveal').hidden = false;
+        busy = false;
+        refreshPacks();
+      }, 1000);
     }
 
     function sellOne(key) {
@@ -295,6 +345,10 @@
     }
 
     $('packs').addEventListener('click', (e) => { const b = e.target.closest('[data-pack]'); if (b) openPack(PACKS.find((p) => p.id === b.dataset.pack)); });
+    $('pack').addEventListener('click', (e) => { const f = e.target.closest('.flip'); if (f) f.classList.add('flipped'); });
+    $('reveal').addEventListener('click', () => {
+      document.querySelectorAll('#pack .flip:not(.flipped)').forEach((f, i) => setTimeout(() => f.classList.add('flipped'), i * 200));
+    });
     $('collection').addEventListener('click', (e) => { const b = e.target.closest('[data-sell]'); if (b) sellOne(b.dataset.sell); });
 
     $('sort').addEventListener('change', renderCollection);
