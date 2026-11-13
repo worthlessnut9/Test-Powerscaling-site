@@ -41,10 +41,6 @@
       <h2>Cards</h2>
       <p class="muted" style="margin-top:0">You have <b id="coins" style="color:#fff">...</b> coins and <b id="cards" style="color:#fff">...</b> cards.</p>
       <div class="row">
-        <div class="what"><b>Give myself a Divine Pack</b><span class="muted">Adds 1 Divine Pack to your Open tab. Each press adds another. It&rsquo;s a 1-card pack with a guaranteed Divine character.</span></div>
-        <button class="btn" id="divine">+1 Divine Pack</button>
-      </div>
-      <div class="row">
         <div class="what"><b>Hard reset</b><span class="muted">Deletes every card, pack and favorite, and sets your coins back to <span id="start">100</span>. It can&rsquo;t be undone.</span></div>
         <button class="btn danger" id="reset">Hard reset</button>
       </div>
@@ -54,7 +50,7 @@
 
   <script>
     // Uses the same save as cards.html, so the two pages always agree
-    const KEY = 'powerscaling-cards-v2', OLD_KEY = 'powerscaling-cards-v1', START_COINS = 100, DIVINE_PACK_ID = 'rarity-divine';   // the id of the Divine Pack in cards.html
+    const KEY = 'powerscaling-cards-v2', OLD_KEY = 'powerscaling-cards-v1', START_COINS = 100;
     const $ = (id) => document.getElementById(id);
     const fresh = () => ({ coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {}, fav: {} });
     let storageOk = true;
@@ -77,13 +73,6 @@
       $('start').textContent = START_COINS;
     }
 
-    $('divine').addEventListener('click', () => {
-      const s = load();
-      s.packs = s.packs || {};
-      s.packs[DIVINE_PACK_ID] = (+s.packs[DIVINE_PACK_ID] || 0) + 1;
-      if (!save(s)) return show('Could not save. Your browser is blocking storage for this site.', true);
-      show('Added a Divine Pack. You now have ' + s.packs[DIVINE_PACK_ID] + '. Open it from the Open tab on the Cards page.');
-    });
     $('reset').addEventListener('click', () => {
       if (!confirm('Hard reset? This deletes ALL your cards, packs and favorites and sets your coins back to ' + START_COINS + '. It can’t be undone.')) return;
       try { localStorage.removeItem(OLD_KEY); } catch (e) { /* ignore */ }   // the first version's cards would otherwise come back
