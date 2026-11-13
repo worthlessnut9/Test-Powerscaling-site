@@ -192,7 +192,7 @@
           <option value="price-asc">Sort: price, low to high</option>
         </select>
         <button class="btn small" id="sell-dupes">Sell all duplicates</button>
-        <button class="btn small" id="reset" style="margin-left:auto">Reset everything</button>
+        <button class="btn small" id="sell-showing" style="margin-left:auto" disabled>Sell everything showing</button>
       </div>
       <div class="filters" id="filters">
         <div class="frow">
@@ -295,6 +295,8 @@
       { id: 'rot-karatekid',  name: 'Karate Kid Pack',    desc: 'Only Karate Kid characters.',    size: 8, cost: 200, cooldown: 0, folder: 'Karate Kid',    colors: ['#c4161c', '#f2f2f2'] },
       { id: 'rot-opm',        name: 'One Punch Man Pack', desc: 'Only One Punch Man characters.', size: 8, cost: 200, cooldown: 0, folder: 'One Punch Man', colors: ['#ffd23f', '#e5392e'] },
       { id: 'rot-jjk',        name: 'Jujutsu Kaisen Pack', desc: 'Only Jujutsu Kaisen characters.', size: 8, cost: 200, cooldown: 0, folder: 'Jujutsu Kaisen', colors: ['#2b1fa8', '#2bd1ff'] },
+      { id: 'rot-hxh',        name: 'Hunter x Hunter Pack', desc: 'Only Hunter x Hunter characters.', size: 8, cost: 200, cooldown: 0,
+        folders: ['Hunter x Hunter', 'Hunter Hunter', 'HxH'], colors: ['#1f8a3b', '#d6f26b'] },   // any of these folder names works
       // ---- ADD YOUR OWN HERE (same options as the packs above: folder, characters, minTier, maxTier, colors, rarityDrop, hold) ----
     ];
 
@@ -620,6 +622,7 @@
       return '1 in ' + (n >= 100 ? Math.round(n) : n.toFixed(1)).toLocaleString() + ' pulls';
     }
 
+    let sellShowing = [];   // the cards the "Sell everything showing" button would sell right now
     function renderCollection() {
       const ownedNames = new Set(Object.keys(state.cards).map((k) => k.split('||')[0]));
       let all, rows;
@@ -642,7 +645,13 @@
         : byScore);
 
       const total = Object.values(state.cards).reduce((t, n) => t + n, 0);
-      $('stats').textContent = total ? `· ${total} cards, ${Object.keys(state.cards).length} unique` : '';
+      const worth = Object.entries(state.cards).reduce((t, [key, n]) => { const e = byName.get(key.split('||')[0]); return e ? t + n * sellPrice(e, flagsOf(key)) : t; }, 0);   // everything you own, favorites included
+      $('stats').textContent = total ? `· ${total} cards, ${Object.keys(state.cards).length} unique · Collection value: ${worth.toLocaleString()} coins` : '';
+      // "Sell everything showing": every copy of every card in the current view, except favorites
+      sellShowing = F.view === 'missing' ? [] : rows.filter((r) => !state.fav[r.key]);
+      const showCards = sellShowing.reduce((t, r) => t + r.n, 0), showCoins = sellShowing.reduce((t, r) => t + r.n * sellPrice(r.e, r.flags), 0);
+      $('sell-showing').disabled = !showCards;
+      $('sell-showing').textContent = showCards ? `Sell everything showing (${showCards.toLocaleString()} cards for ${showCoins.toLocaleString()} coins)` : 'Sell everything showing';
       const filtering = F.q || F.folder || F.from !== '' || F.to !== '' || F.rarity.size || F.finish.size || F.plain || F.dupes;
       $('shown').textContent = F.view === 'missing' ? `${rows.length} of ${all.length} characters you don’t own yet`
         : total ? `Showing ${rows.length} of ${all.length} ${F.view === 'fav' ? 'favorited ' : ''}card types${filtering ? ' (filters on)' : ''}` : '';
@@ -844,11 +853,15 @@
       renderAll();
     });
 
-    $('reset').addEventListener('click', () => {
-      if (!confirm(`Reset everything? This deletes all your cards and sets your coins back to ${START_COINS}. It can\u2019t be undone.`)) return;
-      state = { coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {}, fav: {} };
+    $('sell-showing').addEventListener('click', () => {
+      const rows = sellShowing.filter((r) => state.cards[r.key] > 0 && !state.fav[r.key]);
+      const cards = rows.reduce((t, r) => t + state.cards[r.key], 0), coins = rows.reduce((t, r) => t + state.cards[r.key] * sellPrice(r.e, r.flags), 0);
+      if (!cards) return;
+      const filtering = F.q || F.folder || F.from !== '' || F.to !== '' || F.rarity.size || F.finish.size || F.plain || F.dupes;
+      if (!confirm(`Sell ${cards.toLocaleString()} cards (${rows.length.toLocaleString()} different ones, every copy) for ${coins.toLocaleString()} coins?\n\n${filtering ? 'Only the cards matching your current filters will be sold. ' : 'No filters are on, so this sells your whole collection. '}Favorited cards are never sold.`)) return;
+      rows.forEach((r) => { delete state.cards[r.key]; });
+      state.coins += coins;
       save();
-      $('pack-box').hidden = true;
       renderAll();
     });
 
