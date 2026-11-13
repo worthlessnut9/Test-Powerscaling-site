@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - Powerscaling Database</title>
+  <link rel="stylesheet" href="site.css">
+  <style>
+    .row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 14px 0; border-top: 1px solid var(--border-color); }
+    .row:first-of-type { border-top: none; }
+    .row .what { flex: 1; min-width: 220px; }
+    .row .what b { color: #fff; display: block; margin-bottom: 2px; }
+    .btn { background: var(--tag-bg); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 9px 16px; font-size: 0.95rem; cursor: pointer; }
+    .btn:hover { border-color: var(--accent); color: #fff; }
+    .btn.danger { border-color: #8b2b2b; color: #ff8a8a; }
+    .btn.danger:hover { background: #5a1c1c; border-color: #ff6b6b; color: #fff; }
+    #msg { min-height: 1.4em; margin: 10px 0 0; color: #7ee787; }
+    #msg.err { color: #ff8a8a; }
+  </style>
+</head>
+<body>
+  <nav class="site-nav">
+    <a class="brand" href="index.html">Powerscaling Database</a>
+    <div class="links">
+      <a href="index.html">Home</a>
+      <a href="database.html">Characters</a>
+      <a href="compare.html">Compare</a>
+      <a href="cards.html">Cards</a>
+      <a href="calculators.html">Calculators</a>
+      <a href="terms.html">Terms</a>
+      <a href="settings.html" aria-current="page">Settings</a>
+    </div>
+  </nav>
+  <main class="container">
+    <header>
+      <h1>Settings</h1>
+      <p class="muted">Options for the Cards game. Everything is saved in this browser.</p>
+    </header>
+
+    <section class="panel">
+      <h2>Cards</h2>
+      <p class="muted" style="margin-top:0">You have <b id="coins" style="color:#fff">...</b> coins and <b id="cards" style="color:#fff">...</b> cards.</p>
+      <div class="row">
+        <div class="what"><b>Add 10,000 coins</b><span class="muted">Gives you 10,000 coins. You can press it as many times as you like.</span></div>
+        <button class="btn" id="gold">+10,000 coins</button>
+      </div>
+      <div class="row">
+        <div class="what"><b>Hard reset</b><span class="muted">Deletes every card, pack and favorite, and sets your coins back to <span id="start">100</span>. It can&rsquo;t be undone.</span></div>
+        <button class="btn danger" id="reset">Hard reset</button>
+      </div>
+      <p id="msg" role="status"></p>
+    </section>
+  </main>
+
+  <script>
+    // Uses the same save as cards.html, so the two pages always agree
+    const KEY = 'powerscaling-cards-v2', OLD_KEY = 'powerscaling-cards-v1', START_COINS = 100, GRANT = 10000;
+    const $ = (id) => document.getElementById(id);
+    const fresh = () => ({ coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {}, fav: {} });
+    let storageOk = true;
+
+    function load() {
+      try {
+        const s = JSON.parse(localStorage.getItem(KEY));
+        if (s && typeof s.coins === 'number') return { ...fresh(), ...s };
+      } catch (e) { /* unreadable save: treat as new */ }
+      return fresh();
+    }
+    function save(state) {
+      try { localStorage.setItem(KEY, JSON.stringify(state)); return true; } catch (e) { return false; }
+    }
+    function show(text, bad) { const m = $('msg'); m.textContent = text; m.className = bad ? 'err' : ''; }
+    function render() {
+      const s = load();
+      $('coins').textContent = Math.floor(s.coins).toLocaleString();
+      $('cards').textContent = Object.values(s.cards || {}).reduce((t, n) => t + (+n || 0), 0).toLocaleString();
+      $('start').textContent = START_COINS;
+    }
+
+    $('gold').addEventListener('click', () => {
+      const s = load();
+      s.coins += GRANT;
+      if (!save(s)) return show('Could not save. Your browser is blocking storage for this site.', true);
+      render(); show('Added ' + GRANT.toLocaleString() + ' coins.');
+    });
+    $('reset').addEventListener('click', () => {
+      if (!confirm('Hard reset? This deletes ALL your cards, packs and favorites and sets your coins back to ' + START_COINS + '. It can’t be undone.')) return;
+      try { localStorage.removeItem(OLD_KEY); } catch (e) { /* ignore */ }   // the first version's cards would otherwise come back
+      if (!save(fresh())) return show('Could not save. Your browser is blocking storage for this site.', true);
+      render(); show('Everything was reset.');
+    });
+    window.addEventListener('storage', (e) => { if (e.key === KEY) render(); });   // the Cards page changed your save in another tab
+    render();
+  </script>
+</body>
+</html>

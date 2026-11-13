@@ -146,6 +146,7 @@
       <a href="cards.html" aria-current="page">Cards</a>
       <a href="calculators.html">Calculators</a>
       <a href="terms.html">Terms</a>
+      <a href="settings.html">Settings</a>
     </div>
   </nav>
 
@@ -191,8 +192,6 @@
           <option value="price-desc">Sort: price, high to low</option>
           <option value="price-asc">Sort: price, low to high</option>
         </select>
-        <button class="btn small" id="sell-dupes">Sell all duplicates</button>
-        <button class="btn small" id="sell-showing" style="margin-left:auto" disabled>Sell everything showing</button>
       </div>
       <div class="filters" id="filters">
         <div class="frow">
@@ -211,6 +210,16 @@
         <div class="frow"><span class="lbl">Finish</span><span id="f-finish" class="frow"></span>
           <label class="chk"><input type="checkbox" id="f-dupes"> Duplicates only</label>
           <button class="btn small" id="f-clear" style="margin-left:auto">Clear filters</button>
+        </div>
+        <div class="frow"><span class="lbl">Value</span>
+          <input id="f-vmin" class="sort" type="number" min="0" step="any" placeholder="Min coins" aria-label="Minimum value in coins" style="width:130px">
+          <span class="muted">to</span>
+          <input id="f-vmax" class="sort" type="number" min="0" step="any" placeholder="Max coins" aria-label="Maximum value in coins" style="width:130px">
+          <span class="muted" style="font-size:0.8rem">what one copy sells for</span>
+        </div>
+        <div class="frow"><span class="lbl">Sell</span>
+          <button class="btn small" id="sell-dupes">Sell all duplicates</button>
+          <button class="btn small" id="sell-showing" disabled>Sell everything showing</button>
         </div>
       </div>
       <p class="muted" id="shown" style="margin: 0 0 12px;"></p>
@@ -564,7 +573,7 @@
     }
 
     // ---- Collection filters ----
-    const F = { view: 'owned', q: '', folder: '', from: '', to: '', rarity: new Set(), finish: new Set(), plain: false, dupes: false };
+    const F = { view: 'owned', q: '', folder: '', from: '', to: '', rarity: new Set(), finish: new Set(), plain: false, dupes: false, vmin: '', vmax: '' };
 
     function buildFilters() {
       const tiers = '<option value="">Any</option>' + exactTierSequence.map((t, i) => `<option value="${i}">${esc(t.replace(/^LOW /i, 'Low ').replace(/^HIGH /i, 'High '))}</option>`).join('');
@@ -587,7 +596,7 @@
     }
 
     function syncFilterUI() {
-      $('f-view').value = F.view; $('f-q').value = F.q; $('f-folder').value = F.folder; $('f-from').value = F.from; $('f-to').value = F.to; $('f-dupes').checked = F.dupes;
+      $('f-view').value = F.view; $('f-q').value = F.q; $('f-folder').value = F.folder; $('f-from').value = F.from; $('f-to').value = F.to; $('f-dupes').checked = F.dupes; $('f-vmin').value = F.vmin; $('f-vmax').value = F.vmax;
       document.querySelectorAll('[data-rarity]').forEach((b) => b.classList.toggle('on', F.rarity.has(+b.dataset.rarity)));
       document.querySelectorAll('[data-finish]').forEach((b) => b.classList.toggle('on', F.finish.has(b.dataset.finish)));
       document.querySelector('[data-plain]').classList.toggle('on', F.plain);
@@ -604,6 +613,12 @@
         let a = F.from === '' ? null : +F.from, b = F.to === '' ? null : +F.to;
         if (a !== null && b !== null && a > b) [a, b] = [b, a];
         if (e.rank < (a === null ? -Infinity : tierLowRank(a)) || e.rank > (b === null ? Infinity : tierHighRank(b))) return false;
+      }
+      if (F.vmin !== '' || F.vmax !== '') {   // what one copy of this card sells for
+        const v = sellPrice(e, flags);
+        let lo = F.vmin === '' ? -Infinity : +F.vmin, hi = F.vmax === '' ? Infinity : +F.vmax;
+        if (lo > hi) [lo, hi] = [hi, lo];
+        if (v < lo || v > hi) return false;
       }
       if (F.view === 'missing') return true;
       if (F.view === 'fav' && !state.fav[key]) return false;
@@ -651,8 +666,8 @@
       sellShowing = F.view === 'missing' ? [] : rows.filter((r) => !state.fav[r.key]);
       const showCards = sellShowing.reduce((t, r) => t + r.n, 0), showCoins = sellShowing.reduce((t, r) => t + r.n * sellPrice(r.e, r.flags), 0);
       $('sell-showing').disabled = !showCards;
-      $('sell-showing').textContent = showCards ? `Sell everything showing (${showCards.toLocaleString()} cards for ${showCoins.toLocaleString()} coins)` : 'Sell everything showing';
-      const filtering = F.q || F.folder || F.from !== '' || F.to !== '' || F.rarity.size || F.finish.size || F.plain || F.dupes;
+      $('sell-showing').textContent = showCards ? `Sell everything showing (${showCards.toLocaleString()} ${showCards === 1 ? 'card' : 'cards'} for ${showCoins.toLocaleString()} coins)` : 'Sell everything showing';
+      const filtering = F.q || F.folder || F.from !== '' || F.to !== '' || F.rarity.size || F.finish.size || F.plain || F.dupes || F.vmin !== '' || F.vmax !== '';
       $('shown').textContent = F.view === 'missing' ? `${rows.length} of ${all.length} characters you don’t own yet`
         : total ? `Showing ${rows.length} of ${all.length} ${F.view === 'fav' ? 'favorited ' : ''}card types${filtering ? ' (filters on)' : ''}` : '';
 
@@ -829,13 +844,14 @@
     });
     const onFilterInput = () => {
       F.view = $('f-view').value; F.q = $('f-q').value.trim().toLowerCase(); F.folder = $('f-folder').value;
-      F.from = $('f-from').value; F.to = $('f-to').value; F.dupes = $('f-dupes').checked;
+      F.from = $('f-from').value; F.to = $('f-to').value; F.dupes = $('f-dupes').checked; F.vmin = $('f-vmin').value.trim(); F.vmax = $('f-vmax').value.trim();
       syncFilterUI(); renderCollection();
     };
     ['f-view', 'f-folder', 'f-from', 'f-to', 'f-dupes'].forEach((id) => $(id).addEventListener('change', onFilterInput));
     $('f-q').addEventListener('input', onFilterInput);
+    $('f-vmin').addEventListener('input', onFilterInput); $('f-vmax').addEventListener('input', onFilterInput);
     $('f-clear').addEventListener('click', () => {
-      Object.assign(F, { view: 'owned', q: '', folder: '', from: '', to: '', dupes: false, plain: false });
+      Object.assign(F, { view: 'owned', q: '', folder: '', from: '', to: '', dupes: false, plain: false, vmin: '', vmax: '' });
       F.rarity.clear(); F.finish.clear();
       syncFilterUI(); renderCollection();
     });
@@ -857,7 +873,7 @@
       const rows = sellShowing.filter((r) => state.cards[r.key] > 0 && !state.fav[r.key]);
       const cards = rows.reduce((t, r) => t + state.cards[r.key], 0), coins = rows.reduce((t, r) => t + state.cards[r.key] * sellPrice(r.e, r.flags), 0);
       if (!cards) return;
-      const filtering = F.q || F.folder || F.from !== '' || F.to !== '' || F.rarity.size || F.finish.size || F.plain || F.dupes;
+      const filtering = F.q || F.folder || F.from !== '' || F.to !== '' || F.rarity.size || F.finish.size || F.plain || F.dupes || F.vmin !== '' || F.vmax !== '';
       if (!confirm(`Sell ${cards.toLocaleString()} cards (${rows.length.toLocaleString()} different ones, every copy) for ${coins.toLocaleString()} coins?\n\n${filtering ? 'Only the cards matching your current filters will be sold. ' : 'No filters are on, so this sells your whole collection. '}Favorited cards are never sold.`)) return;
       rows.forEach((r) => { delete state.cards[r.key]; });
       state.coins += coins;
