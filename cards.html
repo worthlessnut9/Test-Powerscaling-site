@@ -205,6 +205,7 @@
     const DIVINE_CHANCE = 0.00002;  // chance a pulled card is Divine (a Tier 0 character): 0.002%
 
     const BASE_VALUE = 2;           // what a Common card sells for
+    const DIVINE_VALUE = 1000000;   // what a Divine card sells for (before finishes). Every other rarity doubles from BASE_VALUE
     const VALUE_GROWTH = 2;         // each rarity step up sells for this many times more (2 = doubles)
 
     // Rarities: [name, first tier it covers]. Each one runs up to just before the next. Sell value = BASE_VALUE x VALUE_GROWTH per step.
@@ -220,7 +221,7 @@
       ['Celestial',  'Low 2-C'],    // Tier 2, plus Tier 1-C and 1-B (everything below the outerversal tiers)
       ['Transcendent', 'Low 1-A'],  // The outerversal tiers (Tier 1-A)
       ['Divine',     '0'],          // Tier 0
-    ].map(([name, from], i) => ({ name, value: BASE_VALUE * Math.pow(VALUE_GROWTH, i), min: from ? parseTierWeight(from) : 0 }));
+    ].map(([name, from], i) => ({ name, value: name === 'Divine' ? DIVINE_VALUE : BASE_VALUE * Math.pow(VALUE_GROWTH, i), min: from ? parseTierWeight(from) : 0 }));
     const DIVINE = RARITIES.length - 1;
 
     // Finishes: [code, name, chance each card gets it (%), sell value multiplier]. Each is rolled separately, so they can stack
@@ -281,6 +282,27 @@
       size: FINISH_PACK_SIZE, cost: FINISH_PACK_COST[c], cooldown: 0, finish: c, colors: FINISH_COLORS[c] })).sort((a, b) => a.cost - b.cost);
     const EXTRA_PACKS = ROTATING_PACKS.concat(RARITY_PACKS, FINISH_PACKS);   // everything that can show up in the rotating slots
     const PACKS = FIXED_PACKS.concat(EXTRA_PACKS);   // every pack in the game
+
+    // ---- Pack prices always beat what the pack is worth ----
+    // A paid pack costs the higher of its listed price and PACK_PROFIT_MARGIN x the average coins its cards sell for, so buying a pack and
+    // selling everything in it loses coins on average. It works from the characters in your sheet, so it stays true if the sheet changes.
+    const PACK_PRICE_STEP = 100;       // pack prices are rounded UP to a multiple of this
+    const up = (n) => Math.ceil(n / PACK_PRICE_STEP) * PACK_PRICE_STEP;
+    const PACK_PROFIT_MARGIN = 1.25;   // 1.25 = a pack costs at least 25% more than its average sell value (must stay above 1)
+    const finishMult = (forced) => VARIANTS.reduce((m, v) => m * (v[0] === forced ? v[3] : 1 + v[2] * (v[3] - 1)), 1);   // average sell multiplier of one card
+    function packValue(pack) {   // average coins you get by selling every card in one pack
+      const pool = poolFor(pack), nDiv = pool.divine.length, dc = nDiv ? DIVINE_CHANCE : 0;
+      const divV = nDiv ? pool.divine.reduce((t, e) => t + RARITIES[e.level].value, 0) / nDiv : 0;
+      const regV = pool.sum ? pool.items.reduce((t, x) => t + x.w * RARITIES[x.e.level].value, 0) / pool.sum : 0;
+      const perCard = pool.items.length ? (1 - dc) * regV + dc * divV : divV;
+      return perCard * finishMult(pack.finish) * pack.size;
+    }
+    PACKS.filter((p) => p.cost > 0).forEach((p) => {
+      const listed = p.cost;
+      Object.defineProperty(p, 'cost', { enumerable: true, get() {
+        try { if (!loaded) return up(listed); return up(Math.max(listed, packValue(p) * PACK_PROFIT_MARGIN)); } catch (e) { return up(listed); }
+      } });
+    });
 
     const PALETTE = [['#2b5cff', '#7a2bff'], ['#e5392e', '#ff9f2e'], ['#13a67b', '#2bd1ff'], ['#b32bff', '#ff2b8a'], ['#c9971c', '#ffe27a']];   // pack colours when a pack has no colors
     // ======================================================================
@@ -421,7 +443,7 @@
       rotating = pickRotating(shownSlot);
       const item = (p, tag) => `<div class="shop-item">${packHtml(p)}${tag ? `<div class="chip">${tag}</div>` : ''}
         <p class="muted" style="margin:0">${esc(p.desc || '')}</p><div class="muted">Pulls from: ${esc(sourceText(p))}</div>
-        <div>${p.cost} coins${everyText(p)}${isFinite(holdOf(p)) ? ' \u00b7 holds up to ' + holdOf(p) : ''}</div>
+        <div>${p.cost.toLocaleString()} coins${everyText(p)}${isFinite(holdOf(p)) ? ' \u00b7 holds up to ' + holdOf(p) : ''}</div>
         <button class="btn primary" data-buy="${esc(p.id)}" disabled>Buy</button></div>`;
       const fixed = FIXED_PACKS.filter((p) => p.cost > 0);
       const html = fixed.map((p) => item(p)).join('') + rotating.map((p) => item(p, 'Rotating')).join('');
@@ -479,12 +501,12 @@
       const now = Date.now();
       document.querySelectorAll('[data-buy]').forEach((btn) => {
         const p = PACKS.find((x) => x.id === btn.dataset.buy), wait = Math.max(0, (state.ready[p.id] || 0) - now);
-        let label = `Buy (${p.cost} coins)`, off = false;
+        let label = `Buy (${p.cost.toLocaleString()} coins)`, off = false;
         if (!loaded) { label = 'Loading...'; off = true; }
         else if (!poolFor(p).pool.length) { label = 'No characters match'; off = true; }
         else if ((state.packs[p.id] || 0) >= holdOf(p)) { label = 'Pack full'; off = true; }
         else if (wait > 0) { label = 'Ready in ' + fmtTime(wait); off = true; }
-        else if (state.coins < p.cost) { label = `Need ${p.cost} coins`; off = true; }
+        else if (state.coins < p.cost) { label = `Need ${p.cost.toLocaleString()} coins`; off = true; }
         btn.textContent = label;
         btn.disabled = off;
       });

@@ -16,6 +16,13 @@
     .panel h3 { color: #fff; margin: 24px 0 6px; font-size: 1.05rem; }
     .panel h3.flash { color: var(--accent); }
     .panel h3 { scroll-margin-top: 16px; }
+    .panel .tbl { overflow-x: auto; margin: 10px 0 16px; }
+    .panel table { border-collapse: collapse; width: 100%; min-width: 420px; }
+    .panel th, .panel td { border: 1px solid var(--border-color); padding: 6px 10px; text-align: left; font-size: 0.9rem; vertical-align: top; }
+    .panel th { background: var(--tag-bg); color: #fff; }
+    .panel a { color: var(--accent); }
+    .panel ul { padding-left: 22px; }
+    .panel li { margin: 4px 0; }
   </style>
 </head>
 <body>
@@ -41,7 +48,6 @@
   <!-- TIER TAB CONTENT: under each tier, replace the bold placeholder text with its description -->
   <template id="content-tier">
     <h2>Tier</h2>
-    <p class="muted">Tier descriptions are adapted from the <a href="https://vsbattles.fandom.com/wiki/Tiering_System" target="_blank" rel="noopener">VS Battles Wiki tiering system</a> (CC BY-SA).</p>
     <h3 id="tier-11-c">11-C</h3>
     <p>Low Hypoverse. Can destroy or create a 0-D construct, or affect reality three levels beneath 3-D reality. Also covers anything weaker.</p>
     <h3 id="tier-11-b">11-B</h3>
@@ -154,6 +160,128 @@
     <p>High Outerverse level. Affects structures beyond what the 1-A framework allows, such as inaccessible cardinals. X is the number of layers.</p>
     <h3 id="tier-0">0</h3>
     <p>Boundless. Affects structures that exceed all of High 1-A, with no upper endpoint. Being “omnipotent” alone is not enough to qualify, though it can support other evidence.</p>
+  </template>
+
+  <template id="content-attack-potency">
+    <h2>Attack Potency</h2>
+    <p><b>Attack Potency (AP)</b> is the amount of destructive energy an attack is equivalent to. It is written in energy units such as Joules or tonnes of TNT. A character does not have to destroy things at their AP level every time. Their attacks can still hurt anyone who can withstand that much force, so small-scale destruction does not prove a low AP.</p>
+    <h3>AP and Destructive Capacity</h3>
+    <p><b>Destructive Capacity (DC)</b> is the broader term for how much damage a character can produce. Together with Speed it usually decides a match. AP is the more specific version, tied to the energy of one attack.</p>
+    <p>The energy counts, not the area an attack covers. An attack that destroys a mountain or an island is not automatically rated at that level if the energy involved was small.</p>
+    <h3>How AP is rated</h3>
+    <p>AP is sorted into the tiers on the <a href="#tiering-system/tier">Tier tab</a>, from Below Average Human up to Universe level. For the tiers from 9-A to 3-B, a rating normally needs an accepted calculation or an exact Joule value. The lower borders of a few tiers are exceptions, because there are standard calculations for destroying a moon, planet, star, solar system, galaxy or group of galaxies. Black holes are not used as an energy source.</p>
+    <h3>Rating modifiers</h3>
+    <ul>
+      <li><b>High / Low:</b> where in the tier the character sits.</li>
+      <li><b>+ (plus):</b> used when AP is above the middle of a tier&rsquo;s range, or the character is near the middle and clearly scales above the feat. It should not be used loosely.</li>
+      <li><b>At least / At most:</b> a lower or upper limit when the exact value is not clear.</li>
+      <li><b>Possibly / Likely:</b> the rating has some basis, but the evidence is not certain. Used sparingly.</li>
+      <li><b>Higher / Lower:</b> a much stronger or weaker ability that still stays inside the same tier. &ldquo;Likely higher&rdquo; means a possibly higher tier without saying how much.</li>
+      <li><b>Varies:</b> only for characters whose power changes for a clear in-story reason. Inconsistency without a reason does not count.</li>
+    </ul>
+    <h3>Notes</h3>
+    <ul>
+      <li>When a series is inconsistent, all feats are considered and the character is rated on the most reliable tier. Very low outliers can be treated as plot-induced stupidity and very high ones as anomalies.</li>
+      <li>A character whose power changes involuntarily (Toon Force) cannot be locked into one tier.</li>
+      <li>A sharp weapon at the same energy may get through durability more easily than a blunt one, but that is not formal durability negation.</li>
+    </ul>
+  </template>
+  <template id="content-speed">
+    <h2>Speed</h2>
+    <p><b>Speed</b> is how fast a character can move or act in a given amount of time. &ldquo;Speed&rdquo; on its own usually means Combat Speed. The wiki recognises five types:</p>
+    <ul>
+      <li><b>Attack Speed:</b> how fast an attack travels. An attack can be faster than the person who used it, such as a beam of light fired by a slow character.</li>
+      <li><b>Combat Speed:</b> how fast a character can fight.</li>
+      <li><b>Reaction Speed:</b> how quickly a character can respond to an event. Reacting to an attack they did not expect, or at very close range, counts. Dodging a telegraphed attack is &ldquo;aim dodging&rdquo;, which is a weaker feat. Reaction speed is usually higher than movement speed.</li>
+      <li><b>Travel Speed:</b> how fast a character or object moves on foot or by similar means. It does not include flight or teleportation.</li>
+      <li><b>Flight Speed:</b> how fast a character or object covers distance while flying. Fast flight needs good reactions to steer, so flight speed is usually assumed to roughly match combat or reaction speed unless a source says otherwise.</li>
+    </ul>
+    <h3>Speed tiers</h3>
+    <p>Speeds are in metres per second (m/s). The percentages are shares of the speed of light.</p>
+    <div class="tbl"><table><thead><tr><th>Tier</th><th>Speed (m/s)</th></tr></thead><tbody><tr><td>Immobile</td><td>0</td></tr><tr><td>Below Average Human</td><td>0 &ndash; 5</td></tr><tr><td>Normal Human</td><td>5 &ndash; 7.7</td></tr><tr><td>Athletic Human</td><td>7.7 &ndash; 10.03</td></tr><tr><td>Peak Human</td><td>10.03 &ndash; 12.43</td></tr><tr><td>Superhuman</td><td>12.43 &ndash; 34.3</td></tr><tr><td>Subsonic (Faster than the Eye)</td><td>34.3 &ndash; 171.5</td></tr><tr><td>Subsonic+</td><td>171.5 &ndash; 308.7</td></tr><tr><td>Transonic</td><td>308.7 &ndash; 377.3</td></tr><tr><td>Supersonic</td><td>377.3 &ndash; 857.5</td></tr><tr><td>Supersonic+</td><td>857.5 &ndash; 1,715</td></tr><tr><td>Hypersonic</td><td>1,715 &ndash; 3,430</td></tr><tr><td>Hypersonic+</td><td>3,430 &ndash; 8,575</td></tr><tr><td>High Hypersonic</td><td>8,575 &ndash; 17,150</td></tr><tr><td>High Hypersonic+</td><td>17,150 &ndash; 34,300</td></tr><tr><td>Massively Hypersonic</td><td>34,300 &ndash; 343,000</td></tr><tr><td>Massively Hypersonic+</td><td>343,000 &ndash; 2,997,925 (1% of light speed)</td></tr><tr><td>Sub-Relativistic</td><td>2,997,925 &ndash; 14,989,621 (1% &ndash; 5%)</td></tr><tr><td>Sub-Relativistic+</td><td>14,989,621 &ndash; 29,979,246 (5% &ndash; 10%)</td></tr><tr><td>Relativistic</td><td>29,979,246 &ndash; 149,896,229 (10% &ndash; 50%)</td></tr><tr><td>Relativistic+</td><td>149,896,229 &ndash; 299,792,458 (50% &ndash; 100%)</td></tr><tr><td>Speed of Light</td><td>299,792,458</td></tr><tr><td>FTL</td><td>299,792,458 &ndash; 2.998&times;10<sup>9</sup></td></tr><tr><td>FTL+</td><td>2.998&times;10<sup>9</sup> &ndash; 2.998&times;10<sup>10</sup></td></tr><tr><td>Massively FTL</td><td>2.998&times;10<sup>10</sup> &ndash; 2.998&times;10<sup>11</sup></td></tr><tr><td>Massively FTL+</td><td>2.998&times;10<sup>11</sup> and above</td></tr></tbody></table></div>
+    <h3>Tiers with no number</h3>
+    <ul>
+      <li><b>Infinite Speed:</b> can reach any location instantly, or cover an infinite distance in a finite time. Teleportation does not count.</li>
+      <li><b>Immeasurable:</b> movement beyond linear time, so distance divided by time cannot be used. Having several time dimensions also counts.</li>
+      <li><b>Irrelevant:</b> beings beyond the concepts of time and space, generally Tier 1-A and above.</li>
+      <li><b>Omnipresence:</b> not strictly a speed, but it works like one in a fight. It has to be given relative to a scale.</li>
+    </ul>
+    <h3>Notes</h3>
+    <ul>
+      <li>Tier ranges can overlap at the edges. A value on the lower limit belongs to the higher tier, so Mach 10 is Hypersonic+ and Mach 100 is Massively Hypersonic.</li>
+      <li>Massively FTL+ is very broad, so two characters in it can differ enormously.</li>
+      <li>Time stop and time slowing lower other people&rsquo;s speed. They do not raise the user&rsquo;s own speed.</li>
+      <li>A timeless void does not give infinite speed, because time there is undefined.</li>
+      <li>Immeasurable speed goes everywhere and everywhen faster than instantly. Infinite speed goes everywhere instantly. Speed depends on distance over time, not on the number of dimensions.</li>
+    </ul>
+  </template>
+  <template id="content-lifting-strength">
+    <h2>Lifting Strength</h2>
+    <p><b>Lifting Strength</b> is how much mass a character can lift on Earth, which shows how much upward force they can produce. Pushing and pulling feats count toward it too.</p>
+    <h3>Lifting Strength classes</h3>
+    <div class="tbl"><table><thead><tr><th>Class</th><th>Mass lifted</th></tr></thead><tbody><tr><td>Inapplicable (Tier 11)</td><td>Too low to calculate</td></tr><tr><td>Below Average Human</td><td>0 &ndash; 50 kg</td></tr><tr><td>Average Human</td><td>50 &ndash; 80 kg</td></tr><tr><td>Above Average Human</td><td>80 &ndash; 120 kg</td></tr><tr><td>Athletic Human</td><td>120 &ndash; 227 kg</td></tr><tr><td>Peak Human</td><td>227 &ndash; 501 kg</td></tr><tr><td>Superhuman</td><td>Anything clearly above Peak Human with no exact value</td></tr><tr><td>Class 1</td><td>501 &ndash; 1,000 kg</td></tr><tr><td>Class 5</td><td>1,000 &ndash; 5,000 kg</td></tr><tr><td>Class 10</td><td>5,000 kg &ndash; 10<sup>4</sup> kg</td></tr><tr><td>Class 25</td><td>10<sup>4</sup> &ndash; 2.5&times;10<sup>4</sup> kg</td></tr><tr><td>Class 50</td><td>2.5&times;10<sup>4</sup> &ndash; 5&times;10<sup>4</sup> kg</td></tr><tr><td>Class 100</td><td>5&times;10<sup>4</sup> &ndash; 10<sup>5</sup> kg</td></tr><tr><td>Class K</td><td>10<sup>5</sup> &ndash; 10<sup>6</sup> kg</td></tr><tr><td>Class M</td><td>10<sup>6</sup> &ndash; 10<sup>9</sup> kg</td></tr><tr><td>Class G</td><td>10<sup>9</sup> &ndash; 10<sup>12</sup> kg</td></tr><tr><td>Class T</td><td>10<sup>12</sup> &ndash; 10<sup>15</sup> kg</td></tr><tr><td>Class P</td><td>10<sup>15</sup> &ndash; 10<sup>18</sup> kg</td></tr><tr><td>Class E</td><td>10<sup>18</sup> &ndash; 10<sup>21</sup> kg</td></tr><tr><td>Class Z</td><td>10<sup>21</sup> &ndash; 10<sup>24</sup> kg</td></tr><tr><td>Class Y</td><td>10<sup>24</sup> &ndash; 10<sup>27</sup> kg</td></tr><tr><td>Pre-Stellar</td><td>10<sup>27</sup> &ndash; 2&times;10<sup>29</sup> kg</td></tr><tr><td>Stellar</td><td>2&times;10<sup>29</sup> &ndash; 6.3&times;10<sup>32</sup> kg</td></tr><tr><td>Multi-Stellar</td><td>6.3&times;10<sup>32</sup> &ndash; 1.6&times;10<sup>42</sup> kg</td></tr><tr><td>Galactic</td><td>1.6&times;10<sup>42</sup> &ndash; 6&times;10<sup>43</sup> kg</td></tr><tr><td>Multi-Galactic</td><td>6&times;10<sup>43</sup> kg up to the mass of the observable universe</td></tr><tr><td>Universal</td><td>1.5&times;10<sup>53</sup> kg and higher</td></tr><tr><td>Infinite</td><td>Countably infinite by 3-D standards</td></tr><tr><td>Immeasurable</td><td>Uncountably infinite compared with 3-D beings. Used for higher-order or higher-dimensional beings shown as qualitatively superior</td></tr><tr><td>Irrelevant</td><td>Beyond all dimensional scale (Tier 1-A and above)</td></tr></tbody></table></div>
+    <h3>Rules</h3>
+    <ul>
+      <li><b>Telekinesis</b> has to be labelled separately from physical strength when it is used for a lifting feat.</li>
+      <li><b>Tearing</b> counts, but it is an unreliable measure because it uses fewer muscles and less force than a lift.</li>
+      <li><b>Throwing or punching</b> an object upward can count as a lifting feat, because it takes more strength than simply lifting it.</li>
+      <li><b>Striking Strength is not Lifting Strength.</b> Striking measures the energy of physical attacks and lifting measures mass. The two are evaluated separately and are not compared. Being able to produce the energy to lift something does not mean a character can lift it unless they have shown it.</li>
+    </ul>
+  </template>
+  <template id="content-striking-strength">
+    <h2>Striking Strength</h2>
+    <p><b>Striking Strength</b> is the attack power of a character&rsquo;s physical blows, such as punches, kicks and strikes.</p>
+    <h3>How it differs from other stats</h3>
+    <ul>
+      <li>It is not <a href="#tiering-system/lifting-strength">Lifting Strength</a>. Striking Strength measures the energy of a physical attack. Lifting Strength measures the mass a character can lift. The wiki says the two are not comparable and should be evaluated separately.</li>
+      <li>It covers physical blows only. <a href="#tiering-system/attack-potency">Attack Potency</a> is the broader measure of the energy of a character&rsquo;s attacks.</li>
+    </ul>
+    <p><b>WRITE THE STRIKING STRENGTH RATING SCALE HERE</b> (I could not read the wiki&rsquo;s Striking Strength page, so no scale is filled in).</p>
+  </template>
+  <template id="content-durability">
+    <h2>Durability</h2>
+    <p><b>Durability</b> is a character&rsquo;s ability to withstand force or damage. It is not the same as endurance. Durability is the ability to take damage, while endurance (<a href="#tiering-system/stamina">Stamina</a>) is how long a character can keep going.</p>
+    <h3>The idea behind it</h3>
+    <p>A character who can produce a certain amount of energy should be able to withstand a comparable amount of damage. Otherwise the strain and counterforce of using that energy would tear their body apart. That is why Durability is linked to <a href="#tiering-system/attack-potency">Attack Potency</a>.</p>
+    <h3>Durability levels</h3>
+    <p>Durability uses the same level names as the <a href="#tiering-system/tier">Tier tab</a>:</p>
+    <ul>
+      <li><b>Human scale:</b> Low Hypoverse, Hypoverse, High Hypoverse, Below Average Human, Human, Athlete, Street and Wall level.</li>
+      <li><b>Building and town scale:</b> Small Building up to Large Town, then Small City and City level.</li>
+      <li><b>Geographic scale:</b> Mountain, Island, Country, Continent and Multi-Continent level.</li>
+      <li><b>Planetary and stellar scale:</b> Moon, Planet, Dwarf Star, Star and Solar System level.</li>
+      <li><b>Galactic and cosmic scale:</b> Galaxy, Multi-Galaxy, Universe, Multiverse, Complex Multiverse, Hyperverse and Outerverse level.</li>
+    </ul>
+    <p>Many of these are split into Low, High or &ldquo;+&rdquo;, the same as for Attack Potency.</p>
+  </template>
+  <template id="content-intelligence">
+    <h2>Intelligence</h2>
+    <p><b>Intelligence</b> is how smart, skilled and knowledgeable a character is, including how well they fight, plan and solve problems. The wiki&rsquo;s profile format treats it as self-explanatory and does not give a rating scale for it.</p>
+    <p><b>WRITE YOUR INTELLIGENCE LEVELS HERE</b> (I could not find an official VS Battles Wiki page for this stat, so nothing else is filled in).</p>
+  </template>
+  <template id="content-range">
+    <h2>Range</h2>
+    <p><b>Range</b> is how far a character&rsquo;s attacks or abilities can effectively reach on their own. A weapon&rsquo;s length counts as part of the character&rsquo;s range.</p>
+    <h3>Range categories</h3>
+    <div class="tbl"><table><thead><tr><th>Range</th><th>Distance</th><th>Notes</th></tr></thead><tbody><tr><td>Below Standard Melee Range</td><td>0 &ndash; 50 cm</td><td>Small characters.</td></tr><tr><td>Standard Melee Range</td><td>50 cm &ndash; 1 m</td><td>Unarmed fighting and short weapons such as knives, daggers and knuckledusters.</td></tr><tr><td>Extended Melee Range</td><td>1 &ndash; 3 m</td><td>Long weapons (swords, spears, axes, halberds) and attacks that reach past normal human reach. For a weapon, add arm length (about 75 cm) to its length.</td></tr><tr><td>Several Meters</td><td>3 &ndash; 10 m</td><td>Throwing weapons (shuriken, bombs, grenades, chakrams) and extremely long melee weapons.</td></tr><tr><td>Tens of Meters</td><td>10 &ndash; 100 m</td><td>Giant beings such as mecha and kaiju. Accurate slingshot range.</td></tr><tr><td>Hundreds of Meters</td><td>100 &ndash; 1,000 m</td><td>Bows, crossbows, unaided perception and the range of an average firearm.</td></tr><tr><td>Kilometers</td><td>1 &ndash; 10 km</td><td>The width of an average city or the distance between cities. Weaker nuclear bombs (Little Boy 1.85 km, B-61 5.06 km).</td></tr><tr><td>Tens of Kilometers</td><td>10 &ndash; 100 km</td><td>Large cities. Stronger nuclear bombs (Ivy Mike 15.64 km, Tsar Bomba 26.26 km).</td></tr><tr><td>Hundreds of Kilometers</td><td>100 &ndash; 1,000 km</td><td></td></tr><tr><td>Thousands of Kilometers</td><td>1,000 &ndash; 20,037 km</td><td></td></tr><tr><td>Planetary</td><td>20,037 &ndash; 1,391,400 km</td><td>Starts at half of Earth&rsquo;s circumference. Earth to Moon is 384,400 km.</td></tr><tr><td>Stellar</td><td>1,391,400 &ndash; 50,290,000 km</td><td>Starts at the Sun&rsquo;s diameter.</td></tr><tr><td>Interplanetary</td><td>50,290,000 km &ndash; 4.22 light years</td><td>Distances between planets.</td></tr><tr><td>Interstellar</td><td>4.22 &ndash; 50,000 light years</td><td>Starts at the distance to Proxima Centauri.</td></tr><tr><td>Galactic</td><td>50,000 &ndash; 2,500,000 light years</td><td>Ends near the Milky Way&rsquo;s radius.</td></tr><tr><td>Intergalactic</td><td>2,500,000 &ndash; 46.6 billion light years</td><td>Distances between galaxies.</td></tr><tr><td>Universal</td><td>46.6 billion light years and up</td><td>Based on the radius of the observable universe, with no upper end.</td></tr><tr><td>High Universal</td><td>&mdash;</td><td>Reaches anywhere in infinite 3-D space.</td></tr><tr><td>Universal+</td><td>&mdash;</td><td>Reaches anywhere within one 4-D space-time continuum.</td></tr><tr><td>Interdimensional</td><td>&mdash;</td><td>Reaches beyond one universe&rsquo;s space-time into pocket realities or parts of other universes. Cannot cover universal distances, affect several such realities at once, or reach other multiverses.</td></tr><tr><td>Extradimensional</td><td>&mdash;</td><td>Reaches outside one universe&rsquo;s space-time in ways not covered elsewhere, such as partly reaching realms outside a standard multiverse.</td></tr><tr><td>Low Multiversal</td><td>&mdash;</td><td>2 to 1,000 continuums at once.</td></tr><tr><td>Multiversal</td><td>&mdash;</td><td>1,001 or more (finite) continuums at once.</td></tr><tr><td>Multiversal+</td><td>&mdash;</td><td>An infinite number of continuums at once.</td></tr><tr><td>Low Complex Multiversal</td><td>&mdash;</td><td>One level above a universal model (5 to 6 dimensions).</td></tr><tr><td>Complex Multiversal</td><td>&mdash;</td><td>Two to five levels (7 to 9 dimensions).</td></tr><tr><td>High Complex Multiversal</td><td>&mdash;</td><td>Six to seven levels (10 to 11 dimensions).</td></tr><tr><td>Hyperversal</td><td>&mdash;</td><td>Eight or more finite levels (12 or more dimensions).</td></tr><tr><td>High Hyperversal</td><td>&mdash;</td><td>Infinite dimensions and/or time.</td></tr><tr><td>Low Outerversal</td><td>&mdash;</td><td>Encompasses all possible dimensional levels.</td></tr><tr><td>Outerversal</td><td>&mdash;</td><td>Reaches realms qualitatively above all earlier structures.</td></tr><tr><td>Outerversal+</td><td>&mdash;</td><td>Reaches an infinite number of steps above baseline 1-A realms.</td></tr><tr><td>High Outerversal</td><td>&mdash;</td><td>Reaches realms completely beyond all 1-A hierarchies and their extensions.</td></tr><tr><td>Boundless</td><td>&mdash;</td><td>Exists beyond both quantitative and qualitative distinction.</td></tr></tbody></table></div>
+    <h3>Notes</h3>
+    <ul>
+      <li>Teleportation and other non-combat techniques must be clearly labelled as such.</li>
+      <li>For Universal+ range through precognition or similar powers, a character needs feats or statements showing they can perceive the entire future of a 4-D space-time continuum. Higher categories follow the same rule for their own structures.</li>
+      <li>Fate manipulation at these ranges needs proof that it affects those structures in their entirety.</li>
+    </ul>
+  </template>
+  <template id="content-stamina">
+    <h2>Stamina</h2>
+    <p><b>Stamina</b> is what lets a character stay active, keep exerting themselves for a long time and recover from strain. It covers endurance and tolerance. The wiki has no fixed ratings for it.</p>
+    <h3>How it is written up</h3>
+    <ul>
+      <li>Describe the stated or shown extent of a character&rsquo;s stamina with examples of what they actually did. Labels such as &ldquo;High&rdquo; or &ldquo;Very High&rdquo; should not be used unless they are explained.</li>
+      <li><b>Infinite stamina</b> is narrow. It applies only to characters who can use their abilities any number of times without getting exhausted.</li>
+      <li>Mechanical and undead characters are not assumed to have infinite stamina unless the series clearly establishes it.</li>
+    </ul>
+    <h3>Scaling</h3>
+    <p>Stamina depends on physiology, training, lifestyle and willpower, and it varies even within a species. It should not be scaled between characters just because they are comparable or superior in stats such as Attack Potency or Durability. It can be scaled only when stamina is clearly stated to be a shared trait of a species or group, or when direct evidence shows the characters are comparable in it.</p>
   </template>
 
   <script>
