@@ -267,7 +267,7 @@
 
     // =====================  RARITY AND FINISH PACKS (made automatically)  =====================
     // One pack per rarity: every card in it is that rarity. The price goes up RARITY_PACK_STEP coins per rarity.
-    const RARITY_PACK_SIZE = 8, DIVINE_PACK_SIZE = 1, RARITY_PACK_BASE = 100, RARITY_PACK_STEP = 100;
+    const RARITY_PACK_SIZE = 8, DIVINE_PACK_SIZE = 1, DIVINE_PACK_COST = 2000000, RARITY_PACK_BASE = 100, RARITY_PACK_STEP = 100;
     // One pack per finish: every card in it has that finish (other finishes can still stack on top by chance).
     // Prices: rarer finishes cost more. Change the numbers here.
     const FINISH_PACK_SIZE = 4;
@@ -277,7 +277,7 @@
       ['#e5392e', '#ff9f2e'], ['#ff6a00', '#ffd23f'], ['#00b3a4', '#7affd9'], ['#1b1f3a', '#6a5cff'], ['#c9971c', '#fff3b0']];
     const FINISH_COLORS = { f: ['#2bd1ff', '#e9f7ff'], s: ['#ff2bd6', '#2bd1ff'], b: ['#c9971c', '#ffe27a'], g: ['#a87400', '#ffd34a'] };
     const RARITY_PACKS = RARITIES.map((r, i) => ({ id: 'rarity-' + slug(r.name), name: r.name + ' Pack', desc: (i === DIVINE ? DIVINE_PACK_SIZE + ' card' : RARITY_PACK_SIZE + ' cards') + ', ' + (i === DIVINE ? 'guaranteed ' : 'every one ') + r.name + '.',
-      size: i === DIVINE ? DIVINE_PACK_SIZE : RARITY_PACK_SIZE, cost: RARITY_PACK_BASE + RARITY_PACK_STEP * i, cooldown: 0, rarity: i, colors: RARITY_COLORS[i % RARITY_COLORS.length] }));
+      size: i === DIVINE ? DIVINE_PACK_SIZE : RARITY_PACK_SIZE, cost: r.name === 'Divine' ? DIVINE_PACK_COST : RARITY_PACK_BASE + RARITY_PACK_STEP * i, cooldown: 0, rarity: i, colors: RARITY_COLORS[i % RARITY_COLORS.length] }));
     const FINISH_PACKS = VARIANTS.map(([c, n]) => ({ id: 'finish-' + c, name: n + ' Pack', desc: 'Every card has the ' + n + ' finish.',
       size: FINISH_PACK_SIZE, cost: FINISH_PACK_COST[c], cooldown: 0, finish: c, colors: FINISH_COLORS[c] })).sort((a, b) => a.cost - b.cost);
     const EXTRA_PACKS = ROTATING_PACKS.concat(RARITY_PACKS, FINISH_PACKS);   // everything that can show up in the rotating slots
