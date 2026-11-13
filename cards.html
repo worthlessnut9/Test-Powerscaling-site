@@ -99,7 +99,7 @@
     .flip.glow-9 .face.back { box-shadow: 0 0 28px 10px #ff4dff; animation: rainbow 2s linear infinite; }
     @keyframes rainbow { to { filter: hue-rotate(360deg); } }
     /* ---- Divine light show (plays when a Divine card is flipped) ---- */
-    .lightshow { position: fixed; inset: 0; z-index: 9999; pointer-events: none; overflow: hidden; background: #000; animation: ls-life 5.5s ease-in-out forwards; }
+    .lightshow { position: fixed; inset: 0; z-index: 9999; pointer-events: none; overflow: hidden; background: #000; animation: ls-life 2s ease-in-out forwards; }
     .lightshow > * { position: absolute; }
     .ls-rays { left: 50%; top: 50%; width: 220vmax; height: 220vmax; margin: -110vmax 0 0 -110vmax; border-radius: 50%;
       background: conic-gradient(red, orange, yellow, lime, cyan, blue, magenta, red);
@@ -112,7 +112,7 @@
       animation: ls-ring 2.2s ease-out infinite, ls-hue 1.5s linear infinite; animation-delay: calc(var(--k) * 0.55s), 0s; }
     .ls-title { left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; font-weight: 900; letter-spacing: 0.35em; font-size: clamp(2rem, 11vw, 7rem);
       background: linear-gradient(90deg, red, orange, yellow, lime, cyan, blue, magenta, red); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
-      filter: drop-shadow(0 0 18px #fff); animation: ls-text 1.6s linear infinite, ls-pop 5.5s ease-out forwards; }
+      filter: drop-shadow(0 0 18px #fff); animation: ls-text 1.6s linear infinite, ls-pop 2s ease-out forwards; }
     .ls-p { left: 50%; top: 50%; width: var(--s); height: var(--s); border-radius: 50%; background: hsl(var(--h) 100% 65%); box-shadow: 0 0 12px 3px hsl(var(--h) 100% 65%);
       animation: ls-fly var(--t) ease-out var(--d) infinite; opacity: 0; }
     @keyframes ls-life { 0% { opacity: 0; } 8% { opacity: 1; } 78% { opacity: 1; } 100% { opacity: 0; } }
@@ -124,11 +124,11 @@
     @keyframes ls-pop { 0% { transform: translateY(-50%) scale(0.2); opacity: 0; } 12% { transform: translateY(-50%) scale(1.25); opacity: 1; } 22%, 100% { transform: translateY(-50%) scale(1); } }
     @keyframes ls-fly { 0% { transform: translate(0, 0) scale(0.4); opacity: 1; } 100% { transform: translate(var(--x), var(--y)) scale(1.2); opacity: 0; } }
     @keyframes ls-shake { 0%, 100% { transform: translate(0, 0); } 20% { transform: translate(-6px, 3px); } 40% { transform: translate(5px, -4px); } 60% { transform: translate(-4px, -3px); } 80% { transform: translate(4px, 4px); } }
-    #pack.ls-shake { animation: ls-shake 0.5s linear 4; }
+    #pack.ls-shake { animation: ls-shake 0.5s linear 2; }
     .flip.divine.flipped .face.front { box-shadow: 0 0 40px 12px #ff4dff; animation: rainbow 2s linear infinite; border-radius: 12px; }
     @media (prefers-reduced-motion: reduce) {
       .ls-rays, .ls-rays.two, .ls-ring, .ls-p, .ls-glow, .ls-title { animation: none; }
-      .lightshow { animation: ls-life 3s ease-in-out forwards; }
+      .lightshow { animation: ls-life 1.5s ease-in-out forwards; }
       #pack.ls-shake { animation: none; }
     }
     .flip.glow-gold .face.back { box-shadow: 0 0 22px 7px #ffd24a; }
@@ -801,7 +801,7 @@
       el.innerHTML = '<div class="ls-rays"></div><div class="ls-rays two"></div><div class="ls-glow"></div>' + [0, 1, 2, 3].map((k) => `<div class="ls-ring" style="--k:${k}"></div>`).join('') + ps + '<div class="ls-title">DIVINE</div>';
       document.body.appendChild(el);
       $('pack').classList.add('ls-shake');
-      setTimeout(() => { el.remove(); $('pack').classList.remove('ls-shake'); }, reduce ? 3100 : 5600);
+      setTimeout(() => { el.remove(); $('pack').classList.remove('ls-shake'); }, reduce ? 1600 : 2100);
     }
     function flipCard(f) {
       if (f.classList.contains('flipped')) return;
