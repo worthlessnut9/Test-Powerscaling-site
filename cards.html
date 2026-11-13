@@ -291,10 +291,12 @@
     const PACK_PROFIT_MARGIN = 1.25;   // 1.25 = a pack costs at least 25% more than its average sell value (must stay above 1)
     const finishMult = (forced) => VARIANTS.reduce((m, v) => m * (v[0] === forced ? v[3] : 1 + v[2] * (v[3] - 1)), 1);   // average sell multiplier of one card
     function packValue(pack) {   // average coins you get by selling every card in one pack
-      const pool = poolFor(pack), nDiv = pool.divine.length, dc = nDiv ? DIVINE_CHANCE : 0;
+      const pool = poolFor(pack), nDiv = pool.divine.length;
       const divV = nDiv ? pool.divine.reduce((t, e) => t + RARITIES[e.level].value, 0) / nDiv : 0;
       const regV = pool.sum ? pool.items.reduce((t, x) => t + x.w * RARITIES[x.e.level].value, 0) / pool.sum : 0;
-      const perCard = pool.items.length ? (1 - dc) * regV + dc * divV : divV;
+      // Divine (Boundless) cards are left out of the price, since the chance of one is tiny and its value is an extreme outlier.
+      // The Divine Pack is the one exception: every card in it is Divine, so it is priced on that.
+      const perCard = pool.items.length ? regV : divV;
       return perCard * finishMult(pack.finish) * pack.size;
     }
     PACKS.filter((p) => p.cost > 0).forEach((p) => {
