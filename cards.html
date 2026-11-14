@@ -254,7 +254,8 @@
       //   characters: ['Goku (Raditz Saga)'],      // optional: only these characters (names must match the sheet)
       //   minTier: '7-C', maxTier: '4-B',          // optional: only tiers from this one up to this one (from your tier list)
       //   colors: ['#e5392e', '#ff9f2e'],            // optional: the two colours of the pack artwork
-      //   rarityDrop: 0.95 },                      // optional: closer to 1 = strong characters appear more often
+      //   rarityDrop: 0.95,                        // optional: closer to 1 = strong characters appear more often
+      //   finishBoost: 2 },                        // optional: multiplies every finish chance (2 = twice as likely)
     ];
 
     // =====================  ROTATING PACKS  =====================
@@ -265,7 +266,8 @@
     const PACK_ROTATION_MINUTES = 5;
     const ROTATING_PACKS = [
       { id: 'rot-power',  name: 'Power Pack',    desc: 'Only strong characters (Tier 7 and up).', size: 4, cost: 250, cooldown: 0, minTier: 'Low 7-C' },
-      { id: 'rot-lucky',  name: 'Lucky Pack',    desc: 'Rarer cards show up more often.',          size: 8, cost: 200, cooldown: 0, rarityDrop: 0.97 },
+      { id: 'rot-lucky',  name: 'Lucky Pack',    desc: 'Rarer cards and finishes show up more often.', size: 8, cost: 200, cooldown: 0, rarityDrop: 0.97, finishBoost: 2 },   // finishBoost: every finish chance x2
+      { id: 'rot-superlucky', name: 'Super Lucky Pack', desc: 'Even better odds for rare cards and finishes.', size: 8, cost: 500, cooldown: 0, rarityDrop: 0.99, finishBoost: 4, colors: ['#ffd23f', '#ff2bd6'] },   // finishBoost: every finish chance x4
       { id: 'rot-heavy',  name: 'Heavy Hitters', desc: 'Tier 5 and up. Big cards only.',           size: 4, cost: 400, cooldown: 0, minTier: '5-C' },
       { id: 'rot-dragonball', name: 'Dragon Ball Pack',   desc: 'Only Dragon Ball characters.',   size: 8, cost: 200, cooldown: 0, folder: 'Dragon Ball',   colors: ['#ff8a00', '#ffd23f'] },
       { id: 'rot-karatekid',  name: 'Karate Kid Pack',    desc: 'Only Karate Kid characters.',    size: 8, cost: 200, cooldown: 0, folder: 'Karate Kid',    colors: ['#c4161c', '#f2f2f2'] },
@@ -275,7 +277,7 @@
         folders: ['Hunter x Hunter'], colors: ['#1f8a3b', '#d6f26b'] },
       { id: 'rot-murderdrones', name: 'Murder Drones Pack', desc: 'Only Murder Drones characters.', size: 8, cost: 200, cooldown: 0,
         folders: ['Glitch Productions, Murder Drones'], colors: ['#e5392e', '#2a2a40'] },
-      // ---- ADD YOUR OWN HERE (same options as the packs above: folder, characters, minTier, maxTier, colors, rarityDrop, hold) ----
+      // ---- ADD YOUR OWN HERE (same options as the packs above: folder, characters, minTier, maxTier, colors, rarityDrop, hold, finishBoost) ----
     ];
 
     // =====================  RARITY AND FINISH PACKS (made automatically)  =====================
@@ -302,7 +304,7 @@
     const PACK_PRICE_STEP = 100;       // pack prices are rounded UP to a multiple of this
     const up = (n) => Math.ceil(n / PACK_PRICE_STEP) * PACK_PRICE_STEP;
     const PACK_PROFIT_MARGIN = 1.25;   // 1.25 = a pack costs at least 25% more than its average sell value (must stay above 1)
-    const finishMult = (forced) => VARIANTS.reduce((m, v) => m * (v[0] === forced ? v[3] : 1 + v[2] * (v[3] - 1)), 1);   // average sell multiplier of one card
+    const finishMult = (forced, boost = 1) => VARIANTS.reduce((m, v) => m * (v[0] === forced ? v[3] : 1 + Math.min(1, v[2] * boost) * (v[3] - 1)), 1);   // average sell multiplier of one card
     function packValue(pack) {   // average coins you get by selling every card in one pack
       const pool = poolFor(pack), nDiv = pool.divine.length;
       const divV = nDiv ? pool.divine.reduce((t, e) => t + RARITIES[e.level].value, 0) / nDiv : 0;
@@ -310,7 +312,7 @@
       // Divine (Boundless) cards are left out of the price, since the chance of one is tiny and its value is an extreme outlier.
       // The Divine Pack is the one exception: every card in it is Divine, so it is priced on that.
       const perCard = pool.items.length ? regV : divV;
-      return perCard * finishMult(pack.finish) * pack.size;
+      return perCard * finishMult(pack.finish, pack.finishBoost || 1) * pack.size;
     }
     PACKS.filter((p) => p.cost > 0).forEach((p) => {
       const listed = p.cost;
@@ -386,10 +388,10 @@
       const entries = [...byName.values()]
         .filter((e) => e.fam >= lo && e.fam <= hi && (pack.rarity == null || e.level === pack.rarity) && (!names || names.has(nameOf(e.c).toLowerCase())) && (!folders.length || folders.some((f) => inFolder(folderPath(e.c), f))));
       const items = entries.filter((e) => e.level !== DIVINE).map((e) => ({ e, w: Math.pow(drop, e.fam) }));
-      return (poolCache[pack.id] = { items, sum: items.reduce((t, x) => t + x.w, 0), divine: entries.filter((e) => e.level === DIVINE), pool: entries, finish: pack.finish });
+      return (poolCache[pack.id] = { items, sum: items.reduce((t, x) => t + x.w, 0), divine: entries.filter((e) => e.level === DIVINE), pool: entries, finish: pack.finish, boost: pack.finishBoost || 1 });
     }
 
-    function pullOne({ items, sum, divine, finish }) {
+    function pullOne({ items, sum, divine, finish, boost = 1 }) {
       let e;
       if (divine.length && (!items.length || Math.random() < DIVINE_CHANCE)) e = divine[Math.floor(Math.random() * divine.length)];
       else {
@@ -397,7 +399,7 @@
         for (const x of items) { r -= x.w; if (r <= 0) { pick = x; break; } }
         e = pick.e;
       }
-      const flags = VARIANTS.filter((v) => v[0] === finish || Math.random() < v[2]).map((v) => v[0]).join('');
+      const flags = VARIANTS.filter((v) => v[0] === finish || Math.random() < Math.min(1, v[2] * boost)).map((v) => v[0]).join('');
       return { e, flags };
     }
 
@@ -421,6 +423,7 @@
       if (p.minTier || p.maxTier) parts.push('tiers ' + (p.minTier || 'lowest') + ' to ' + (p.maxTier || 'highest'));
       if (p.rarity != null) parts.push(RARITIES[p.rarity].name + ' cards only');
       if (p.finish) parts.push(VARIANTS.find((v) => v[0] === p.finish)[1] + ' on every card');
+      if (p.finishBoost > 1) parts.push('finishes ' + p.finishBoost + 'x as likely');
       return parts.length ? parts.join(', ') : 'Everything';
     }
 
@@ -545,7 +548,7 @@
     const F = { view: 'owned', q: '', folder: '', from: '', to: '', rarity: new Set(), finish: new Set(), plain: false, dupes: false, vmin: '', vmax: '' };
 
     function buildFilters() {
-      const tiers = '<option value="">Any</option>' + exactTierSequence.map((t, i) => `<option value="${i}">${esc(t.replace(/^LOW /i, 'Low ').replace(/^HIGH /i, 'High '))}</option>`).join('');
+      const tiers = '<option value="">Any</option>' + exactTierSequence.map((t, i) => `<option value="${i}">${esc(t.replace(/^LOW /i, 'Low ').replace(/^HIGH /i, 'High ').replace(/ TYPE /, ' Type '))}</option>`).join('');
       $('f-from').innerHTML = tiers;
       $('f-to').innerHTML = tiers;
       $('f-rarity').innerHTML = RARITIES.map((r, i) => `<button type="button" class="fchip" data-rarity="${i}">${esc(r.name)}</button>`).join('');

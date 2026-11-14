@@ -61,6 +61,8 @@ const BASE_TIERS = [
   "LOW 1-A",
   "1-A (X LAYERS)",
   "HIGH 1-A (X LAYERS)",
+  "HIGH 1-A+ TYPE 1",   // High outerversal+ Type 1
+  "HIGH 1-A+ TYPE 2",   // High outerversal+ Type 2
   "0"
 ];
 
