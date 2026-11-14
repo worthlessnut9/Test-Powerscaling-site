@@ -273,6 +273,8 @@
       { id: 'rot-jjk',        name: 'Jujutsu Kaisen Pack', desc: 'Only Jujutsu Kaisen characters.', size: 8, cost: 200, cooldown: 0, folder: 'Jujutsu Kaisen', colors: ['#2b1fa8', '#2bd1ff'] },
       { id: 'rot-hxh',        name: 'Hunter x Hunter Pack', desc: 'Only Hunter x Hunter characters.', size: 8, cost: 200, cooldown: 0,
         folders: ['Hunter x Hunter', 'Hunter Hunter', 'HxH'], colors: ['#1f8a3b', '#d6f26b'] },   // any of these folder names works
+      { id: 'rot-murderdrones', name: 'Murder Drones Pack', desc: 'Only Murder Drones characters.', size: 8, cost: 200, cooldown: 0,
+        folders: ['Glitch Productions, Murder Drones'], colors: ['#e5392e', '#2a2a40'] },
       // ---- ADD YOUR OWN HERE (same options as the packs above: folder, characters, minTier, maxTier, colors, rarityDrop, hold) ----
     ];
 
@@ -567,9 +569,8 @@
       document.querySelectorAll('[data-rarity]').forEach((b) => b.classList.toggle('on', F.rarity.has(+b.dataset.rarity)));
       document.querySelectorAll('[data-finish]').forEach((b) => b.classList.toggle('on', F.finish.has(b.dataset.finish)));
       document.querySelector('[data-plain]').classList.toggle('on', F.plain);
-      // finish, duplicates and favorites only make sense for cards you own
-      const owned = F.view !== 'missing';
-      document.querySelectorAll('[data-finish], [data-plain], #f-dupes').forEach((el) => { el.disabled = !owned; });
+      // duplicates only make sense for cards you own. Finishes work in "not owned" too: they pick which variant you are missing
+      document.querySelector('#f-dupes').disabled = F.view === 'missing';
     }
 
     function matchesFilters(e, flags, n, key) {
@@ -596,21 +597,31 @@
     }
 
     // Chance that ONE pull from an "everything" pack (the Free and Basic packs) is this character, shown as "1 in N"
-    function oddsText(e) {
+    // flags = the exact finishes of the card ('' = a plain card with none). Each finish rolls on its own, so a card with exactly
+    // these finishes has the chance of the character times (the finish chance for each finish it has, and one minus it for each it lacks)
+    function oddsText(e, flags = '') {
       const pool = poolFor(PACKS.find((p) => p.id === 'mega'));
-      const prob = e.level === DIVINE ? DIVINE_CHANCE / (pool.divine.length || 1) : (1 - (pool.divine.length ? DIVINE_CHANCE : 0)) * Math.pow(RARITY_DROP, e.fam) / pool.sum;
+      let prob = e.level === DIVINE ? DIVINE_CHANCE / (pool.divine.length || 1) : (1 - (pool.divine.length ? DIVINE_CHANCE : 0)) * Math.pow(RARITY_DROP, e.fam) / pool.sum;
+      VARIANTS.forEach((v) => { prob *= flags.includes(v[0]) ? v[2] : 1 - v[2]; });
       if (!(prob > 0)) return '';
       const n = 1 / prob;
-      return '1 in ' + (n >= 100 ? Math.round(n) : n.toFixed(1)).toLocaleString() + ' pulls';
+      return '1 in ' + (n >= 100 ? Math.round(n) : n >= 10 ? n.toFixed(1) : n.toFixed(2)).toLocaleString() + ' pulls';
     }
 
-    let sellShowing = [];   // the cards the "Sell everything showing" button would sell right now
+    let sellShowing = [], variantMode = false;   // variantMode: the not-owned view is listing a finish variant, not whole characters
+    let _unused;   // the cards the "Sell everything showing" button would sell right now
     function renderCollection() {
       const ownedNames = new Set(Object.keys(state.cards).map((k) => k.split('||')[0]));
       let all, rows;
       if (F.view === 'missing') {
-        all = [...byName.values()].filter((e) => !ownedNames.has(nameOf(e.c))).map((e) => ({ key: '', e, flags: '', n: 0, score: rarityScore(e, '') }));
-        rows = all.filter((r) => matchesFilters(r.e, '', 0, ''));
+        // No finish chosen: characters you own no copy of. A finish (or "Plain only") chosen: every character whose card with exactly
+        // those finishes you don't own yet, even if you own the character in another finish.
+        variantMode = F.finish.size > 0 || F.plain;
+        const want = variantMode && !(F.plain && F.finish.size) ? VARIANTS.filter((v) => F.finish.has(v[0])).map((v) => v[0]).join('') : '';
+        const list = variantMode && F.plain && F.finish.size ? [] : [...byName.values()];
+        all = list.filter((e) => variantMode ? !(state.cards[nameOf(e.c) + '||' + want] > 0) : !ownedNames.has(nameOf(e.c)))
+          .map((e) => ({ key: '', e, flags: want, n: 0, score: rarityScore(e, want) }));
+        rows = all.filter((r) => matchesFilters(r.e, r.flags, 0, ''));
       } else {
         all = Object.entries(state.cards).map(([key, n]) => {
           const [name, flags = ''] = key.split('||'), e = byName.get(name);
@@ -635,17 +646,17 @@
       $('sell-showing').disabled = !showCards;
       $('sell-showing').textContent = showCards ? `Sell everything showing (${showCards.toLocaleString()} ${showCards === 1 ? 'card' : 'cards'} for ${showCoins.toLocaleString()} coins)` : 'Sell everything showing';
       const filtering = F.q || F.folder || F.from !== '' || F.to !== '' || F.rarity.size || F.finish.size || F.plain || F.dupes || F.vmin !== '' || F.vmax !== '';
-      $('shown').textContent = F.view === 'missing' ? `${rows.length} of ${all.length} characters you don’t own yet`
+      $('shown').textContent = F.view === 'missing' ? `${rows.length} of ${all.length} ${variantMode ? 'cards' : 'characters'} you don’t own yet`
         : total ? `Showing ${rows.length} of ${all.length} ${F.view === 'fav' ? 'favorited ' : ''}card types${filtering ? ' (filters on)' : ''}` : '';
 
       $('collection').innerHTML = rows.length ? rows.map((r) => {
-        if (F.view === 'missing') return `<div class="ghost">${cardHtml(r.e, '', 0, false, `<div class="muted" style="text-align:center;margin-top:8px">Not owned yet<br><b style="color:#fff">Odds: ${oddsText(r.e)}</b></div>`)}</div>`;
+        if (F.view === 'missing') return `<div class="ghost">${cardHtml(r.e, r.flags, 0, false, `<div class="muted" style="text-align:center;margin-top:8px">Not owned yet<br><b style="color:#fff">Odds: ${oddsText(r.e, r.flags)}</b><br>Sells for ${sellPrice(r.e, r.flags).toLocaleString()} coins</div>`)}</div>`;
         const fav = !!state.fav[r.key];
         return cardHtml(r.e, r.flags, r.n, false,
           `<button class="btn fav${fav ? ' on' : ''}" data-fav="${esc(r.key)}">${fav ? '★ Favorited' : '☆ Favorite'}</button>
            <button class="btn" data-sell="${esc(r.key)}"${fav ? ' disabled title="Unfavorite this card to sell it"' : ''}>${fav ? 'Locked (favorited)' : `Sell 1 for ${sellPrice(r.e, r.flags).toLocaleString()} coins`}</button>`, fav);
       }).join('')
-        : `<p class="muted">${F.view === 'missing' ? (all.length ? 'No characters match your filters.' : 'You own every character!') : total ? 'No cards match your filters.' : 'No cards yet. Open a pack!'}</p>`;
+        : `<p class="muted">${F.view === 'missing' ? (all.length ? 'No cards match your filters.' : variantMode ? (F.plain && F.finish.size ? 'No card is both plain and finished. Pick one or the other.' : 'You own every one of those!') : 'You own every character!') : total ? 'No cards match your filters.' : 'No cards yet. Open a pack!'}</p>`;
     }
 
     // ---- Card shop: a small selection of cards you can buy outright. It changes every CARD_SHOP_MINUTES. ----
