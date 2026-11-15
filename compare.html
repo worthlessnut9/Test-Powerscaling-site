@@ -108,18 +108,31 @@
 
     document.addEventListener('error', (e) => {
       const el = e.target;
-      if (el.tagName === 'IMG' && !el.dataset.fb) { el.dataset.fb = '1'; el.src = FALLBACK_IMG; }
+      if (el.tagName !== 'IMG') return;
+      const old = IMG_OLD.get(el.getAttribute('src'));
+      if (old && !el.dataset.old) { el.dataset.old = '1'; el.src = old; return; }   // not in its folder yet: try the old Images folder
+      if (!el.dataset.fb) { el.dataset.fb = '1'; el.src = FALLBACK_IMG; }
     }, true);
 
     const val = (item, ...keys) => { for (const k of keys) { const v = (item[k] || '').trim(); if (v) return v; } return ''; };
     const isEmpty = (v) => !v || /^(none|n\/a)$/i.test(v.trim());   // "None" fields are not shown
     const nameOf = (item) => val(item, 'Character Name', 'Character');
-    const imageOf = (item) => {
-      const raw = val(item, 'Image Link / Name', 'Image Link');
+    // Images live in a folder named after the character's Folders path: Images/<Folders path>/<file name>.
+    // A character with no folder uses "Not Sorted". If the file isn't there yet, the old single Images folder is tried next.
+    const IMG_OLD = new Map();
+    const imgUrl = (raw, folders) => {
+      raw = String(raw || '').trim();
       if (!raw) return '';
       if (/^https?:\/\//i.test(raw)) return raw;
-      return './Images/' + raw.replace(/^(\.\/)?images\//i, '').replace(/[#?]/g, (c) => encodeURIComponent(c));
+      const file = raw.replace(/^(\.\/)?images\//i, '');
+      const enc = (s) => s.split('/').map(encodeURIComponent).join('/');
+      if (file.includes('/')) return './Images/' + enc(file);   // the sheet already gives a path
+      const parts = String(folders || '').split(/\s*,\s*/).filter(Boolean);
+      const url = './Images/' + encodeURIComponent(parts.length ? parts.join(', ') : 'Not Sorted') + '/' + enc(file);
+      IMG_OLD.set(url, './Images/' + enc(file));
+      return url;
     };
+    const imageOf = (item) => imgUrl(val(item, 'Image Link / Name', 'Image Link'), val(item, 'Folders', 'Folder'));
 
     const FIELDS = [
       ['Attack Potency', ['AP (Attack Potency)', 'AP']],

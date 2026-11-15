@@ -300,7 +300,10 @@
 
     document.addEventListener('error', (e) => {
       const el = e.target;
-      if (el.tagName === 'IMG' && !el.dataset.fb) { el.dataset.fb = '1'; el.src = FALLBACK_IMG; }
+      if (el.tagName !== 'IMG') return;
+      const old = IMG_OLD.get(el.getAttribute('src'));
+      if (old && !el.dataset.old) { el.dataset.old = '1'; el.src = old; return; }   // not in its folder yet: try the old Images folder
+      if (!el.dataset.fb) { el.dataset.fb = '1'; el.src = FALLBACK_IMG; }
     }, true);
 
     const getCharName = (item) => item['Character Name'] || item.Character || '';
@@ -319,13 +322,22 @@
     const getNotes = (item) => item['Notes'] || 'None';
     const getTags = (item) => item['Tags'] || item.Tags || '';
 
-    const getImage = (item) => {
-      const raw = (item['Image Link / Name'] || item['Image Link'] || '').trim();
+    // Images live in a folder named after the character's Folders path: Images/<Folders path>/<file name>.
+    // A character with no folder uses "Not Sorted". If the file isn't there yet, the old single Images folder is tried next.
+    const IMG_OLD = new Map();
+    const imgUrl = (raw, folders) => {
+      raw = String(raw || '').trim();
       if (!raw) return '';
       if (/^https?:\/\//i.test(raw)) return raw;
-      const clean = raw.replace(/^(\.\/)?images\//i, '').replace(/[#?]/g, (c) => encodeURIComponent(c));
-      return `./Images/${clean}`;
+      const file = raw.replace(/^(\.\/)?images\//i, '');
+      const enc = (s) => s.split('/').map(encodeURIComponent).join('/');
+      if (file.includes('/')) return './Images/' + enc(file);   // the sheet already gives a path
+      const parts = String(folders || '').split(/\s*,\s*/).filter(Boolean);
+      const url = './Images/' + encodeURIComponent(parts.length ? parts.join(', ') : 'Not Sorted') + '/' + enc(file);
+      IMG_OLD.set(url, './Images/' + enc(file));
+      return url;
     };
+    const getImage = (item) => imgUrl(item['Image Link / Name'] || item['Image Link'], item['Folders'] || item['Folder']);
 
     const safeUrl = (u) => {
       try { const x = new URL(String(u).trim()); return /^https?:$/.test(x.protocol) ? x.href : ''; }
