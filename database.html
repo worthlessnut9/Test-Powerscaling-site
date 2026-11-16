@@ -301,9 +301,9 @@
     document.addEventListener('error', (e) => {
       const el = e.target;
       if (el.tagName !== 'IMG') return;
-      if (!el._chain) el._chain = (IMG_OLD.get(el.getAttribute('src')) || []).slice();
+      if (!el._chain) { el._want = el.getAttribute('src'); el._chain = (IMG_OLD.get(el._want) || []).slice(); }
       if (el._chain.length) { el.src = el._chain.shift(); return; }   // not found: try the next folder up
-      if (!el.dataset.fb) { el.dataset.fb = '1'; el.src = FALLBACK_IMG; }
+      if (!el.dataset.fb) { el.dataset.fb = '1'; if (el._want) { el.title = 'Image not found. First place checked: ' + decodeURIComponent(el._want).replace(/^\.\//, ''); console.warn('Image not found:', decodeURIComponent(el._want)); } el.src = FALLBACK_IMG; }
     }, true);
 
     const getCharName = (item) => item['Character Name'] || item.Character || '';
