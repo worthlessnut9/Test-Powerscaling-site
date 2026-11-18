@@ -283,6 +283,8 @@
 
     // =====================  RARITY AND FINISH PACKS (made automatically)  =====================
     // One pack per rarity: every card in it is that rarity. The price goes up RARITY_PACK_STEP coins per rarity.
+    const RARITY_UPGRADE_CHANCE = 0.001;   // each card in a rarity pack has this chance (0.001 = 0.1%) to come from a HIGHER rarity instead (never Divine)
+    const TRANSCENDENT_DIVINE_CHANCE = 0.0001;   // each card in a Transcendent Pack has this chance (0.0001 = 0.01%, 1 in 10,000) to be Divine
     const RARITY_PACK_SIZE = 8, DIVINE_PACK_SIZE = 1, DIVINE_PACK_COST = 2000000, RARITY_PACK_BASE = 100, RARITY_PACK_STEP = 100;
     // One pack per finish: every card in it has that finish (other finishes can still stack on top by chance).
     // Prices: rarer finishes cost more. Change the numbers here.
@@ -292,8 +294,8 @@
     const RARITY_COLORS = [['#8a8f99', '#c9ced6'], ['#13a67b', '#7be0b4'], ['#2b5cff', '#2bd1ff'], ['#7a2bff', '#b98aff'], ['#b32bff', '#ff2b8a'],
       ['#e5392e', '#ff9f2e'], ['#ff6a00', '#ffd23f'], ['#00b3a4', '#7affd9'], ['#1b1f3a', '#6a5cff'], ['#c9971c', '#fff3b0']];
     const FINISH_COLORS = { f: ['#2bd1ff', '#e9f7ff'], s: ['#ff2bd6', '#2bd1ff'], b: ['#c9971c', '#ffe27a'], g: ['#a87400', '#ffd34a'] };
-    const RARITY_PACKS = RARITIES.map((r, i) => ({ id: 'rarity-' + slug(r.name), name: r.name + ' Pack', desc: (i === DIVINE ? DIVINE_PACK_SIZE + ' card' : RARITY_PACK_SIZE + ' cards') + ', ' + (i === DIVINE ? 'guaranteed ' : 'every one ') + r.name + '.',
-      size: i === DIVINE ? DIVINE_PACK_SIZE : RARITY_PACK_SIZE, cost: r.name === 'Divine' ? DIVINE_PACK_COST : RARITY_PACK_BASE + RARITY_PACK_STEP * i, cooldown: 0, rarity: i, colors: RARITY_COLORS[i % RARITY_COLORS.length] }));
+    const RARITY_PACKS = RARITIES.map((r, i) => ({ id: 'rarity-' + slug(r.name), name: r.name + ' Pack', desc: (i === DIVINE ? DIVINE_PACK_SIZE + ' card' : RARITY_PACK_SIZE + ' cards') + ', ' + (i === DIVINE ? 'guaranteed ' : 'every one ') + r.name + (i < DIVINE - 1 ? ' (0.1% chance each to be a higher rarity)' : i === DIVINE - 1 ? ' (0.01% chance each to be Divine)' : '') + '.',
+      size: i === DIVINE ? DIVINE_PACK_SIZE : RARITY_PACK_SIZE, cost: r.name === 'Divine' ? DIVINE_PACK_COST : RARITY_PACK_BASE + RARITY_PACK_STEP * i, cooldown: 0, rarity: i, upgrade: i < DIVINE ? RARITY_UPGRADE_CHANCE : 0, divineChance: i === DIVINE - 1 ? TRANSCENDENT_DIVINE_CHANCE : 0, colors: RARITY_COLORS[i % RARITY_COLORS.length] }));
     const FINISH_PACKS = VARIANTS.map(([c, n]) => ({ id: 'finish-' + c, name: n + ' Pack', desc: 'Every card has the ' + n + ' finish.',
       size: FINISH_PACK_SIZE, cost: FINISH_PACK_COST[c], cooldown: 0, finish: c, colors: FINISH_COLORS[c] })).sort((a, b) => a.cost - b.cost);
     const EXTRA_PACKS = ROTATING_PACKS.concat(RARITY_PACKS, FINISH_PACKS);   // everything that can show up in the rotating slots
@@ -312,7 +314,8 @@
       const regV = pool.sum ? pool.items.reduce((t, x) => t + x.w * RARITIES[x.e.level].value, 0) / pool.sum : 0;
       // Divine (Boundless) cards are left out of the price, since the chance of one is tiny and its value is an extreme outlier.
       // The Divine Pack is the one exception: every card in it is Divine, so it is priced on that.
-      const perCard = pool.items.length ? regV : divV;
+      const upV = pool.upSum ? pool.upItems.reduce((t, x) => t + x.w * RARITIES[x.e.level].value, 0) / pool.upSum : 0;
+      const perCard = pool.items.length ? regV * (1 - pool.upChance) + upV * pool.upChance : divV;   // rarity packs: the small chance of a higher rarity counts toward the price
       return perCard * finishMult(pack.finish, pack.finishBoost || 1) * pack.size;
     }
     PACKS.filter((p) => p.cost > 0 && !p.fixedPrice).forEach((p) => {
@@ -406,12 +409,20 @@
       const entries = [...byName.values()]
         .filter((e) => e.fam >= lo && e.fam <= hi && (pack.rarity == null || e.level === pack.rarity) && (!names || names.has(nameOf(e.c).toLowerCase())) && (!folders.length || folders.some((f) => inFolder(folderPath(e.c), f))));
       const items = entries.filter((e) => e.level !== DIVINE).map((e) => ({ e, w: Math.pow(drop, e.fam) }));
-      return (poolCache[pack.id] = { items, sum: items.reduce((t, x) => t + x.w, 0), divine: entries.filter((e) => e.level === DIVINE), pool: entries, finish: pack.finish, boost: pack.finishBoost || 1 });
+      // Rarity packs: a small chance per card to come from a higher rarity (Divine excluded), weighted like a normal pull
+      const upItems = pack.upgrade ? [...byName.values()].filter((e) => e.level > pack.rarity && e.level !== DIVINE).map((e) => ({ e, w: Math.pow(drop, e.fam) })) : [];
+      const divUp = pack.divineChance ? [...byName.values()].filter((e) => e.level === DIVINE) : [];   // Divine cards a rarity pack can rarely give
+      return (poolCache[pack.id] = { divUp, divChance: divUp.length ? pack.divineChance : 0, upItems, upSum: upItems.reduce((t, x) => t + x.w, 0), upChance: upItems.length ? pack.upgrade : 0, items, sum: items.reduce((t, x) => t + x.w, 0), divine: entries.filter((e) => e.level === DIVINE), pool: entries, finish: pack.finish, boost: pack.finishBoost || 1 });
     }
 
-    function pullOne({ items, sum, divine, finish, boost = 1 }) {
+    function pullOne({ items, sum, divine, finish, boost = 1, upItems = [], upSum = 0, upChance = 0, divUp = [], divChance = 0 }) {
       let e;
-      if (divine.length && (!items.length || Math.random() < DIVINE_CHANCE)) e = divine[Math.floor(Math.random() * divine.length)];
+      if (divChance && Math.random() < divChance) e = divUp[Math.floor(Math.random() * divUp.length)];
+      else if (upChance && Math.random() < upChance) {
+        let r = Math.random() * upSum, pick = upItems[upItems.length - 1];
+        for (const x of upItems) { r -= x.w; if (r <= 0) { pick = x; break; } }
+        e = pick.e;
+      } else if (divine.length && (!items.length || Math.random() < DIVINE_CHANCE)) e = divine[Math.floor(Math.random() * divine.length)];
       else {
         let r = Math.random() * sum, pick = items[items.length - 1];
         for (const x of items) { r -= x.w; if (r <= 0) { pick = x; break; } }
