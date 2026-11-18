@@ -265,10 +265,8 @@
     const ROTATING_SLOTS = 3;
     const PACK_ROTATION_MINUTES = 5;
     const ROTATING_PACKS = [
-      { id: 'rot-power',  name: 'Power Pack',    desc: 'Only strong characters (Tier 7 and up).', size: 4, cost: 250, cooldown: 0, minTier: 'Low 7-C' },
       { id: 'rot-lucky',  name: 'Lucky Pack',    desc: 'Rarer cards and finishes show up more often.', size: 8, cost: 200, cooldown: 0, rarityDrop: 0.97, finishBoost: 2 },   // finishBoost: every finish chance x2
       { id: 'rot-superlucky', name: 'Super Lucky Pack', desc: 'Even better odds for rare cards and finishes.', size: 8, cost: 500, cooldown: 0, rarityDrop: 0.99, finishBoost: 4, colors: ['#ffd23f', '#ff2bd6'] },   // finishBoost: every finish chance x4
-      { id: 'rot-heavy',  name: 'Heavy Hitters', desc: 'Tier 5 and up. Big cards only.',           size: 4, cost: 400, cooldown: 0, minTier: '5-C' },
       { id: 'rot-dragonball', name: 'Dragon Ball Pack',   desc: 'Only Dragon Ball characters.',   size: 8, cost: 200, cooldown: 0, folder: 'Dragon Ball',   colors: ['#ff8a00', '#ffd23f'] },
       { id: 'rot-karatekid',  name: 'Karate Kid Pack',    desc: 'Only Karate Kid characters.',    size: 8, cost: 200, cooldown: 0, folder: 'Karate Kid',    colors: ['#c4161c', '#f2f2f2'] },
       { id: 'rot-opm',        name: 'One Punch Man Pack', desc: 'Only One Punch Man characters.', size: 8, cost: 200, cooldown: 0, folder: 'One Punch Man', colors: ['#ffd23f', '#e5392e'] },
@@ -277,6 +275,9 @@
         folders: ['Hunter x Hunter'], colors: ['#1f8a3b', '#d6f26b'] },
       { id: 'rot-murderdrones', name: 'Murder Drones Pack', desc: 'Only Murder Drones characters.', size: 8, cost: 200, cooldown: 0,
         folders: ['Glitch Productions, Murder Drones'], colors: ['#e5392e', '#2a2a40'] },
+      // Every card has ALL four finishes. oncePerRotation: you can only buy it once each time the shop rotates. fixedPrice: skips the automatic price rise.
+      { id: 'rot-god', name: 'God Pack', desc: 'Every card is Foil, Shiny, Gold Border and Full Gold. One per shop rotation.', size: 8, cost: 5000, cooldown: 0, finish: 'fsbg',
+        oncePerRotation: true, fixedPrice: true, colors: ['#ff2bd6', '#ffd23f'] },
       // ---- ADD YOUR OWN HERE (same options as the packs above: folder, characters, minTier, maxTier, colors, rarityDrop, hold, finishBoost) ----
     ];
 
@@ -285,8 +286,8 @@
     const RARITY_PACK_SIZE = 8, DIVINE_PACK_SIZE = 1, DIVINE_PACK_COST = 2000000, RARITY_PACK_BASE = 100, RARITY_PACK_STEP = 100;
     // One pack per finish: every card in it has that finish (other finishes can still stack on top by chance).
     // Prices: rarer finishes cost more. Change the numbers here.
-    const FINISH_PACK_SIZE = 4;
-    const FINISH_PACK_COST = { f: 300, s: 500, b: 800, g: 1500 };   // f = Foil, s = Shiny, b = Gold Border, g = Full Gold
+    const FINISH_PACK_SIZE = 8;
+    const FINISH_PACK_COST = { f: 500, s: 500, b: 1000, g: 2000 };   // f = Foil, s = Shiny, b = Gold Border, g = Full Gold
     const slug = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     const RARITY_COLORS = [['#8a8f99', '#c9ced6'], ['#13a67b', '#7be0b4'], ['#2b5cff', '#2bd1ff'], ['#7a2bff', '#b98aff'], ['#b32bff', '#ff2b8a'],
       ['#e5392e', '#ff9f2e'], ['#ff6a00', '#ffd23f'], ['#00b3a4', '#7affd9'], ['#1b1f3a', '#6a5cff'], ['#c9971c', '#fff3b0']];
@@ -304,7 +305,7 @@
     const PACK_PRICE_STEP = 100;       // pack prices are rounded UP to a multiple of this
     const up = (n) => Math.ceil(n / PACK_PRICE_STEP) * PACK_PRICE_STEP;
     const PACK_PROFIT_MARGIN = 1.25;   // 1.25 = a pack costs at least 25% more than its average sell value (must stay above 1)
-    const finishMult = (forced, boost = 1) => VARIANTS.reduce((m, v) => m * (v[0] === forced ? v[3] : 1 + Math.min(1, v[2] * boost) * (v[3] - 1)), 1);   // average sell multiplier of one card
+    const finishMult = (forced, boost = 1) => VARIANTS.reduce((m, v) => m * ((forced && forced.includes(v[0])) ? v[3] : 1 + Math.min(1, v[2] * boost) * (v[3] - 1)), 1);   // average sell multiplier of one card
     function packValue(pack) {   // average coins you get by selling every card in one pack
       const pool = poolFor(pack), nDiv = pool.divine.length;
       const divV = nDiv ? pool.divine.reduce((t, e) => t + RARITIES[e.level].value, 0) / nDiv : 0;
@@ -314,7 +315,7 @@
       const perCard = pool.items.length ? regV : divV;
       return perCard * finishMult(pack.finish, pack.finishBoost || 1) * pack.size;
     }
-    PACKS.filter((p) => p.cost > 0).forEach((p) => {
+    PACKS.filter((p) => p.cost > 0 && !p.fixedPrice).forEach((p) => {
       const listed = p.cost;
       Object.defineProperty(p, 'cost', { enumerable: true, get() {
         try { if (!loaded) return up(listed); return up(Math.max(listed, packValue(p) * PACK_PROFIT_MARGIN)); } catch (e) { return up(listed); }
@@ -373,10 +374,10 @@
 
     // ---- Saved game (kept in this browser, survives refreshes) ----
     const KEY = 'powerscaling-cards-v2';
-    let state = { coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {}, fav: {} };   // cards: "Name||flags" -> copies; ready: pack id -> time it can be opened again
+    let state = { coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {}, fav: {}, lim: {} };   // cards: "Name||flags" -> copies; ready: pack id -> time it can be opened again
     try {
       const saved = JSON.parse(localStorage.getItem(KEY));
-      if (saved && typeof saved.coins === 'number') state = { coins: saved.coins, cards: saved.cards || {}, ready: saved.ready || {}, packs: saved.packs || {}, next: saved.next || {}, fav: saved.fav || {} };
+      if (saved && typeof saved.coins === 'number') state = { coins: saved.coins, cards: saved.cards || {}, ready: saved.ready || {}, packs: saved.packs || {}, next: saved.next || {}, fav: saved.fav || {}, lim: saved.lim || {} };
       else { const old = JSON.parse(localStorage.getItem('powerscaling-cards-v1')); if (old) state.cards = old; }   // keep cards from the first version
     } catch (err) { /* start fresh */ }
     const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (err) { /* storage unavailable */ } };
@@ -416,7 +417,7 @@
         for (const x of items) { r -= x.w; if (r <= 0) { pick = x; break; } }
         e = pick.e;
       }
-      const flags = VARIANTS.filter((v) => v[0] === finish || Math.random() < Math.min(1, v[2] * boost)).map((v) => v[0]).join('');
+      const flags = VARIANTS.filter((v) => (finish && finish.includes(v[0])) || Math.random() < Math.min(1, v[2] * boost)).map((v) => v[0]).join('');
       return { e, flags };
     }
 
@@ -439,7 +440,7 @@
       if (p.characters && p.characters.length) parts.push(p.characters.length + ' chosen characters');
       if (p.minTier || p.maxTier) parts.push('tiers ' + (p.minTier || 'lowest') + ' to ' + (p.maxTier || 'highest'));
       if (p.rarity != null) parts.push(RARITIES[p.rarity].name + ' cards only');
-      if (p.finish) parts.push(VARIANTS.find((v) => v[0] === p.finish)[1] + ' on every card');
+      if (p.finish) parts.push(VARIANTS.filter((v) => p.finish.includes(v[0])).map((v) => v[1]).join(' + ') + ' on every card');
       if (p.finishBoost > 1) parts.push('finishes ' + p.finishBoost + 'x as likely');
       return parts.length ? parts.join(', ') : 'Everything';
     }
@@ -478,7 +479,7 @@
       rotating = pickRotating(shownSlot);
       const item = (p, tag) => `<div class="shop-item">${packHtml(p)}${tag ? `<div class="chip">${tag}</div>` : ''}
         <p class="muted" style="margin:0">${esc(p.desc || '')}</p><div class="muted">Pulls from: ${esc(sourceText(p))}</div>
-        <div>${p.cost.toLocaleString()} coins${everyText(p)}${isFinite(holdOf(p)) ? ' \u00b7 holds up to ' + holdOf(p) : ''}</div>
+        <div>${p.cost.toLocaleString()} coins${everyText(p)}${isFinite(holdOf(p)) ? ' \u00b7 holds up to ' + holdOf(p) : ''}${p.oncePerRotation ? ' \u00b7 1 per rotation' : ''}</div>
         <button class="btn primary" data-buy="${esc(p.id)}" disabled>Buy</button></div>`;
       const fixed = FIXED_PACKS.filter((p) => p.cost > 0);
       const html = fixed.map((p) => item(p)).join('') + rotating.map((p) => item(p, 'Rotating')).join('');
@@ -493,6 +494,7 @@
     }
 
     // Open tab: the free packs (always here) plus any packs you bought
+    const usedThisRotation = (p) => !!p.oncePerRotation && state.lim[p.id] === rotSlot();   // already bought during the current shop rotation
     const holdOf = (p) => p.hold ?? (p.cost ? Infinity : 1);   // how many of this pack you can keep
     const isRegen = (p) => !p.cost && p.cooldown > 0;           // a free pack that refills over time
 
@@ -539,6 +541,7 @@
         let label = `Buy (${p.cost.toLocaleString()} coins)`, off = false;
         if (!loaded) { label = 'Loading...'; off = true; }
         else if (!poolFor(p).pool.length) { label = 'No characters match'; off = true; }
+        else if (usedThisRotation(p)) { label = 'Bought this rotation'; off = true; }
         else if ((state.packs[p.id] || 0) >= holdOf(p)) { label = 'Pack full'; off = true; }
         else if (wait > 0) { label = 'Ready in ' + fmtTime(wait); off = true; }
         else if (state.coins < p.cost) { label = `Need ${p.cost.toLocaleString()} coins`; off = true; }
@@ -736,8 +739,9 @@
 
     // ---- Actions ----
     function buyPack(p) {
-      if (!loaded || (state.ready[p.id] || 0) > Date.now() || state.coins < p.cost || !poolFor(p).pool.length || (state.packs[p.id] || 0) >= holdOf(p)) return;
+      if (!loaded || (state.ready[p.id] || 0) > Date.now() || state.coins < p.cost || !poolFor(p).pool.length || (state.packs[p.id] || 0) >= holdOf(p) || usedThisRotation(p)) return;
       state.coins -= p.cost;
+      if (p.oncePerRotation) state.lim[p.id] = rotSlot();
       if (p.cooldown) state.ready[p.id] = Date.now() + p.cooldown * 1000;
       state.packs[p.id] = (state.packs[p.id] || 0) + 1;
       save();
@@ -862,7 +866,7 @@
       if (e.key !== KEY) return;
       try {
         const s = JSON.parse(e.newValue);
-        if (s && typeof s.coins === 'number') { state = { coins: s.coins, cards: s.cards || {}, ready: s.ready || {}, packs: s.packs || {}, next: s.next || {}, fav: s.fav || {} }; updateRegen(); renderAll(); }
+        if (s && typeof s.coins === 'number') { state = { coins: s.coins, cards: s.cards || {}, ready: s.ready || {}, packs: s.packs || {}, next: s.next || {}, fav: s.fav || {}, lim: s.lim || {} }; updateRegen(); renderAll(); }
       } catch (err) { /* ignore */ }
     });
 
