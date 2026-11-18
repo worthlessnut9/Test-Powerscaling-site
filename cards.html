@@ -275,9 +275,9 @@
         folders: ['Hunter x Hunter'], colors: ['#1f8a3b', '#d6f26b'] },
       { id: 'rot-murderdrones', name: 'Murder Drones Pack', desc: 'Only Murder Drones characters.', size: 8, cost: 200, cooldown: 0,
         folders: ['Glitch Productions, Murder Drones'], colors: ['#e5392e', '#2a2a40'] },
-      // Every card has ALL four finishes. oncePerRotation: you can only buy it once each time the shop rotates. fixedPrice: skips the automatic price rise.
+      // Every card has ALL four finishes. shopChance: 0.01 = it shows up in 1 in 100 shop rotations (it takes over one of the rotating slots). oncePerRotation: you can only buy it once each time the shop rotates. fixedPrice: skips the automatic price rise.
       { id: 'rot-god', name: 'God Pack', desc: 'Every card is Foil, Shiny, Gold Border and Full Gold. One per shop rotation.', size: 8, cost: 5000, cooldown: 0, finish: 'fsbg',
-        oncePerRotation: true, fixedPrice: true, colors: ['#ff2bd6', '#ffd23f'] },
+        oncePerRotation: true, fixedPrice: true, shopChance: 0.01, colors: ['#ff2bd6', '#ffd23f'] },
       // ---- ADD YOUR OWN HERE (same options as the packs above: folder, characters, minTier, maxTier, colors, rarityDrop, hold, finishBoost) ----
     ];
 
@@ -468,8 +468,13 @@
       if (!loaded) return [];
       let a = ((slot * 2246822519) ^ 0x9E3779B9) >>> 0;
       const rnd = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-      const left = EXTRA_PACKS.filter((p) => p.cost > 0 && poolFor(p).pool.length), out = [];   // skips packs that would have no characters
+      const ok = EXTRA_PACKS.filter((p) => p.cost > 0 && poolFor(p).pool.length);   // skips packs that would have no characters
+      const left = ok.filter((p) => !p.shopChance), out = [];   // packs with a shopChance are not in the normal draw
       while (out.length < ROTATING_SLOTS && left.length) out.push(left.splice(Math.floor(rnd() * left.length), 1)[0]);
+      // Rare packs: each one rolls its own chance every rotation, and if it hits it takes over one of the slots
+      ok.filter((p) => p.shopChance).forEach((p) => {
+        if (rnd() < p.shopChance) { if (out.length < ROTATING_SLOTS) out.push(p); else out[Math.floor(rnd() * out.length)] = p; }
+      });
       return out;
     }
 
