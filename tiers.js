@@ -73,6 +73,7 @@ const MAX_PLUS = 9;   // how many "+" can stack on one tier ("1-C (7 Dimensions)
 const normTier = (s) => String(s || '').toUpperCase().replace(/[\u2010-\u2015\u2212]/g, '-')   // fancy dashes from copy-paste -> plain "-"
   .replace(/\s+/g, ' ')
   .replace(/(\++)\s*(\((?:\d+|X) ?(?:DIMENSION|UNIVERSE|LAYER)S?\))/g, '$2$1')   // "1-C++ (7 dimensions)" -> "1-C (7 dimensions)++"
+  .replace(/\s?\(\s*(TYPE \d+)\s*\)/g, ' $1')   // "High 1-A+ (Type 1)" -> "High 1-A+ Type 1" (brackets around Type are optional)
   .replace(/ \(/g, '(');
 
 const FAMILY = {};   // normalised tier name -> { fam: position among the base tiers, step: position in exactTierSequence }
