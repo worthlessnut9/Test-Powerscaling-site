@@ -265,8 +265,9 @@
     const ROTATING_SLOTS = 3;
     const PACK_ROTATION_MINUTES = 5;
     const ROTATING_PACKS = [
-      { id: 'rot-lucky',  name: 'Lucky Pack',    desc: 'Rarer cards and finishes show up more often.', size: 8, cost: 200, cooldown: 0, rarityDrop: 0.97, finishBoost: 2 },   // finishBoost: every finish chance x2
-      { id: 'rot-superlucky', name: 'Super Lucky Pack', desc: 'Even better odds for rare cards and finishes.', size: 8, cost: 500, cooldown: 0, rarityDrop: 0.99, finishBoost: 4, colors: ['#ffd23f', '#ff2bd6'] },   // finishBoost: every finish chance x4
+      { id: 'rot-lucky',  name: 'Lucky Pack',    desc: 'Rarer cards, finishes and Divines show up more often.', size: 8, cost: 200, cooldown: 0, rarityDrop: 0.97, finishBoost: 2, divineBoost: 5 },   // divineBoost: Divine chance x5 (1 in 20,000)
+        // finishBoost: every finish chance x2
+      { id: 'rot-superlucky', name: 'Super Lucky Pack', desc: 'Even better odds for rare cards, finishes and Divines.', size: 8, cost: 500, cooldown: 0, rarityDrop: 0.99, finishBoost: 4, divineBoost: 10, colors: ['#ffd23f', '#ff2bd6'] },   // finishBoost: every finish chance x4
       { id: 'rot-dragonball', name: 'Dragon Ball Pack',   desc: 'Only Dragon Ball characters.',   size: 8, cost: 200, cooldown: 0, folder: 'Dragon Ball',   colors: ['#ff8a00', '#ffd23f'] },
       { id: 'rot-karatekid',  name: 'Karate Kid Pack',    desc: 'Only Karate Kid characters.',    size: 8, cost: 200, cooldown: 0, folder: 'Karate Kid',    colors: ['#c4161c', '#f2f2f2'] },
       { id: 'rot-opm',        name: 'One Punch Man Pack', desc: 'Only One Punch Man characters.', size: 8, cost: 200, cooldown: 0, folder: 'One Punch Man', colors: ['#ffd23f', '#e5392e'] },
@@ -414,17 +415,17 @@
       // Rarity packs: a small chance per card to come from a higher rarity (Divine excluded), weighted like a normal pull
       const upItems = pack.upgrade ? [...byName.values()].filter((e) => e.level > pack.rarity && e.level !== DIVINE).map((e) => ({ e, w: Math.pow(drop, e.fam) })) : [];
       const divUp = pack.divineChance ? [...byName.values()].filter((e) => e.level === DIVINE) : [];   // Divine cards a rarity pack can rarely give
-      return (poolCache[pack.id] = { divUp, divChance: divUp.length ? pack.divineChance : 0, upItems, upSum: upItems.reduce((t, x) => t + x.w, 0), upChance: upItems.length ? pack.upgrade : 0, items, sum: items.reduce((t, x) => t + x.w, 0), divine: entries.filter((e) => e.level === DIVINE), pool: entries, finish: pack.finish, boost: pack.finishBoost || 1 });
+      return (poolCache[pack.id] = { divUp, divChance: divUp.length ? pack.divineChance : 0, upItems, upSum: upItems.reduce((t, x) => t + x.w, 0), upChance: upItems.length ? pack.upgrade : 0, items, sum: items.reduce((t, x) => t + x.w, 0), divine: entries.filter((e) => e.level === DIVINE), pool: entries, finish: pack.finish, boost: pack.finishBoost || 1, divBoost: pack.divineBoost || 1 });
     }
 
-    function pullOne({ items, sum, divine, finish, boost = 1, upItems = [], upSum = 0, upChance = 0, divUp = [], divChance = 0 }) {
+    function pullOne({ items, sum, divine, finish, boost = 1, upItems = [], upSum = 0, upChance = 0, divUp = [], divChance = 0, divBoost = 1 }) {
       let e;
       if (divChance && Math.random() < divChance) e = divUp[Math.floor(Math.random() * divUp.length)];
       else if (upChance && Math.random() < upChance) {
         let r = Math.random() * upSum, pick = upItems[upItems.length - 1];
         for (const x of upItems) { r -= x.w; if (r <= 0) { pick = x; break; } }
         e = pick.e;
-      } else if (divine.length && (!items.length || Math.random() < DIVINE_CHANCE)) e = divine[Math.floor(Math.random() * divine.length)];
+      } else if (divine.length && (!items.length || Math.random() < DIVINE_CHANCE * divBoost)) e = divine[Math.floor(Math.random() * divine.length)];
       else {
         let r = Math.random() * sum, pick = items[items.length - 1];
         for (const x of items) { r -= x.w; if (r <= 0) { pick = x; break; } }
@@ -455,6 +456,7 @@
       if (p.rarity != null) parts.push(RARITIES[p.rarity].name + ' cards only');
       if (p.finish) parts.push(VARIANTS.filter((v) => p.finish.includes(v[0])).map((v) => v[1]).join(' + ') + ' on every card');
       if (p.finishBoost > 1) parts.push('finishes ' + p.finishBoost + 'x as likely');
+      if (p.divineBoost > 1) parts.push('Divine ' + p.divineBoost + 'x as likely');
       return parts.length ? parts.join(', ') : 'Everything';
     }
 
