@@ -288,7 +288,8 @@
     // One pack per rarity: every card in it is that rarity. The price goes up RARITY_PACK_STEP coins per rarity.
     const RARITY_UPGRADE_CHANCE = 0.001;   // each card in a rarity pack has this chance (0.001 = 0.1%) to come from a HIGHER rarity instead (never Divine)
     const TRANSCENDENT_DIVINE_CHANCE = 0.0001;   // each card in a Transcendent Pack has this chance (0.0001 = 0.01%, 1 in 10,000) to be Divine
-    const RARITY_PACK_SIZE = 8, DIVINE_PACK_SIZE = 1, DIVINE_PACK_COST = 2000000, RARITY_PACK_BASE = 100, RARITY_PACK_STEP = 100;
+    const RARITY_PACK_SIZE = 8, DIVINE_PACK_SIZE = 1, DIVINE_PACK_COST = 1000000,   // the Divine Pack costs this at the start, then DOUBLES for every Divine card you own (each finish version counts separately)
+       RARITY_PACK_BASE = 100, RARITY_PACK_STEP = 100;
     // One pack per finish: every card in it has that finish (other finishes can still stack on top by chance).
     // Prices: rarer finishes cost more. Change the numbers here.
     const FINISH_PACK_SIZE = 8;
@@ -298,7 +299,7 @@
       ['#e5392e', '#ff9f2e'], ['#ff6a00', '#ffd23f'], ['#00b3a4', '#7affd9'], ['#1b1f3a', '#6a5cff'], ['#c9971c', '#fff3b0']];
     const FINISH_COLORS = { f: ['#2bd1ff', '#e9f7ff'], s: ['#ff2bd6', '#2bd1ff'], b: ['#c9971c', '#ffe27a'], g: ['#a87400', '#ffd34a'] };
     const RARITY_PACKS = RARITIES.map((r, i) => ({ id: 'rarity-' + slug(r.name), name: r.name + ' Pack', desc: (i === DIVINE ? DIVINE_PACK_SIZE + ' card' : RARITY_PACK_SIZE + ' cards') + ', ' + (i === DIVINE ? 'guaranteed ' : 'every one ') + r.name + '.',
-      size: i === DIVINE ? DIVINE_PACK_SIZE : RARITY_PACK_SIZE, cost: r.name === 'Divine' ? DIVINE_PACK_COST : RARITY_PACK_BASE + RARITY_PACK_STEP * i, cooldown: 0, rarity: i, upgrade: i < DIVINE ? RARITY_UPGRADE_CHANCE : 0, divineChance: i === DIVINE - 1 ? TRANSCENDENT_DIVINE_CHANCE : 0, colors: RARITY_COLORS[i % RARITY_COLORS.length] }));
+      size: i === DIVINE ? DIVINE_PACK_SIZE : RARITY_PACK_SIZE, cost: r.name === 'Divine' ? DIVINE_PACK_COST : RARITY_PACK_BASE + RARITY_PACK_STEP * i, fixedPrice: i === DIVINE, divineDouble: i === DIVINE, cooldown: 0, rarity: i, upgrade: i < DIVINE ? RARITY_UPGRADE_CHANCE : 0, divineChance: i === DIVINE - 1 ? TRANSCENDENT_DIVINE_CHANCE : 0, colors: RARITY_COLORS[i % RARITY_COLORS.length] }));
     const FINISH_PACKS = VARIANTS.map(([c, n]) => ({ id: 'finish-' + c, name: n + ' Pack', desc: 'Every card has the ' + n + ' finish.',
       size: FINISH_PACK_SIZE, cost: FINISH_PACK_COST[c], cooldown: 0, finish: c, colors: FINISH_COLORS[c] })).sort((a, b) => a.cost - b.cost);
     const EXTRA_PACKS = ROTATING_PACKS.concat(RARITY_PACKS, FINISH_PACKS);   // everything that can show up in the rotating slots
@@ -326,6 +327,13 @@
       Object.defineProperty(p, 'cost', { enumerable: true, get() {
         try { if (!loaded) return up(listed); return up(Math.max(listed, packValue(p) * PACK_PROFIT_MARGIN)); } catch (e) { return up(listed); }
       } });
+    });
+
+    // The Divine Pack: base price doubled once for every different Divine card you own (a Divine with a finish counts as another one).
+    const divinesOwned = () => Object.keys(state.cards).filter((k) => state.cards[k] > 0 && byName.get(k.split('||')[0])?.level === DIVINE).length;
+    PACKS.filter((p) => p.divineDouble).forEach((p) => {
+      const base = p.cost;
+      Object.defineProperty(p, 'cost', { enumerable: true, get() { try { return loaded ? base * Math.pow(2, divinesOwned()) : base; } catch (e) { return base; } } });
     });
 
     const PALETTE = [['#2b5cff', '#7a2bff'], ['#e5392e', '#ff9f2e'], ['#13a67b', '#2bd1ff'], ['#b32bff', '#ff2b8a'], ['#c9971c', '#ffe27a']];   // pack colours when a pack has no colors
@@ -499,7 +507,7 @@
       rotating = pickRotating(shownSlot);
       const item = (p, tag) => `<div class="shop-item">${packHtml(p)}${tag ? `<div class="chip">${tag}</div>` : ''}
         <p class="muted" style="margin:0">${esc(p.desc || '')}</p><div class="muted">Pulls from: ${esc(sourceText(p))}</div>
-        <div>${p.cost.toLocaleString()} coins${everyText(p)}${isFinite(holdOf(p)) ? ' \u00b7 holds up to ' + holdOf(p) : ''}${p.oncePerRotation ? ' \u00b7 1 per rotation' : ''}</div>
+        <div><span data-price="${esc(p.id)}">${p.cost.toLocaleString()}</span> coins${everyText(p)}${isFinite(holdOf(p)) ? ' \u00b7 holds up to ' + holdOf(p) : ''}${p.oncePerRotation ? ' \u00b7 1 per rotation' : ''}</div>
         <button class="btn primary" data-buy="${esc(p.id)}" disabled>Buy</button></div>`;
       const fixed = FIXED_PACKS.filter((p) => p.cost > 0);
       const html = fixed.map((p) => item(p)).join('') + rotating.map((p) => item(p, 'Rotating')).join('');
@@ -556,6 +564,7 @@
 
     function refreshPacks() {
       const now = Date.now();
+      document.querySelectorAll('[data-price]').forEach((el) => { const q = PACKS.find((x) => x.id === el.dataset.price); if (q) el.textContent = q.cost.toLocaleString(); });   // prices that change as you play
       document.querySelectorAll('[data-buy]').forEach((btn) => {
         const p = PACKS.find((x) => x.id === btn.dataset.buy), wait = Math.max(0, (state.ready[p.id] || 0) - now);
         let label = `Buy (${p.cost.toLocaleString()} coins)`, off = false;
