@@ -288,7 +288,7 @@
     // One pack per rarity: every card in it is that rarity. The price goes up RARITY_PACK_STEP coins per rarity.
     const RARITY_UPGRADE_CHANCE = 0.001;   // each card in a rarity pack has this chance (0.001 = 0.1%) to come from a HIGHER rarity instead (never Divine)
     const TRANSCENDENT_DIVINE_CHANCE = 0.0001;   // each card in a Transcendent Pack has this chance (0.0001 = 0.01%, 1 in 10,000) to be Divine
-    const RARITY_PACK_SIZE = 8, DIVINE_PACK_SIZE = 1, DIVINE_PACK_COST = 1000000,   // the Divine Pack costs this at the start, then DOUBLES for every Divine card you own (each finish version counts separately)
+    const RARITY_PACK_SIZE = 8, DIVINE_PACK_SIZE = 1, DIVINE_PACK_COST = 1000000,   // the Divine Pack costs this at the start, then DOUBLES for every Divine Pack you open
        RARITY_PACK_BASE = 100, RARITY_PACK_STEP = 100;
     // One pack per finish: every card in it has that finish (other finishes can still stack on top by chance).
     // Prices: rarer finishes cost more. Change the numbers here.
@@ -329,11 +329,10 @@
       } });
     });
 
-    // The Divine Pack: base price doubled once for every different Divine card you own (a Divine with a finish counts as another one).
-    const divinesOwned = () => Object.keys(state.cards).filter((k) => state.cards[k] > 0 && byName.get(k.split('||')[0])?.level === DIVINE).length;
+    // The Divine Pack: the base price doubled once for every Divine Pack you have opened (selling cards does not bring it back down).
     PACKS.filter((p) => p.divineDouble).forEach((p) => {
       const base = p.cost;
-      Object.defineProperty(p, 'cost', { enumerable: true, get() { try { return loaded ? base * Math.pow(2, divinesOwned()) : base; } catch (e) { return base; } } });
+      Object.defineProperty(p, 'cost', { enumerable: true, get() { try { return base * Math.pow(2, state.divOpened || 0); } catch (e) { return base; } } });
     });
 
     const PALETTE = [['#2b5cff', '#7a2bff'], ['#e5392e', '#ff9f2e'], ['#13a67b', '#2bd1ff'], ['#b32bff', '#ff2b8a'], ['#c9971c', '#ffe27a']];   // pack colours when a pack has no colors
@@ -388,10 +387,10 @@
 
     // ---- Saved game (kept in this browser, survives refreshes) ----
     const KEY = 'powerscaling-cards-v2';
-    let state = { coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {}, fav: {}, lim: {}, cbuy: {} };   // cards: "Name||flags" -> copies; ready: pack id -> time it can be opened again
+    let state = { coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {}, fav: {}, lim: {}, cbuy: {}, divOpened: 0 };   // cards: "Name||flags" -> copies; ready: pack id -> time it can be opened again
     try {
       const saved = JSON.parse(localStorage.getItem(KEY));
-      if (saved && typeof saved.coins === 'number') state = { coins: saved.coins, cards: saved.cards || {}, ready: saved.ready || {}, packs: saved.packs || {}, next: saved.next || {}, fav: saved.fav || {}, lim: saved.lim || {}, cbuy: saved.cbuy || {} };
+      if (saved && typeof saved.coins === 'number') state = { coins: saved.coins, cards: saved.cards || {}, ready: saved.ready || {}, packs: saved.packs || {}, next: saved.next || {}, fav: saved.fav || {}, lim: saved.lim || {}, cbuy: saved.cbuy || {}, divOpened: saved.divOpened || 0 };
       else { const old = JSON.parse(localStorage.getItem('powerscaling-cards-v1')); if (old) state.cards = old; }   // keep cards from the first version
     } catch (err) { /* start fresh */ }
     const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (err) { /* storage unavailable */ } };
@@ -823,6 +822,7 @@
         state.packs[p.id]--;
         updateRegen();   // starts the refill timer if a free pack was full
       }                  // a free pack with no wait can always be opened
+      if (p.divineDouble) state.divOpened = (state.divOpened || 0) + 1;   // each Divine Pack opened doubles the Divine Pack price
       const pulls = [];
       for (let i = 0; i < p.size; i++) {
         const { e, flags } = p.unowned ? pickUnowned(pool) : pullOne(pool), key = nameOf(e.c) + '||' + flags;
@@ -922,7 +922,7 @@
       if (e.key !== KEY) return;
       try {
         const s = JSON.parse(e.newValue);
-        if (s && typeof s.coins === 'number') { state = { coins: s.coins, cards: s.cards || {}, ready: s.ready || {}, packs: s.packs || {}, next: s.next || {}, fav: s.fav || {}, lim: s.lim || {}, cbuy: s.cbuy || {} }; updateRegen(); renderAll(); }
+        if (s && typeof s.coins === 'number') { state = { coins: s.coins, cards: s.cards || {}, ready: s.ready || {}, packs: s.packs || {}, next: s.next || {}, fav: s.fav || {}, lim: s.lim || {}, cbuy: s.cbuy || {}, divOpened: s.divOpened || 0 }; updateRegen(); renderAll(); }
       } catch (err) { /* ignore */ }
     });
 
