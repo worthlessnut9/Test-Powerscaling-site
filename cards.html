@@ -208,7 +208,7 @@
     const CARD_SHOP_SIZE = 8;      // how many cards are for sale in the Shop at a time
     const CARD_SHOP_FINISHES = 2;  // at least this many of them always have a finish (Shiny, Foil, Gold Border or Full Gold)
     const CARD_SHOP_MINUTES = 10;  // the cards for sale change this often
-    const CARD_BUY_MARKUP = 2;     // buying a card in the Shop costs this many times what it sells for (it was 4; now half). Each card can be bought once per rotation
+    const CARD_BUY_MARKUP = 0.5;   // buying a card in the Shop costs this many times what it sells for (0.5 = half, so you can sell it for a profit). Each card can be bought once per rotation
 
     const RARITY_DROP = 0.9;        // each tier step up makes a character this much as likely to be pulled (smaller = rarer)
     const DIVINE_CHANCE = 0.00001;  // chance a pulled card is Divine (a Tier 0 character): 0.001%, or 1 in 100,000
@@ -713,7 +713,7 @@
 
     // ---- Card shop: a small selection of cards you can buy outright. It changes every CARD_SHOP_MINUTES. ----
     let stockSlot = null, stock = [];
-    const buyPrice = (e, flags = '') => sellPrice(e, flags) * CARD_BUY_MARKUP;   // finishes make a card cost more, same as they make it sell for more
+    const buyPrice = (e, flags = '') => Math.max(1, Math.round(sellPrice(e, flags) * CARD_BUY_MARKUP));   // finishes make a card cost more, same as they make it sell for more
     const cardBought = (i) => state.cbuy.slot === stockSlot && (state.cbuy.i || []).includes(+i);   // already bought this card during the current rotation
     const currentSlot = () => Math.floor(Date.now() / (CARD_SHOP_MINUTES * 60000));
 
