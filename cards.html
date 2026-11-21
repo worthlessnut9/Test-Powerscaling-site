@@ -742,7 +742,7 @@
     function renderCardShop() {
       if (!loaded) { $('shop-cards').innerHTML = '<p class="muted">Loading...</p>'; return; }
       if (currentSlot() !== stockSlot) { stockSlot = currentSlot(); stock = makeStock(stockSlot); }
-      $('shop-cards').innerHTML = stock.map((x, i) => cardHtml(x.e, x.flags, 0, false, `<button class="btn primary" data-buycard="${i}">Buy</button>`)).join('');
+      $('shop-cards').innerHTML = stock.map((x, i) => cardHtml(x.e, x.flags, 0, !state.cards[nameOf(x.e.c) + '||' + x.flags], `<button class="btn primary" data-buycard="${i}">Buy</button>`)).join('');
       refreshCardShop();
     }
 
@@ -755,6 +755,10 @@
         const got = cardBought(btn.dataset.buycard);
         btn.textContent = got ? 'Bought this rotation' : state.coins < price ? `Need ${price.toLocaleString()} coins` : `Buy for ${price.toLocaleString()} coins`;
         btn.disabled = got || state.coins < price;
+        // "NEW" tag: shown while you do not own this card (this exact finish version); it goes away once you have it
+        const card = btn.closest('.tcard'), tag = card.querySelector('.new'), isNew = !state.cards[nameOf(item.e.c) + '||' + item.flags];
+        if (isNew && !tag) card.insertAdjacentHTML('afterbegin', '<div class="new">NEW</div>');
+        else if (!isNew && tag) tag.remove();
       });
     }
 
