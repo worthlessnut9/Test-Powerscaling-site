@@ -54,6 +54,35 @@
     .count, .new { position: absolute; top: 12px; z-index: 2; border-radius: 6px; padding: 2px 8px; font-size: 0.8rem; font-weight: 700; background: rgba(0,0,0,0.75); color: #fff; }
     .count { right: 12px; }
     .new { left: 12px; background: #238636; }
+    .cp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 520px; margin: 10px auto; }
+    .cp-cell { background: var(--bg-color); border: 2px solid var(--border-color); border-radius: 10px; padding: 6px; text-align: center; font-size: 0.78rem; min-height: 120px; min-width: 0; }
+    .cp-cell img { width: 100%; height: 70px; object-fit: cover; border-radius: 6px; background: #000; }
+    .cp-cell b { display: block; color: #fff; margin-top: 4px; line-height: 1.15; }
+    .cp-cell.win { border-color: #e3b341; box-shadow: 0 0 10px rgba(227, 179, 65, 0.5); }
+    .cp-cell.spin { opacity: 0.6; }
+    .cp-bar { height: 12px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 999px; overflow: hidden; }
+    .cp-bar > i { display: block; height: 100%; background: linear-gradient(90deg, #238636, #e3b341); }
+    .cp-charm { display: inline-block; background: var(--tag-bg); border: 1px solid var(--border-color); border-radius: 999px; padding: 2px 10px; margin: 2px; font-size: 0.8rem; }
+    .cp-offer { background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; flex: 1; min-width: 160px; }
+    .cp-pick.on { border-color: #e3b341; color: #e3b341; }
+    .pt-table { background: radial-gradient(ellipse at center, #1b6b3a, #0d3b20); border: 3px solid #5a3a1a; border-radius: 16px; padding: 12px; margin: 10px 0; min-height: 150px; color: #fff; }
+    .pt-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; }
+    .pt-row.small .pcard { width: 32px; height: 46px; } .pt-row.small .pcard b { font-size: 0.8rem; } .pt-row.small .pcard i { font-size: 0.9rem; }
+    .pt-lbl { min-width: 96px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.85; }
+    .pt-bet, .pt-hint { margin: 6px 0; opacity: 0.95; }
+    .pt-slot { text-align: center; cursor: pointer; } .pt-slot small { display: block; height: 14px; font-size: 0.65rem; color: #e3b341; font-weight: 700; }
+    .pcard { width: 54px; height: 76px; background: #fff; color: #111; border: 2px solid #d0d0d0; border-radius: 8px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; box-shadow: 0 2px 6px rgba(0,0,0,0.45); }
+    .pcard b { font-size: 1.2rem; } .pcard i { font-style: normal; font-size: 1.4rem; }
+    .pcard.red { color: #c4161c; }
+    .pcard.back { background: repeating-linear-gradient(45deg, #1d3fa8 0 6px, #2b5cff 6px 12px); border-color: #fff; }
+    .pcard.empty { background: rgba(0,0,0,0.2); border: 2px dashed rgba(255,255,255,0.3); box-shadow: none; }
+    .pcard.hold { transform: translateY(-6px); box-shadow: 0 0 0 3px #e3b341; }
+    .pt-res { margin: 10px 0 2px; padding: 8px 12px; border-radius: 8px; background: rgba(0,0,0,0.4); font-weight: 700; }
+    .pt-res.win { color: #7ee787; } .pt-res.lose { color: #ff7b72; }
+    .pt-log { font-size: 0.8rem; opacity: 0.85; margin-top: 8px; }
+    .pt-controls { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 4px 0 6px; }
+    .pt-pay { margin-top: 10px; border-collapse: collapse; font-size: 0.85rem; width: auto; max-width: 360px; } .pt-pay th { text-align: left; font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); } .pt-pay th, .pt-pay td { padding: 2px 18px 2px 0; } .pt-pay tr.hit td { color: #7ee787; font-weight: 700; }
+    @media (max-width: 480px) { .pcard { width: 44px; height: 62px; } .pcard b { font-size: 1rem; } .pcard i { font-size: 1.1rem; } .pt-lbl { min-width: 100%; } }
     .filters { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px; }
     .frow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
     .frow > .lbl { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; min-width: 52px; }
@@ -133,6 +162,8 @@
       <button class="tab" id="tab-packs" role="tab">Open Packs</button>
       <button class="tab" id="tab-collection" role="tab">My Collection</button>
       <button class="tab" id="tab-prestige" role="tab">Prestige</button>
+      <button class="tab" id="tab-clover" role="tab">Clover Pit</button>
+      <button class="tab" id="tab-poker" role="tab">Poker Table</button>
     </div>
 
     <section id="panel-shop">
@@ -192,6 +223,14 @@
       </div>
       <p class="muted" id="shown" style="margin: 0 0 12px;"></p>
       <div class="cgrid" id="collection"></div>
+    </section>
+
+    <section id="panel-clover" hidden>
+      <div class="filters" id="clover-box"></div>
+    </section>
+
+    <section id="panel-poker" hidden>
+      <div class="filters" id="poker-box"></div>
     </section>
 
     <section id="panel-prestige" hidden>
@@ -399,10 +438,10 @@
 
     // ---- Saved game (kept in this browser, survives refreshes) ----
     const KEY = 'powerscaling-cards-v2';
-    let state = { coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {}, fav: {}, lim: {}, cbuy: {}, divOpened: 0, divSlot: 0, prestige: 0 };   // cards: "Name||flags" -> copies; ready: pack id -> time it can be opened again
+    let state = { coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {}, fav: {}, lim: {}, cbuy: {}, divOpened: 0, divSlot: 0, prestige: 0, clover: { run: null, lineup: [] } };   // cards: "Name||flags" -> copies; ready: pack id -> time it can be opened again
     try {
       const saved = JSON.parse(localStorage.getItem(KEY));
-      if (saved && typeof saved.coins === 'number') state = { coins: saved.coins, cards: saved.cards || {}, ready: saved.ready || {}, packs: saved.packs || {}, next: saved.next || {}, fav: saved.fav || {}, lim: saved.lim || {}, cbuy: saved.cbuy || {}, divOpened: saved.divOpened || 0, divSlot: saved.divSlot || 0, prestige: saved.prestige || 0 };
+      if (saved && typeof saved.coins === 'number') state = { coins: saved.coins, cards: saved.cards || {}, ready: saved.ready || {}, packs: saved.packs || {}, next: saved.next || {}, fav: saved.fav || {}, lim: saved.lim || {}, cbuy: saved.cbuy || {}, divOpened: saved.divOpened || 0, divSlot: saved.divSlot || 0, prestige: saved.prestige || 0, clover: saved.clover || { run: null, lineup: [] } };
       else { const old = JSON.parse(localStorage.getItem('powerscaling-cards-v1')); if (old) state.cards = old; }   // keep cards from the first version
     } catch (err) { /* start fresh */ }
     const lw = (level, L = luck()) => Math.pow(L, level * LUCK_RARITY_STEP);   // how much more likely luck makes a card of this rarity (Common = 1)
@@ -831,9 +870,456 @@
       if (!q || n <= P || busy || state.coins < q.price) return;
       if (q.card) { const r = resolveReq(q.card); if (!r || !ownsReq(r)) return; }
       if (!window.confirm(`Go to Prestige ${n}${n > P + 1 ? ' (skipping ' + (n - P - 1) + ' level' + (n - P - 1 > 1 ? 's' : '') + ')' : ''}? This resets your coins to ${startCoinsFor(n).toLocaleString()} and removes ALL your cards, packs and favorites. You keep the luck.`)) return;
-      state = { coins: startCoinsFor(n), cards: {}, ready: {}, packs: {}, next: {}, fav: {}, lim: {}, cbuy: {}, divOpened: 0, divSlot: 0, prestige: n };
-      save(); $('pack-box').hidden = true; location.hash = '#packs';
+      state = { coins: startCoinsFor(n), cards: {}, ready: {}, packs: {}, next: {}, fav: {}, lim: {}, cbuy: {}, divOpened: 0, divSlot: 0, prestige: n, clover: { run: null, lineup: [] } };
+      ptReset(); save(); $('pack-box').hidden = true; location.hash = '#packs';
       renderShop(); renderCardShop(); renderAll(); showTab();
+    }
+
+
+    // ---- Clover Pit: a roguelike slot machine made of your own cards ----
+    // Pick a lineup of cards you own, pay the entry fee, then spin a 3x3 machine each round. Each round has a points target that grows.
+    // Clear it to add coins to your run purse (and buy charms); you can cash out the purse between rounds, or risk it for the next round.
+    // Fail a round and the purse is lost. Your cards are never used up. Everything is scaled to the lineup you pick, so the odds are the same for any collection.
+    const CLOVER_VALUE_CAP = 2000;     // the most one symbol can be worth (so a Divine card does not break the scale)
+    const CLOVER_LINEUP_MIN = 3, CLOVER_LINEUP_MAX = 8;
+    const CLOVER_SPINS = 5;            // spins per round
+    const CLOVER_PAYS = { triple: 8, series: 3, rarity: 1.5, pair: 1 };   // line payout = this x the average symbol value on the line
+    const CLOVER_GROWTH = 1.7;         // each round's target is this many times the last one
+    const CLOVER_ROUND1_CLEAR = 0.65;  // the round 1 target is set so a lineup with no charms clears it about this often
+    const CLOVER_ENTRY_SHARE = 1;      // entry fee = this x the round 1 target (in coins)
+    const CLOVER_REWARD_RATIO = 1.3;   // clearing a round adds this x its target to the purse
+    const CLOVER_LEFTOVER_BONUS = 0.05;   // ...plus this x the target for every spin you did not need
+    const CLOVER_CHARM_PRICE = 0.5;   // a charm costs this x the target of the round you just cleared (paid from the purse)
+    const CLOVER_CHARMS = [
+      { id: 'spin', name: 'Extra Spin', desc: '+1 spin every round', max: 2 },
+      { id: 'respin', name: 'Free Respin', desc: 'Once a round, redo your last spin for free', max: 2 },
+      { id: 'clover', name: 'Lucky Clover', desc: 'Each cell is 25% more likely to be one of your best cards', max: 2 },
+      { id: 'twin', name: 'Twin Boost', desc: 'Three of the same character pays double', max: 2 },
+      { id: 'series', name: 'Series Boost', desc: 'Three from the same folder pays double', max: 2 },
+      { id: 'pair', name: 'Pair Pay', desc: 'Two of the same character pays double', max: 2 },
+      { id: 'mult', name: 'Multiplier', desc: 'Every payout x1.25', max: 3 },
+      { id: 'insure', name: 'Insurance', desc: 'If you fail a round, keep half your purse (used once)', max: 1 }
+    ];
+    const CLOVER_LINES = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 4, 8], [2, 4, 6]];
+    let cloverBusy = false, cloverFilter = '';
+    const cloverRun = () => state.clover.run;
+    const charmN = (run, id) => (run && run.charms[id]) || 0;
+
+    function cloverSymbol(key) {
+      const [n, flags = ''] = key.split('||'), e = byName.get(n);
+      if (!e) return null;
+      return { key, e, flags, name: n, level: e.level, folder: folderPath(e.c)[0], val: Math.max(1, Math.min(CLOVER_VALUE_CAP, sellPrice(e, flags))) };
+    }
+    const cloverLineupSyms = () => (state.clover.lineup || []).filter((k) => state.cards[k] > 0).map(cloverSymbol).filter(Boolean);
+    function cloverSpinGrid(syms, run) {
+      const pTop = Math.min(0.9, 0.25 * charmN(run, 'clover') + (luck() - 1) * 0.5);   // prestige luck also favours your best cards
+      const best = syms.slice().sort((a, b) => b.val - a.val).slice(0, Math.ceil(syms.length / 2));
+      return Array.from({ length: 9 }, () => { const pool = Math.random() < pTop ? best : syms; return pool[Math.floor(Math.random() * pool.length)]; });
+    }
+    function cloverScore(grid, run) {
+      const lines = []; let total = 0;
+      CLOVER_LINES.forEach((ix) => {
+        const c = ix.map((i) => grid[i]), mean = (a) => a.reduce((t, x) => t + x.val, 0) / a.length;
+        let label = null, pts = 0;
+        if (c[0].name === c[1].name && c[1].name === c[2].name) { label = 'Triple'; pts = CLOVER_PAYS.triple * mean(c) * Math.pow(2, charmN(run, 'twin')); }
+        else if (c[0].folder === c[1].folder && c[1].folder === c[2].folder) { label = 'Series'; pts = CLOVER_PAYS.series * mean(c) * Math.pow(2, charmN(run, 'series')); }
+        else if (c[0].level === c[1].level && c[1].level === c[2].level) { label = 'Rarity'; pts = CLOVER_PAYS.rarity * mean(c); }
+        else {
+          const pair = c.find((x, i) => c.some((y, j) => j !== i && y.name === x.name));
+          if (pair) { label = 'Pair'; pts = CLOVER_PAYS.pair * mean(c.filter((x) => x.name === pair.name)) * Math.pow(2, charmN(run, 'pair')); }
+        }
+        if (label) { pts *= Math.pow(1.25, charmN(run, 'mult')); total += pts; lines.push({ ix, label, pts }); }
+      });
+      return { total: Math.round(total), lines };
+    }
+    const cloverTermsCache = {};
+    function cloverTerms(syms) {   // the round 1 target and the entry fee, found by simulating this lineup (and remembered, so the numbers do not change on every redraw)
+      const key = syms.map((x) => x.key).sort().join('|');
+      if (cloverTermsCache[key]) return cloverTermsCache[key];
+      const base = { charms: {} }, totals = [];
+      for (let i = 0; i < 500; i++) { let t = 0; for (let k = 0; k < CLOVER_SPINS; k++) t += cloverScore(cloverSpinGrid(syms, base), base).total; totals.push(t); }
+      totals.sort((a, b) => a - b);
+      const d1 = Math.max(1, Math.ceil(totals[Math.floor(totals.length * (1 - CLOVER_ROUND1_CLEAR))]));   // round 1 is cleared about this often with no charms
+      return (cloverTermsCache[key] = { d1, entry: Math.max(1, Math.ceil(d1 * CLOVER_ENTRY_SHARE)) });
+    }
+    const cloverTarget = (run) => Math.ceil(run.d1 * Math.pow(CLOVER_GROWTH, run.round - 1));
+    function cloverStartRound(run) {
+      run.target = cloverTarget(run); run.points = 0; run.spinsLeft = CLOVER_SPINS + charmN(run, 'spin'); run.respins = charmN(run, 'respin');
+      run.grid = null; run.lines = []; run.lastTotal = 0; run.phase = 'play';
+    }
+    function cloverOffers(run) {
+      const open = CLOVER_CHARMS.filter((c) => charmN(run, c.id) < c.max), out = [];
+      while (out.length < 3 && open.length) out.push(open.splice(Math.floor(Math.random() * open.length), 1)[0].id);
+      return out;
+    }
+    function cloverStart() {
+      const syms = cloverLineupSyms();
+      if (cloverBusy || cloverRun() || syms.length < CLOVER_LINEUP_MIN) return;
+      const t = cloverTerms(syms);
+      if (state.coins < t.entry) return;
+      state.coins -= t.entry;
+      const run = { round: 1, d1: t.d1, entry: t.entry, purse: 0, charms: {}, lineup: syms.map((x) => x.key), shop: [], phase: 'play' };
+      cloverStartRound(run); state.clover.run = run; save(); renderAll(); renderClover();
+    }
+    function cloverFinishSpin(run, g) {
+      run.grid = g.grid.map((x) => x.key); run.lines = g.lines; run.lastTotal = g.total; run.points += g.total;
+      if (run.points >= run.target) {   // round cleared
+        const reward = Math.round(CLOVER_REWARD_RATIO * run.target + CLOVER_LEFTOVER_BONUS * run.target * run.spinsLeft);
+        run.purse += reward; run.reward = reward; run.phase = 'shop'; run.shop = cloverOffers(run);
+      } else if (run.spinsLeft <= 0) {
+        run.phase = 'over'; run.lost = run.purse;
+        if (charmN(run, 'insure')) { run.kept = Math.floor(run.purse / 2); state.coins += run.kept; } else run.kept = 0;
+        run.purse = 0;
+      }
+      save(); renderAll(); renderClover();
+    }
+    function cloverSpin(isRespin) {
+      const run = cloverRun();
+      if (!run || cloverBusy || run.phase !== 'play') return;
+      if (isRespin) { if (run.respins <= 0 || !run.grid) return; run.respins--; run.points -= run.lastTotal; }
+      else { if (run.spinsLeft <= 0) return; run.spinsLeft--; }
+      const syms = run.lineup.map(cloverSymbol).filter(Boolean), grid = cloverSpinGrid(syms, run), res = cloverScore(grid, run);
+      cloverBusy = true; let n = 0;
+      const cells = () => [...document.querySelectorAll('#clover-box .cp-cell')];
+      const timer = setInterval(() => {   // a short reel flicker, then the real result
+        n++;
+        cells().forEach((c) => { const x = syms[Math.floor(Math.random() * syms.length)]; c.classList.add('spin'); c.classList.remove('win'); c.innerHTML = cloverCellInner(x); });
+        if (n >= 6) { clearInterval(timer); cloverBusy = false; cloverFinishSpin(run, { grid, lines: res.lines, total: res.total }); }
+      }, 90);
+    }
+    function cloverCashOut() {
+      const run = cloverRun();
+      if (!run || cloverBusy || run.phase !== 'shop') return;
+      state.coins += run.purse; state.clover.run = null; save(); renderAll(); renderClover();
+    }
+    function cloverNext() {
+      const run = cloverRun();
+      if (!run || cloverBusy || run.phase !== 'shop') return;
+      run.round++; cloverStartRound(run); save(); renderClover();
+    }
+    function cloverBuy(id) {
+      const run = cloverRun(), c = CLOVER_CHARMS.find((x) => x.id === id);
+      if (!run || run.phase !== 'shop' || !c || !run.shop.includes(id) || charmN(run, id) >= c.max) return;
+      const price = Math.max(1, Math.round(CLOVER_CHARM_PRICE * run.target));
+      if (run.purse < price) return;
+      run.purse -= price; run.charms[id] = charmN(run, id) + 1; run.shop = run.shop.filter((x) => x !== id); save(); renderClover();
+    }
+    function cloverEnd() { state.clover.run = null; save(); renderClover(); }
+    const cloverCellInner = (x) => `<img src="${esc(imageOf(x.e.c) || FALLBACK_IMG)}" alt=""><b>${esc(x.name)}</b>${x.flags ? '<span class="muted">' + VARIANTS.filter((v) => x.flags.includes(v[0])).map((v) => v[1]).join(' + ') + '</span>' : ''}`;
+
+    function renderClover() {
+      const box = $('clover-box'), run = cloverRun();
+      if (!loaded) { box.innerHTML = '<p class="muted">Loading characters...</p>'; return; }
+      const f = (n) => Math.round(n).toLocaleString();
+      if (run) {
+        const pct = Math.min(100, Math.round(run.points / run.target * 100));
+        const charms = CLOVER_CHARMS.filter((c) => charmN(run, c.id)).map((c) => `<span class="cp-charm" title="${esc(c.desc)}">${esc(c.name)}${charmN(run, c.id) > 1 ? ' x' + charmN(run, c.id) : ''}</span>`).join('') || '<span class="muted">none yet</span>';
+        let h = `<div class="frow"><span class="lbl">Round</span><b>${run.round}</b><span class="lbl">Target</span><b>${f(run.target)}</b><span class="lbl">Spins left</span><b>${run.spinsLeft}</b><span class="lbl">Purse</span><b>${f(run.purse)} coins</b></div>
+          <div class="cp-bar" title="${f(run.points)} / ${f(run.target)}"><i style="width:${pct}%"></i></div>
+          <p class="muted" style="margin:6px 0">Points this round: <b style="color:#fff">${f(run.points)}</b> of ${f(run.target)} &middot; Charms: ${charms}</p>`;
+        const syms = run.grid ? run.grid.map(cloverSymbol) : null, win = new Set((run.lines || []).flatMap((l) => l.ix));
+        h += `<div class="cp-grid">${[...Array(9).keys()].map((i) => `<div class="cp-cell${win.has(i) ? ' win' : ''}">${syms && syms[i] ? cloverCellInner(syms[i]) : '<span class="muted">?</span>'}</div>`).join('')}</div>`;
+        if (run.lines && run.lines.length) h += `<p style="text-align:center;margin:4px 0">${run.lines.map((l) => `${l.label} +${f(l.pts)}`).join(' &middot; ')}</p>`;
+        else if (run.grid) h += '<p class="muted" style="text-align:center;margin:4px 0">No winning line.</p>';
+        if (run.phase === 'play') {
+          h += `<div style="text-align:center"><button class="btn primary" id="cp-spin" ${run.spinsLeft > 0 ? '' : 'disabled'}>Spin</button>
+            ${run.respins > 0 && run.grid ? '<button class="btn" id="cp-respin">Free respin (' + run.respins + ')</button>' : ''}</div>`;
+        } else if (run.phase === 'shop') {
+          const price = Math.max(1, Math.round(CLOVER_CHARM_PRICE * run.target));
+          h += `<h2 class="sec">Round ${run.round} cleared! +${f(run.reward)} coins to your purse</h2>
+            <div class="frow">${run.shop.map((id) => { const c = CLOVER_CHARMS.find((x) => x.id === id); return `<div class="cp-offer"><b>${esc(c.name)}</b><div class="muted" style="margin:4px 0">${esc(c.desc)}</div><button class="btn" data-cpbuy="${id}" ${run.purse >= price ? '' : 'disabled'}>Buy (${f(price)} coins)</button></div>`; }).join('') || '<span class="muted">No charms left to buy.</span>'}</div>
+            <div style="text-align:center;margin-top:10px"><button class="btn primary" id="cp-next">Next round (target ${f(cloverTarget({ d1: run.d1, round: run.round + 1 }))})</button>
+              <button class="btn" id="cp-cash">Cash out ${f(run.purse)} coins</button></div>
+            <p class="muted" style="text-align:center">Cashing out keeps your purse safely. Failing the next round loses it.</p>`;
+        } else {
+          h += `<h2 class="sec">Run over</h2><p>You didn’t reach the target of ${f(run.target)}. You lost ${f(run.lost || 0)} coins from your purse${run.kept ? ' (insurance saved ' + f(run.kept) + ')' : ''}. You cleared ${run.round - 1} round${run.round === 2 ? '' : 's'}.</p>
+            <button class="btn primary" id="cp-end">Back to the lineup</button>`;
+        }
+        box.innerHTML = h;
+        const on = (id, fn) => { const b = $(id); if (b) b.onclick = fn; };
+        on('cp-spin', () => cloverSpin(false)); on('cp-respin', () => cloverSpin(true)); on('cp-next', cloverNext); on('cp-cash', cloverCashOut); on('cp-end', cloverEnd);
+        box.querySelectorAll('[data-cpbuy]').forEach((b) => { b.onclick = () => cloverBuy(b.dataset.cpbuy); });
+        return;
+      }
+      // No run: choose a lineup
+      const owned = Object.keys(state.cards).filter((k) => state.cards[k] > 0).map(cloverSymbol).filter(Boolean).sort((a, b) => b.val - a.val || a.name.localeCompare(b.name));
+      const lineup = cloverLineupSyms(), keys = new Set(lineup.map((x) => x.key)), q = cloverFilter.toLowerCase();
+      const shown = owned.filter((x) => !q || x.name.toLowerCase().includes(q)).slice(0, 60);
+      const terms = lineup.length >= CLOVER_LINEUP_MIN ? cloverTerms(lineup) : null;
+      const label = (x) => esc(x.name) + (x.flags ? ' <span class="muted">(' + VARIANTS.filter((v) => x.flags.includes(v[0])).map((v) => v[1]).join(' + ') + ')</span>' : '');
+      let h = `<p style="margin:0 0 8px"><b>Clover Pit</b> &mdash; spin a slot machine made of your own cards. Pick ${CLOVER_LINEUP_MIN}&ndash;${CLOVER_LINEUP_MAX} cards, pay the entry fee, and reach each round’s points target in ${CLOVER_SPINS} spins.
+        Clear a round to add coins to your purse, then cash out or risk it for a harder round. Fail and the purse is lost. Your cards are never used up.</p>
+        <p class="muted" style="margin:0 0 10px">Lines pay across the 3 rows and 2 diagonals: three of the same character pays most, then three from the same folder, three of the same rarity, then a pair. Better cards and finishes are worth more points.</p>
+        <div class="frow"><span class="lbl">Lineup (${lineup.length}/${CLOVER_LINEUP_MAX})</span>${lineup.map((x) => `<button class="opt cp-pick on" data-cprm="${esc(x.key)}">${label(x)} &times;</button>`).join('') || '<span class="muted">pick cards below</span>'}</div>
+        <div class="frow"><button class="btn" id="cp-auto">Auto-pick my best ${CLOVER_LINEUP_MAX}</button><button class="btn" id="cp-clear">Clear</button>
+          <input type="search" id="cp-search" placeholder="Search your cards..." value="${esc(cloverFilter)}" autocomplete="off" style="flex:1;min-width:160px"></div>`;
+      if (terms) h += `<div class="frow"><span class="lbl">Entry fee</span><b>${f(terms.entry)} coins</b><span class="lbl">Round 1 target</span><b>${f(terms.d1)}</b><span class="muted">you have ${f(state.coins)} coins</span></div>
+        <button class="btn primary" id="clover-start" ${state.coins >= terms.entry ? '' : 'disabled'}>${state.coins >= terms.entry ? 'Start run' : 'Not enough coins'}</button>`;
+      else h += `<p class="muted">Pick at least ${CLOVER_LINEUP_MIN} cards to see the entry fee.</p>`;
+      h += `<h2 class="sec" style="margin-top:14px">Your cards ${owned.length > 60 ? '<span class="muted">(best 60 shown &mdash; search for others)</span>' : ''}</h2>
+        <div class="group" id="cp-list">${shown.map((x) => `<button class="opt cp-pick${keys.has(x.key) ? ' on' : ''}" data-cpadd="${esc(x.key)}">${label(x)} <span>${f(x.val)}</span></button>`).join('') || '<span class="muted">You don’t own any cards yet.</span>'}</div>`;
+      box.innerHTML = h;
+      const set = (fn) => { state.clover.lineup = fn(state.clover.lineup || []); save(); renderClover(); };
+      box.querySelectorAll('[data-cpadd]').forEach((b) => { b.onclick = () => set((l) => l.includes(b.dataset.cpadd) ? l.filter((k) => k !== b.dataset.cpadd) : l.length < CLOVER_LINEUP_MAX ? l.concat(b.dataset.cpadd) : l); });
+      box.querySelectorAll('[data-cprm]').forEach((b) => { b.onclick = () => set((l) => l.filter((k) => k !== b.dataset.cprm)); });
+      $('cp-auto').onclick = () => set(() => owned.slice(0, CLOVER_LINEUP_MAX).map((x) => x.key));
+      $('cp-clear').onclick = () => set(() => []);
+      $('cp-search').oninput = (ev) => { cloverFilter = ev.target.value; const pos = ev.target.selectionStart; renderClover(); const s2 = $('cp-search'); s2.focus(); s2.setSelectionRange(pos, pos); };
+      const st = $('clover-start'); if (st) st.onclick = cloverStart;
+    }
+
+    // ---- Poker Table: Blackjack, Video Poker, Hi-Lo and Texas Hold'em (a normal 52-card deck, bets paid in coins) ----
+    const PT_KEY = 'powerscaling-poker-v1';
+    const PT_MIN_BET = 10;
+    const PT_RAKE = 0.03;               // Hold'em: the house keeps this share of any pot you win
+    const PT_HILO_EDGE = 0.97;          // Hi-Lo pays this share of the fair odds
+    const PT_HILO_CAP = 100;            // Hi-Lo cashes out for you once the multiplier reaches this
+    const PT_HE_STAKE = 9;              // Hold'em needs this many times your bet at the table (ante + 4 rounds of bet and raise)
+    const PT_VIDEO_PAYS = [['Royal Flush', 250], ['Straight Flush', 50], ['Four of a Kind', 25], ['Full House', 8], ['Flush', 5], ['Straight', 4], ['Three of a Kind', 3], ['Two Pair', 2], ['Jacks or Better', 1]];
+    const PT_GAMES = [['bj', 'Blackjack'], ['vp', 'Video Poker'], ['hl', 'Hi-Lo'], ['he', "Texas Hold'em"]];
+    const PT_R = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'], PT_S = ['♠︎', '♥︎', '♦︎', '♣︎'];
+    const PT_STREETS = ['Pre-flop', 'Flop', 'Turn', 'River'];
+    const ptRank = (c) => c % 13, ptSuit = (c) => Math.floor(c / 13);
+    const ptDeck = () => { const d = [...Array(52).keys()]; for (let i = 51; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [d[i], d[j]] = [d[j], d[i]]; } return d; };
+    const ptF = (n) => Math.round(n).toLocaleString();
+
+    // Best five-card hand from 5-7 cards -> { score (higher wins), cat, name, k }
+    function ptEval(cards) {
+      const rc = Array(13).fill(0), sc = [[], [], [], []];
+      cards.forEach((c) => { rc[ptRank(c)]++; sc[ptSuit(c)].push(ptRank(c)); });
+      const straight = (has) => {
+        for (let h = 12; h >= 4; h--) { let ok = true; for (let i = 0; i < 5; i++) if (!has[h - i]) { ok = false; break; } if (ok) return h; }
+        return has[12] && has[0] && has[1] && has[2] && has[3] ? 3 : -1;   // A-2-3-4-5
+      };
+      const mk = (cat, k, name) => ({ cat, name, k, score: cat * 371293 + k.concat([0, 0, 0, 0, 0]).slice(0, 5).reduce((a, x) => a * 13 + x, 0) });
+      const by = (n) => { const r = []; for (let i = 12; i >= 0; i--) if (rc[i] === n) r.push(i); return r; };
+      const kick = (ex, n) => { const r = []; for (let i = 12; i >= 0 && r.length < n; i--) if (rc[i] && !ex.includes(i)) r.push(i); return r; };
+      const flush = sc.find((s) => s.length >= 5);
+      if (flush) { const has = Array(13).fill(false); flush.forEach((r) => { has[r] = true; }); const h = straight(has); if (h >= 0) return mk(8, [h], h === 12 ? 'Royal Flush' : 'Straight Flush'); }
+      const q = by(4), t = by(3), p = by(2);
+      if (q.length) return mk(7, [q[0]].concat(kick([q[0]], 1)), 'Four of a Kind');
+      if (t.length && (t.length > 1 || p.length)) return mk(6, [t[0], t.length > 1 ? t[1] : p[0]], 'Full House');
+      if (flush) return mk(5, flush.slice().sort((a, b) => b - a).slice(0, 5), 'Flush');
+      const sh = straight(rc.map((x) => x > 0)); if (sh >= 0) return mk(4, [sh], 'Straight');
+      if (t.length) return mk(3, [t[0]].concat(kick([t[0]], 2)), 'Three of a Kind');
+      if (p.length >= 2) return mk(2, [p[0], p[1]].concat(kick([p[0], p[1]], 1)), 'Two Pair');
+      if (p.length) return mk(1, [p[0]].concat(kick([p[0]], 3)), 'Pair');
+      return mk(0, kick([], 5), 'High Card');
+    }
+    const ptBjVal = (h) => { let t = 0, a = 0; h.forEach((c) => { const r = ptRank(c); if (r === 12) { a++; t += 11; } else t += r >= 8 ? 10 : r + 2; }); while (t > 21 && a) { t -= 10; a--; } return t; };
+
+    // Chance the given hole cards win against a random hand (used by the Hold'em dealer)
+    function ptEquity(hole, board, sims) {
+      const used = new Set(hole.concat(board)), rest = [];
+      for (let c = 0; c < 52; c++) if (!used.has(c)) rest.push(c);
+      const need = 2 + (5 - board.length); let w = 0;
+      for (let s = 0; s < sims; s++) {
+        for (let i = 0; i < need; i++) { const j = i + Math.floor(Math.random() * (rest.length - i)); const x = rest[i]; rest[i] = rest[j]; rest[j] = x; }
+        const full = board.concat(rest.slice(2, need)), a = ptEval(hole.concat(full)).score, b = ptEval([rest[0], rest[1]].concat(full)).score;
+        w += a > b ? 1 : a === b ? 0.5 : 0;
+      }
+      return w / sims;
+    }
+
+    // ---- State (saved on its own so a hand in progress survives a reload; the cards are already dealt, so reloading cannot change them) ----
+    const ptEmpty = () => ({ game: 'bj', bet: 100, bj: null, vp: null, hl: null, he: null });
+    let ptState = ptEmpty();
+    try { const s = JSON.parse(localStorage.getItem(PT_KEY)); if (s && PT_GAMES.some((g) => g[0] === s.game)) ptState = Object.assign(ptEmpty(), s); } catch (err) { /* ignore */ }
+    const ptSave = () => { try { localStorage.setItem(PT_KEY, JSON.stringify(ptState)); } catch (err) { /* ignore */ } };
+    function ptReset() { ptState = ptEmpty(); try { localStorage.removeItem(PT_KEY); } catch (err) { /* ignore */ } }
+    function ptCoins(d) { state.coins += d; save(); $('coins').textContent = state.coins.toLocaleString(); }
+    const ptMax = (g) => Math.floor(g === 'he' ? state.coins / PT_HE_STAKE : state.coins);
+    function ptBet(g) { const m = ptMax(g); return m < PT_MIN_BET ? 0 : Math.max(PT_MIN_BET, Math.min(m, Math.floor(+ptState.bet || PT_MIN_BET))); }
+    function ptStart(g) { const b = ptBet(g); if (!b) return 0; ptState.bet = b; ptCoins(-b); return b; }
+    const ptActive = (g) => ptState[g] && ptState[g].phase !== 'done';
+    function ptFinish(h, back, text) { h.phase = 'done'; h.back = back; h.net = back - h.bet; h.text = text; if (back) ptCoins(back); }
+
+    // ---- Blackjack ----
+    function ptBjDeal() {
+      const bet = ptStart('bj'); if (!bet) return;
+      const d = ptDeck(), h = { bet, deck: d, p: [d.pop(), d.pop()], d: [], phase: 'play' };
+      h.d = [d.pop(), d.pop()];
+      ptState.bj = h;
+      if (ptBjVal(h.p) === 21 || ptBjVal(h.d) === 21) ptBjSettle(h);
+      ptSave(); renderPoker();
+    }
+    function ptBjSettle(h) {
+      const pv = ptBjVal(h.p), pbj = h.p.length === 2 && pv === 21, dbj = h.d.length === 2 && ptBjVal(h.d) === 21;
+      if (pv > 21) return ptFinish(h, 0, 'Bust');
+      if (pbj || dbj) {
+        if (pbj && dbj) return ptFinish(h, h.bet, 'Both have blackjack: push');
+        return pbj ? ptFinish(h, h.bet + Math.floor(h.bet * 1.5), 'Blackjack! Pays 3:2') : ptFinish(h, 0, 'Dealer has blackjack');
+      }
+      while (ptBjVal(h.d) < 17) h.d.push(h.deck.pop());
+      const dv = ptBjVal(h.d);
+      if (dv > 21) return ptFinish(h, h.bet * 2, 'Dealer busts');
+      if (pv > dv) return ptFinish(h, h.bet * 2, `You win ${pv} to ${dv}`);
+      if (pv === dv) return ptFinish(h, h.bet, `Push at ${pv}`);
+      ptFinish(h, 0, `Dealer wins ${dv} to ${pv}`);
+    }
+    function ptBjAct(a) {
+      const h = ptState.bj; if (!h || h.phase !== 'play') return;
+      if (a === 'hit') { h.p.push(h.deck.pop()); if (ptBjVal(h.p) >= 21) ptBjSettle(h); }
+      else if (a === 'stand') ptBjSettle(h);
+      else if (a === 'double') { if (h.p.length !== 2 || state.coins < h.bet) return; ptCoins(-h.bet); h.bet *= 2; h.p.push(h.deck.pop()); ptBjSettle(h); }
+      ptSave(); renderPoker();
+    }
+
+    // ---- Video Poker (Jacks or Better, one draw) ----
+    function ptVpDeal() {
+      const bet = ptStart('vp'); if (!bet) return;
+      const d = ptDeck(); ptState.vp = { bet, deck: d, hand: d.splice(0, 5), held: [false, false, false, false, false], phase: 'hold' };
+      ptSave(); renderPoker();
+    }
+    function ptVpDraw() {
+      const h = ptState.vp; if (!h || h.phase !== 'hold') return;
+      h.hand = h.hand.map((c, i) => h.held[i] ? c : h.deck.pop());
+      const ev = ptEval(h.hand), row = PT_VIDEO_PAYS.find((r) => r[0] === ev.name || (r[0] === 'Jacks or Better' && ev.cat === 1 && ev.k[0] >= 9));
+      h.row = row ? row[0] : null;
+      if (row) ptFinish(h, h.bet * row[1], row[0] + ' pays ' + row[1] + ' to 1'); else ptFinish(h, 0, ev.cat === 1 ? 'A pair below jacks does not pay' : ev.name + ' does not pay');
+      ptSave(); renderPoker();
+    }
+
+    // ---- Hi-Lo ----
+    const ptHlP = (card, dir) => dir === 'hi' ? (12 - ptRank(card)) / 13 : ptRank(card) / 13;
+    function ptHlDeal() {
+      const bet = ptStart('hl'); if (!bet) return;
+      const c = Math.floor(Math.random() * 52); ptState.hl = { bet, cur: c, seen: [c], mult: 1, streak: 0, phase: 'play' };
+      ptSave(); renderPoker();
+    }
+    function ptHlGuess(dir) {
+      const h = ptState.hl; if (!h || h.phase !== 'play') return;
+      const p = ptHlP(h.cur, dir); if (p <= 0) return;
+      const nxt = Math.floor(Math.random() * 52), r = ptRank(h.cur), nr = ptRank(nxt);
+      h.seen.push(nxt); const prev = h.cur; h.cur = nxt;
+      if (dir === 'hi' ? nr > r : nr < r) {
+        h.mult = Math.min(PT_HILO_CAP, h.mult * PT_HILO_EDGE / p); h.streak++;
+        if (h.mult >= PT_HILO_CAP) ptFinish(h, Math.floor(h.bet * h.mult), 'Top multiplier reached, cashed out');
+      } else ptFinish(h, 0, nr === r ? `A tie (${PT_R[nr]} after ${PT_R[ptRank(prev)]}) loses` : `${PT_R[nr]} came after ${PT_R[ptRank(prev)]}`);
+      ptSave(); renderPoker();
+    }
+    function ptHlCash() { const h = ptState.hl; if (!h || h.phase !== 'play' || !h.streak) return; ptFinish(h, Math.floor(h.bet * h.mult), 'Cashed out'); ptSave(); renderPoker(); }
+
+    // ---- Texas Hold'em: heads-up against the dealer, fixed limit (each bet or raise = your bet), you act first every round ----
+    function ptHeDeal() {
+      const bet = ptStart('he'); if (!bet) return;
+      const d = ptDeck();
+      ptState.he = { bet, pc: bet, bc: bet, pHole: d.splice(0, 2), bHole: d.splice(0, 2), board: [], deck: d, street: 0, phase: 'act', owe: 0, show: false, log: [`Ante ${ptF(bet)} each.`] };
+      ptSave(); renderPoker();
+    }
+    function ptHeWin(h, who, text) {
+      const back = who === 'player' ? Math.floor((h.pc + h.bc) * (1 - PT_RAKE)) : who === 'tie' ? h.pc : 0;
+      ptFinish(h, back, text); h.net = back - h.pc;
+    }
+    function ptHeEnd(h) {
+      if (h.street === 3) {
+        h.show = true;
+        const pe = ptEval(h.pHole.concat(h.board)), be = ptEval(h.bHole.concat(h.board));
+        if (pe.score > be.score) return ptHeWin(h, 'player', `You win with ${pe.name} against ${be.name}`);
+        if (pe.score < be.score) return ptHeWin(h, 'bot', `Dealer wins with ${be.name} against your ${pe.name}`);
+        return ptHeWin(h, 'tie', `Split pot, both have ${pe.name}`);
+      }
+      h.street++; h.board = h.board.concat(h.deck.splice(0, h.street === 1 ? 3 : 1)); h.phase = 'act'; h.owe = 0; h.log.push(PT_STREETS[h.street] + '.');
+    }
+    function ptHeAct(a) {
+      const h = ptState.he; if (!h || h.phase === 'done') return;
+      const u = h.bet, street = PT_STREETS[h.street], log = (s) => h.log.push(s);
+      if (a === 'fold') { log('You fold.'); ptHeWin(h, 'bot', 'You folded'); }
+      else if (a === 'call' && h.phase === 'facing') { ptCoins(-h.owe); h.pc += h.owe; log(`You call ${ptF(h.owe)}.`); h.owe = 0; ptHeEnd(h); }
+      else if (a === 'check' && h.phase === 'act') {
+        const e = ptEquity(h.bHole, h.board, 150);
+        if ((e > 0.62 && Math.random() < 0.85) || (e < 0.3 && Math.random() < 0.12)) { h.bc += u; h.owe = u; h.phase = 'facing'; log(`You check. Dealer bets ${ptF(u)}.`); }
+        else { log('You check. Dealer checks.'); ptHeEnd(h); }
+      } else if (a === 'bet' && h.phase === 'act') {
+        ptCoins(-u); h.pc += u;
+        const e = ptEquity(h.bHole, h.board, 150) - 0.08;   // a bet means you probably hold more than a random hand
+        if (e > 0.72 && Math.random() < 0.7) { h.bc += 2 * u; h.owe = u; h.phase = 'facing'; log(`You bet ${ptF(u)}. Dealer raises to ${ptF(2 * u)}.`); }
+        else if (e + (Math.random() - 0.5) * 0.12 > 0.36) { h.bc += u; log(`You bet ${ptF(u)}. Dealer calls.`); ptHeEnd(h); }
+        else { log(`You bet ${ptF(u)}. Dealer folds.`); ptHeWin(h, 'player', 'The dealer folded'); }
+      } else return;
+      ptSave(); renderPoker();
+    }
+
+    // ---- Drawing ----
+    const ptCard = (c, o) => !(c >= 0) || (o && o.down) ? '<div class="pcard back"></div>'
+      : `<div class="pcard${ptSuit(c) === 1 || ptSuit(c) === 2 ? ' red' : ''}${o && o.hold ? ' hold' : ''}"><b>${PT_R[ptRank(c)]}</b><i>${PT_S[ptSuit(c)]}</i></div>`;
+    const ptRow = (label, cards, o) => `<div class="pt-row"><span class="pt-lbl">${label}</span>${cards}</div>`;
+    const ptBanner = (h) => `<div class="pt-res ${h.net > 0 ? 'win' : h.net < 0 ? 'lose' : ''}">${h.text} &middot; ${h.net > 0 ? 'you win ' + ptF(h.net) : h.net < 0 ? 'you lose ' + ptF(-h.net) : 'bet returned'}</div>`;
+    const PT_RULES = {
+      bj: 'Get closer to 21 than the dealer without going over. Blackjack pays 3:2, the dealer stands on 17, and you can double down on your first two cards. A new deck every hand.',
+      vp: 'Jacks or Better. Click the cards you want to keep, then draw once. Pays below are for your current bet.',
+      hl: 'Guess if the next card is higher or lower (aces high, a tie loses). Every right guess multiplies your bet, and you can cash out any time after the first. Odds are paid at 97% of fair.',
+      he: `Heads-up Texas Hold'em against the dealer. You and the dealer each ante your bet. In every round (pre-flop, flop, turn, river) you act first: check or bet one bet, and the dealer can call, raise once, or fold. Best five of seven cards wins. The house keeps ${PT_RAKE * 100}% of any pot you win. You need ${PT_HE_STAKE}x your bet at the table.`,
+    };
+
+    function ptTableHtml(g, h) {
+      if (!h) return '<p class="pt-hint">Place a bet to start.</p>';
+      const done = h.phase === 'done';
+      if (g === 'bj') return ptRow('Dealer' + (done ? ' &middot; ' + ptBjVal(h.d) : ''), h.d.map((c, i) => ptCard(c, { down: !done && i === 1 })).join(''))
+        + ptRow('You &middot; ' + ptBjVal(h.p), h.p.map((c) => ptCard(c)).join('')) + `<p class="pt-bet">Bet ${ptF(h.bet)}</p>` + (done ? ptBanner(h) : '');
+      if (g === 'vp') {
+        const cards = h.hand.map((c, i) => `<div class="pt-slot" ${h.phase === 'hold' ? `data-pthold="${i}"` : ''}>${ptCard(c, { hold: h.held[i] })}<small>${h.held[i] && h.phase === 'hold' ? 'HELD' : '&nbsp;'}</small></div>`).join('');
+        return `<div class="pt-row">${cards}</div>` + (done ? ptBanner(h) : '<p class="pt-hint">Click cards to hold them, then draw.</p>');
+      }
+      if (g === 'hl') {
+        const prev = h.seen.slice(Math.max(0, h.seen.length - 7), -1).map((c) => ptCard(c)).join('');
+        return `<div class="pt-row"><span class="pt-lbl">Current card</span>${ptCard(h.cur)}</div>`
+          + (prev ? `<div class="pt-row small"><span class="pt-lbl">Earlier</span>${prev}</div>` : '')
+          + `<p class="pt-bet">Bet ${ptF(h.bet)} &middot; Multiplier x${h.mult.toFixed(2)} &middot; ${done ? '' : 'Cash out now: ' + ptF(Math.floor(h.bet * h.mult))}</p>` + (done ? ptBanner(h) : '');
+      }
+      const pe = h.board.length >= 3 ? ptEval(h.pHole.concat(h.board)).name : null, shown = h.show || false;
+      const board = [0, 1, 2, 3, 4].map((i) => h.board[i] >= 0 ? ptCard(h.board[i]) : '<div class="pcard empty"></div>').join('');
+      return `<p class="pt-bet">Pot ${ptF(h.pc + h.bc)} &middot; You have put in ${ptF(h.pc)} &middot; ${PT_STREETS[h.street]}</p>`
+        + ptRow('Dealer', h.bHole.map((c) => ptCard(c, { down: !shown })).join('')) + ptRow('Board', board)
+        + ptRow('You' + (pe && !done ? ' &middot; ' + pe : ''), h.pHole.map((c) => ptCard(c)).join(''))
+        + `<div class="pt-log">${h.log.slice(-5).map((s) => `<div>${s}</div>`).join('')}</div>` + (done ? ptBanner(h) : '');
+    }
+    function ptControlsHtml(g, h) {
+      const b = (id, label, o = {}) => `<button class="btn${o.primary ? ' primary' : ''}" data-pta="${id}" ${o.off ? 'disabled' : ''}>${label}</button>`;
+      if (g === 'bj') return b('hit', 'Hit', { primary: true }) + b('stand', 'Stand') + b('double', 'Double down', { off: h.p.length !== 2 || state.coins < h.bet });
+      if (g === 'vp') return b('draw', 'Draw', { primary: true });
+      if (g === 'hl') {
+        const lab = (dir, name) => { const p = ptHlP(h.cur, dir); return b(dir, p > 0 ? `${name} (${Math.round(p * 100)}% &middot; x${Math.min(PT_HILO_CAP, h.mult * PT_HILO_EDGE / p).toFixed(2)})` : name, { off: p <= 0 }); };
+        return lab('hi', 'Higher') + lab('lo', 'Lower') + b('cash', `Cash out ${ptF(Math.floor(h.bet * h.mult))}`, { off: !h.streak });
+      }
+      return h.phase === 'facing' ? b('call', `Call ${ptF(h.owe)}`, { primary: true }) + b('fold', 'Fold') : b('check', 'Check') + b('bet', `Bet ${ptF(h.bet)}`, { primary: true });
+    }
+
+    function renderPoker() {
+      const box = $('poker-box'); if (!box) return;
+      const g = ptState.game, h = ptState[g], active = ptActive(g), max = ptMax(g), bet = ptBet(g);
+      let html = `<p style="margin:0 0 8px"><b>Poker Table</b> &mdash; play card games with a normal 52-card deck and bet your coins. Your collected cards are not used here, and a hand in progress is saved if you leave the page.</p>
+        <div class="frow">${PT_GAMES.map(([id, n]) => `<button class="btn cp-pick${id === g ? ' on' : ''}" data-ptg="${id}">${n}${ptActive(id) ? ' &bull;' : ''}</button>`).join('')}</div>
+        <div class="pt-table">${ptTableHtml(g, h)}</div>`;
+      if (active) html += `<div class="pt-controls">${ptControlsHtml(g, h)}</div>`;
+      else {
+        html += `<div class="frow" style="margin-top:4px"><span class="lbl">Bet</span><input type="number" id="pt-bet" min="${PT_MIN_BET}" max="${Math.max(max, PT_MIN_BET)}" step="10" value="${bet || PT_MIN_BET}" style="width:110px">
+          ${[10, 50, 100, 500, 1000, 5000, 25000].map((n) => `<button class="btn small" data-ptchip="${n}">${n >= 1000 ? n / 1000 + 'k' : n}</button>`).join('')}
+          <button class="btn small" data-ptchip="half">&frac12;</button><button class="btn small" data-ptchip="double">2x</button><button class="btn small" data-ptchip="max">Max</button>
+          <button class="btn primary" id="pt-deal" ${bet ? '' : 'disabled'}>${g === 'hl' ? 'Start' : 'Deal'}</button></div>`;
+        if (!bet) html += `<p class="muted" style="margin:4px 0">${g === 'he' ? `You need at least ${ptF(PT_MIN_BET * PT_HE_STAKE)} coins for Texas Hold'em (${PT_HE_STAKE}x the ${PT_MIN_BET} minimum bet).` : `You need at least ${PT_MIN_BET} coins to play.`}</p>`;
+        else if (g === 'he') html += `<p class="muted" style="margin:4px 0">Highest bet right now: ${ptF(max)} (your coins &divide; ${PT_HE_STAKE}).</p>`;
+      }
+      if (g === 'vp') html += `<table class="pt-pay"><thead><tr><th>Hand</th><th>Pays</th><th>Win</th></tr></thead><tbody>${PT_VIDEO_PAYS.map((r) => `<tr class="${h && h.row === r[0] ? 'hit' : ''}"><td>${r[0]}</td><td>${r[1]}x</td><td>${h ? ptF(h.bet * r[1]) : ptF((bet || PT_MIN_BET) * r[1])}</td></tr>`).join('')}</tbody></table>`;
+      html += `<p class="muted" style="margin:10px 0 0;font-size:0.8rem">${PT_RULES[g]}</p>`;
+      box.innerHTML = html;
+      box.querySelectorAll('[data-ptg]').forEach((x) => { x.onclick = () => { ptState.game = x.dataset.ptg; ptSave(); renderPoker(); }; });
+      box.querySelectorAll('[data-pta]').forEach((x) => { x.onclick = () => {
+        const a = x.dataset.pta;
+        if (g === 'bj') ptBjAct(a); else if (g === 'vp') ptVpDraw(); else if (g === 'hl') (a === 'cash' ? ptHlCash() : ptHlGuess(a)); else ptHeAct(a);
+      }; });
+      box.querySelectorAll('[data-pthold]').forEach((x) => { x.onclick = () => { const v = ptState.vp; if (v && v.phase === 'hold') { v.held[+x.dataset.pthold] = !v.held[+x.dataset.pthold]; ptSave(); renderPoker(); } }; });
+      const inp = $('pt-bet');
+      if (inp) {
+        inp.oninput = () => { ptState.bet = +inp.value || PT_MIN_BET; };
+        inp.onchange = () => { ptState.bet = ptBet(g) ? Math.max(PT_MIN_BET, Math.min(max, Math.floor(+inp.value || PT_MIN_BET))) : PT_MIN_BET; ptSave(); renderPoker(); };
+        box.querySelectorAll('[data-ptchip]').forEach((x) => { x.onclick = () => {
+          const v = x.dataset.ptchip, cur = ptBet(g) || PT_MIN_BET;
+          ptState.bet = v === 'half' ? Math.max(PT_MIN_BET, Math.floor(cur / 2)) : v === 'double' ? cur * 2 : v === 'max' ? Math.max(max, PT_MIN_BET) : +v;
+          ptSave(); renderPoker();
+        }; });
+        $('pt-deal').onclick = () => { ptState.bet = +inp.value || ptState.bet; ({ bj: ptBjDeal, vp: ptVpDeal, hl: ptHlDeal, he: ptHeDeal })[g](); };
+      }
     }
 
     function renderAll() {
@@ -1001,12 +1487,12 @@
       if (e.key !== KEY) return;
       try {
         const s = JSON.parse(e.newValue);
-        if (s && typeof s.coins === 'number') { state = { coins: s.coins, cards: s.cards || {}, ready: s.ready || {}, packs: s.packs || {}, next: s.next || {}, fav: s.fav || {}, lim: s.lim || {}, cbuy: s.cbuy || {}, divOpened: s.divOpened || 0, divSlot: s.divSlot || 0, prestige: s.prestige || 0 }; updateRegen(); renderAll(); }
+        if (s && typeof s.coins === 'number') { state = { coins: s.coins, cards: s.cards || {}, ready: s.ready || {}, packs: s.packs || {}, next: s.next || {}, fav: s.fav || {}, lim: s.lim || {}, cbuy: s.cbuy || {}, divOpened: s.divOpened || 0, divSlot: s.divSlot || 0, prestige: s.prestige || 0, clover: s.clover || { run: null, lineup: [] } }; updateRegen(); renderAll(); }
       } catch (err) { /* ignore */ }
     });
 
     // ---- Tabs: #shop, #packs (open your packs), #collection ----
-    const TABS = ['shop', 'packs', 'collection', 'prestige'];
+    const TABS = ['shop', 'packs', 'collection', 'prestige', 'clover', 'poker'];
     function showTab() {
       let id = location.hash.slice(1);
       if (!TABS.includes(id)) id = 'packs';   // the Open tab is home (the free pack lives there)
@@ -1014,6 +1500,8 @@
         $('panel-' + t).hidden = t !== id;
         $('tab-' + t).setAttribute('aria-selected', String(t === id));
       });
+      if (id === 'clover') renderClover();
+      if (id === 'poker') renderPoker();
     }
     TABS.forEach((t) => $('tab-' + t).addEventListener('click', () => { location.hash = '#' + t; }));
     window.addEventListener('hashchange', showTab);
