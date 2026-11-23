@@ -8,6 +8,14 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <script src="tiers.js"></script>
   <style>
+    .fight { margin-top: 20px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; }
+    .fight h2 { margin: 0 0 10px; }
+    .fight .verdict { font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0 0 4px; }
+    .fight .diff { display: inline-block; padding: 3px 12px; border-radius: 999px; font-weight: 700; font-size: 0.85rem; border: 1px solid var(--border-color); margin-bottom: 10px; }
+    .fight .diff.d0 { color: #3fb950; border-color: #238636; } .fight .diff.d1 { color: #7ee787; } .fight .diff.d2 { color: #e3b341; } .fight .diff.d3 { color: #f0883e; } .fight .diff.d4 { color: #f85149; border-color: #da3633; }
+    .fight ul { margin: 8px 0 0; padding-left: 20px; color: var(--text-muted); font-size: 0.9rem; }
+    .fight li { margin: 3px 0; }
+    .a-link { text-decoration: none; }
     .sec-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
     .sec-head h2 { margin: 0; }
     .matchup { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: start; }
@@ -229,13 +237,122 @@
       refreshers.push(() => { if (!browser.hidden) render(); });
     }
 
+
+    // ---- Fight prediction: who is expected to win, and how hard the fight is ----
+    // Offence against defence, plus speed:
+    //   score = (A's attack - B's durability) - (B's attack - A's durability) + SPEED_WEIGHT x (A's speed - B's speed)
+    // Attack and durability are tier steps (the same scale as the Tier tab). Speed is a step on the Speed tab's list. A positive score favours A.
+    const SPEED_WEIGHT = 0.5;      // how much one speed step counts, compared with one tier step of attack or durability
+    const FIGHT_SHARPNESS = 0.4;   // how fast the win chance grows with the score: a score of 1 is about 60/40, 2 about 70/30, 4 about 83/17
+    // The win chance of the expected winner decides the difficulty
+    const DIFFICULTIES = [
+      { max: 0.55, label: 'Extreme Difficulty', note: 'about 50/50', cls: 'd4' },
+      { max: 0.65, label: 'High Difficulty', note: 'about 60/40', cls: 'd3' },
+      { max: 0.75, label: 'Mid Difficulty', note: 'about 70/30', cls: 'd2' },
+      { max: 0.95, label: 'Low Difficulty', note: 'about 80/20', cls: 'd1' },
+      { max: 1.01, label: 'No Difficulty', note: 'near-certain win', cls: 'd0' }
+    ];
+    const SPEED_LADDER = ['immobile', 'below average human', 'normal human', 'athletic human', 'peak human', 'superhuman', 'subsonic', 'subsonic+', 'transonic', 'supersonic', 'supersonic+',
+      'hypersonic', 'hypersonic+', 'high hypersonic', 'high hypersonic+', 'massively hypersonic', 'massively hypersonic+', 'sub-relativistic', 'sub-relativistic+', 'relativistic', 'relativistic+',
+      'speed of light', 'ftl', 'ftl+', 'massively ftl', 'massively ftl+', 'infinite', 'immeasurable', 'irrelevant', 'omnipresent', 'boundless'];
+    const SPEED_BY_LENGTH = SPEED_LADDER.map((n, i) => [n, i]).sort((a, b) => b[0].length - a[0].length);
+    const speedPos = (text) => {
+      const s = String(text || '').toLowerCase().replace(/\(.*?\)/g, ' ').replace(/\bspeed\b/g, ' ').replace(/\s+/g, ' ');
+      for (const [name, i] of SPEED_BY_LENGTH) {
+        if (new RegExp('(^|[^a-z-])' + name.replace(/[+]/g, '\\+') + '(?![a-z+-])').test(s)) return i;
+      }
+      return null;
+    };
+    // The level names used for Attack Potency and Durability, with the tier each one means (the names are the ones on the Terms page's Tier tab)
+    const LEVEL_NAMES = [
+      ['low hypoverse', '11-C'], ['high hypoverse', '11-A'], ['hypoverse', '11-B'], ['below average human', '10-C'], ['human', '10-B'], ['athlete', '10-A'], ['street', '9-C'], ['wall', '9-B'],
+      ['small building', '9-A'], ['large building', 'High 8-C'], ['building', '8-C'], ['multi-city block', '8-A'], ['city block', '8-B'], ['small town', 'Low 7-C'], ['large town', 'High 7-C'], ['town', '7-C'],
+      ['small city', 'Low 7-B'], ['city', '7-B'], ['large mountain', 'High 7-A'], ['mountain', '7-A'], ['large island', 'High 6-C'], ['island', '6-C'], ['small country', 'Low 6-B'], ['large country', 'High 6-B'],
+      ['country', '6-B'], ['multi-continent', 'High 6-A'], ['continent', '6-A'], ['moon', '5-C'], ['small planet', 'Low 5-B'], ['large planet', '5-A'], ['planet', '5-B'], ['dwarf star', 'High 5-A'],
+      ['small star', 'Low 4-C'], ['large star', 'High 4-C'], ['star', '4-C'], ['multi-solar system', '4-A'], ['solar system', '4-B'], ['multi-galaxy', '3-B'], ['galaxy', '3-C'], ['high universe', 'High 3-A'],
+      ['universe', '3-A'], ['low multiverse', '2-C'], ['multiverse', '2-B'], ['low complex multiverse', 'Low 1-C'], ['high complex multiverse', 'High 1-C'], ['complex multiverse', '1-C'],
+      ['high hyperverse', 'High 1-B'], ['hyperverse', '1-B'], ['low outerverse', 'Low 1-A'], ['high outerverse', 'High 1-A'], ['outerverse', '1-A'], ['boundless', '0']
+    ].sort((a, b) => b[0].length - a[0].length);
+    // A tier as a number: its place in the tier list, plus a fraction for the X number, so 8 layers beats 2 layers
+    const tierPos = (r) => {
+      if (!r) return null;
+      const x = Math.floor((r.rank % SLOT) / (MAX_PLUS + 1));
+      return r.step + (isXFamily(r.family) ? 1 - 1 / (1 + x / 5) : 0);
+    };
+    // "Large Planet level", "Complex Multiverse level (7 Dimensions)+", "High Outerversal+ (Type 1)" or a plain tier like "5-A"
+    function levelPos(text) {
+      const raw = String(text || '').trim();
+      if (!raw || isEmpty(raw)) return null;
+      let r = parseTier(raw);
+      if (r) return tierPos(r);
+      const s = raw.toLowerCase().replace(/outerversal|outerverse/g, 'outerverse').replace(/hyperversal/g, 'hyperverse').replace(/multiversal/g, 'multiverse').replace(/\blevel\b|\btier\b/g, ' ');
+      const x = s.match(/\(\s*(\d+)\s*(dimensions?|layers?|universes?)\s*\)/), type = s.match(/type\s*(\d)/);
+      const bare = s.replace(/\(.*?\)/g, ' ').replace(/\s+/g, ' ');
+      const plus = /\+/.test(bare);
+      const hit = LEVEL_NAMES.find(([name]) => new RegExp('(^|[^a-z-])' + name + '(?![a-z-])').test(bare.replace(/\+/g, ' ')));
+      if (!hit) return null;
+      let code = hit[1];
+      if (hit[0] === 'high outerverse' && type) code = 'High 1-A+ TYPE ' + type[1];
+      else {
+        if (plus && hit[0] === 'universe') code = 'Low 2-C';
+        else if (plus && hit[0] === 'multiverse') code = '2-A';
+        else if (x) {
+          const unit = x[2].replace(/s$/, '').toUpperCase() + 'S';
+          const tryCode = code + ' (' + x[1] + ' ' + unit + ')';
+          if (parseTier(tryCode)) code = tryCode;
+        }
+        if (plus && !/^(Low 2-C|2-A)$/.test(code)) code += '+';
+      }
+      return tierPos(parseTier(code));
+    }
+    function fightStats(c) {
+      const tier = tierPos(parseTier(val(c, 'Tier / Tier range', 'Tier')));
+      const ap = levelPos(val(c, 'AP (Attack Potency)', 'AP'));
+      const attack = ap ?? tier;
+      const dur = levelPos(val(c, 'Durability'));
+      return { attack, defence: dur ?? attack, speed: speedPos(val(c, 'Speed')),
+        guessedDefence: dur === null && attack !== null, speedText: val(c, 'Speed') };
+    }
+    const fightOdds = (score) => 1 / (1 + Math.exp(-FIGHT_SHARPNESS * Math.abs(score)));   // the expected winner's chance
+    function predictFight(a, b) {
+      const A = fightStats(a), B = fightStats(b);
+      if (A.attack === null || B.attack === null) return null;
+      const hurtAB = A.attack - B.defence, hurtBA = B.attack - A.defence;
+      const speedKnown = A.speed !== null && B.speed !== null, speedEdge = speedKnown ? SPEED_WEIGHT * (A.speed - B.speed) : 0;
+      const score = hurtAB - hurtBA + speedEdge, p = fightOdds(score);
+      const diff = DIFFICULTIES.find((d) => p < d.max);
+      return { A, B, hurtAB, hurtBA, speedKnown, speedEdge, score, p, diff, winner: score >= 0 ? 0 : 1 };
+    }
+    function fightHtml(a, b) {
+      const r = predictFight(a, b);
+      if (!r) return '<p class="muted" style="margin:0">Not enough data to predict this fight (one of them has no readable Attack Potency or tier).</p>';
+      const n = [nameOf(a), nameOf(b)], f1 = (v) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1);
+      const lines = [
+        `${esc(n[0])} vs ${esc(n[1])}'s durability: ${f1(r.hurtAB)} steps ${r.hurtAB >= 0 ? '(can hurt them)' : '(struggles to hurt them)'}`,
+        `${esc(n[1])} vs ${esc(n[0])}'s durability: ${f1(r.hurtBA)} steps ${r.hurtBA >= 0 ? '(can hurt them)' : '(struggles to hurt them)'}`,
+        r.speedKnown ? `Speed: ${r.speedEdge === 0 ? 'even' : esc(n[r.speedEdge > 0 ? 0 : 1]) + ' is faster (' + f1(Math.abs(r.speedEdge)) + ' for them)'}` : 'Speed: not counted (one speed could not be read)'
+      ];
+      if (r.A.guessedDefence || r.B.guessedDefence) lines.push('A missing Durability is assumed to match that character’s Attack Potency.');
+      const toss = r.diff.cls === 'd4';
+      return `<h2>Fight prediction</h2>
+        <p class="verdict">${toss ? 'Too close to call' + (r.score === 0 ? '' : ' · slight edge: ' + esc(n[r.winner])) : 'Expected winner: ' + esc(n[r.winner])}</p>
+        <span class="diff ${r.diff.cls}">${r.diff.label} (${r.diff.note})</span>
+        <ul>${lines.map((l) => '<li>' + l + '</li>').join('')}<li>Score: ${f1(Math.abs(r.score))} for ${esc(n[r.winner])}</li></ul>`;
+    }
+
     // ---- Compare tab: two pickers, side by side ----
     function buildCompare(el) {
       const side = () => '<div class="side"><div class="picker"></div><div class="fighter"></div></div>';
-      el.innerHTML = `<div class="matchup">${side()}<div class="vs">VS</div>${side()}</div>`;
+      el.innerHTML = `<div class="matchup">${side()}<div class="vs">VS</div>${side()}</div><div class="fight" hidden></div>`;
+      const chosen = [null, null], fight = el.querySelector('.fight');
       el.querySelectorAll('.side').forEach((s, i) => {
         const box = s.querySelector('.fighter');
-        createPicker(s.querySelector('.picker'), `Choose character ${i + 1}`, (ch) => { box.innerHTML = fighterHtml(ch); });
+        createPicker(s.querySelector('.picker'), `Choose character ${i + 1}`, (ch) => {
+          box.innerHTML = fighterHtml(ch);
+          chosen[i] = ch;
+          fight.hidden = !(chosen[0] && chosen[1]);   // the prediction shows once both are picked
+          if (!fight.hidden) fight.innerHTML = fightHtml(chosen[0], chosen[1]);
+        });
       });
     }
 
