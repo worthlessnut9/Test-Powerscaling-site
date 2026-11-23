@@ -243,7 +243,7 @@
     //   score = (A's attack - B's durability) - (B's attack - A's durability) + SPEED_WEIGHT x (A's speed - B's speed)
     // Attack and durability are tier steps (the same scale as the Tier tab). Speed is a step on the Speed tab's list. A positive score favours A.
     const SPEED_WEIGHT = 0.5;      // how much one speed step counts, compared with one tier step of attack or durability
-    const FIGHT_SHARPNESS = 0.4;   // how fast the win chance grows with the score: a score of 1 is about 60/40, 2 about 70/30, 4 about 83/17
+    const FIGHT_SHARPNESS = 0.15;  // how fast the win chance grows with the score (smaller = a wider range of close fights): a score of 3 is about 60/40, 6 about 71/29, 10 about 82/18, 20 about 95/5
     // The win chance of the expected winner decides the difficulty
     const DIFFICULTIES = [
       { max: 0.55, label: 'Extreme Difficulty', note: 'about 50/50', cls: 'd4' },
