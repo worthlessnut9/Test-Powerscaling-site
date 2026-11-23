@@ -1,30 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#0d1117">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Zombie Defense</title>
-  <style>
-    html, body { margin: 0; height: 100%; background: #0d1117; overflow: hidden; overscroll-behavior: none; }
-    /* the game never scrolls or zooms: all touches belong to the canvas */
-    body { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
-    #game { width: 100vw; height: 100vh; height: 100dvh; }
-    canvas { display: block; touch-action: none; }
-    /* held upright on a phone the game would be tiny, so ask for landscape */
-    #rotate { display: none; position: fixed; inset: 0; z-index: 10; background: #0d1117; color: #e8eef7; font: 600 20px system-ui, sans-serif; text-align: center; align-items: center; justify-content: center; flex-direction: column; gap: 14px; padding: 24px; }
-    #rotate span { font-size: 64px; line-height: 1; }
-    @media (orientation: portrait) and (max-width: 700px) { #rotate { display: flex; } }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Powerscaling Database</title>
+  <link rel="stylesheet" href="site.css">
 </head>
 <body>
-  <div id="game"></div>
-  <div id="rotate"><span>&#8635;</span>Turn your phone sideways to play</div>
-  <!-- Phaser is loaded from a CDN. To work offline, download phaser.min.js into /lib and change this src. -->
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
-  <script type="module" src="src/main.js"></script>
+  <nav class="site-nav">
+    <a class="brand" href="index.html">Powerscaling Database</a>
+    <div class="links">
+      <a href="index.html" aria-current="page">Home</a>
+      <a href="database.html">Characters</a>
+      <a href="compare.html">Compare</a>
+      <a href="cards.html">Cards</a>
+      <a href="calculators.html">Calculators</a>
+      <a href="terms.html">Terms</a>
+      <a href="settings.html">Settings</a>
+    </div>
+  </nav>
+  <main class="container">
+    <header>
+      <h1>Powerscaling Database</h1>
+      <p class="muted">Welcome.</p>
+    </header>
+    <section class="panel"><h2>Featured Characters</h2><p class="muted">Coming soon.</p></section>
+    <section class="panel"><h2>More</h2><p class="muted">Coming soon.</p></section>
+  </main>
 </body>
 </html>
