@@ -124,7 +124,7 @@
     </header>
 
     <div class="bar">
-      <div class="coins">Coins: <b id="coins">0</b></div>
+      <div class="coins">Coins: <b id="coins">0</b> <span class="muted" id="luckbar" style="font-size:0.85rem"></span></div>
       <span class="muted" id="status">Loading characters...</span>
     </div>
 
@@ -132,6 +132,7 @@
       <button class="tab" id="tab-shop" role="tab">Shop</button>
       <button class="tab" id="tab-packs" role="tab">Open Packs</button>
       <button class="tab" id="tab-collection" role="tab">My Collection</button>
+      <button class="tab" id="tab-prestige" role="tab">Prestige</button>
     </div>
 
     <section id="panel-shop">
@@ -192,6 +193,10 @@
       <p class="muted" id="shown" style="margin: 0 0 12px;"></p>
       <div class="cgrid" id="collection"></div>
     </section>
+
+    <section id="panel-prestige" hidden>
+      <div class="filters" id="prestige-box"></div>
+    </section>
   </main>
 
   <script>
@@ -204,6 +209,9 @@
     }
 
     // =====================  SETTINGS YOU CAN CHANGE  =====================
+    const PRESTIGE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQWRS4v9F9SJ-Y4wUOO3efaf3UXCItz8EX4wK4QV6lnHX37MQMrchewnvjC9IcwYnehddX5VjBAzUxi/pub?gid=191912243&single=true&output=csv';   // the "Cards Prestige" tab: column 1 = price, column 2 = the card you need; row 1 is Prestige 1, row 2 is Prestige 2, ...
+    const PRESTIGE_LUCK = 1.04;        // every prestige multiplies your luck by this (compounding: 1.04, 1.0816, ...)
+    const PRESTIGE_GOLD_BONUS = 1;     // every prestige adds this much x the base starting coins (1 = +100%)
     const START_COINS = 100;       // coins a new player starts with
     const CARD_SHOP_SIZE = 8;      // how many cards are for sale in the Shop at a time
     const CARD_SHOP_FINISHES = 2;  // at least this many of them always have a finish (Shiny, Foil, Gold Border or Full Gold)
@@ -316,12 +324,13 @@
     function packValue(pack) {   // average coins you get by selling every card in one pack
       const pool = poolFor(pack), nDiv = pool.divine.length;
       const divV = nDiv ? pool.divine.reduce((t, e) => t + RARITIES[e.level].value, 0) / nDiv : 0;
-      const regV = pool.sum ? pool.items.reduce((t, x) => t + x.w * RARITIES[x.e.level].value, 0) / pool.sum : 0;
+      const L = luck(), wl = (x) => (x.e.level > 0 ? x.w * L : x.w);
+      const regV = pool.sum ? pool.items.reduce((t, x) => t + wl(x) * RARITIES[x.e.level].value, 0) / pool.items.reduce((t, x) => t + wl(x), 0) : 0;
       // Divine (Boundless) cards are left out of the price, since the chance of one is tiny and its value is an extreme outlier.
       // The Divine Pack is the one exception: every card in it is Divine, so it is priced on that.
       const upV = pool.upSum ? pool.upItems.reduce((t, x) => t + x.w * RARITIES[x.e.level].value, 0) / pool.upSum : 0;
       const perCard = pool.items.length ? regV * (1 - pool.upChance) + upV * pool.upChance : divV;   // rarity packs: the small chance of a higher rarity counts toward the price
-      return perCard * finishMult(pack.finish, pack.finishBoost || 1) * pack.size;
+      return perCard * finishMult(pack.finish, (pack.finishBoost || 1) * L) * pack.size;
     }
     PACKS.filter((p) => p.cost > 0 && !p.fixedPrice).forEach((p) => {
       const listed = p.cost;
@@ -389,12 +398,14 @@
 
     // ---- Saved game (kept in this browser, survives refreshes) ----
     const KEY = 'powerscaling-cards-v2';
-    let state = { coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {}, fav: {}, lim: {}, cbuy: {}, divOpened: 0, divSlot: 0 };   // cards: "Name||flags" -> copies; ready: pack id -> time it can be opened again
+    let state = { coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {}, fav: {}, lim: {}, cbuy: {}, divOpened: 0, divSlot: 0, prestige: 0 };   // cards: "Name||flags" -> copies; ready: pack id -> time it can be opened again
     try {
       const saved = JSON.parse(localStorage.getItem(KEY));
-      if (saved && typeof saved.coins === 'number') state = { coins: saved.coins, cards: saved.cards || {}, ready: saved.ready || {}, packs: saved.packs || {}, next: saved.next || {}, fav: saved.fav || {}, lim: saved.lim || {}, cbuy: saved.cbuy || {}, divOpened: saved.divOpened || 0, divSlot: saved.divSlot || 0 };
+      if (saved && typeof saved.coins === 'number') state = { coins: saved.coins, cards: saved.cards || {}, ready: saved.ready || {}, packs: saved.packs || {}, next: saved.next || {}, fav: saved.fav || {}, lim: saved.lim || {}, cbuy: saved.cbuy || {}, divOpened: saved.divOpened || 0, divSlot: saved.divSlot || 0, prestige: saved.prestige || 0 };
       else { const old = JSON.parse(localStorage.getItem('powerscaling-cards-v1')); if (old) state.cards = old; }   // keep cards from the first version
     } catch (err) { /* start fresh */ }
+    const luck = () => Math.pow(PRESTIGE_LUCK, state.prestige || 0);   // 1 = no prestige; multiplies every rare chance
+    const startCoinsFor = (p) => START_COINS * (1 + p * PRESTIGE_GOLD_BONUS);
     const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (err) { /* storage unavailable */ } };
 
     // ---- Characters and pulling ----
@@ -424,23 +435,24 @@
       // Rarity packs: a small chance per card to come from a higher rarity (Divine excluded), weighted like a normal pull
       const upItems = pack.upgrade ? [...byName.values()].filter((e) => e.level > pack.rarity && e.level !== DIVINE).map((e) => ({ e, w: Math.pow(drop, e.fam) })) : [];
       const divUp = pack.divineChance ? [...byName.values()].filter((e) => e.level === DIVINE) : [];   // Divine cards a rarity pack can rarely give
-      return (poolCache[pack.id] = { divUp, divChance: divUp.length ? pack.divineChance : 0, upItems, upSum: upItems.reduce((t, x) => t + x.w, 0), upChance: upItems.length ? pack.upgrade : 0, items, sum: items.reduce((t, x) => t + x.w, 0), divine: entries.filter((e) => e.level === DIVINE), pool: entries, finish: pack.finish, boost: pack.finishBoost || 1, divBoost: pack.divineBoost || 1 });
+      return (poolCache[pack.id] = { divUp, divChance: divUp.length ? pack.divineChance : 0, upItems, upSum: upItems.reduce((t, x) => t + x.w, 0), upChance: upItems.length ? pack.upgrade : 0, items, sumHi: items.reduce((t, x) => t + (x.e.level > 0 ? x.w : 0), 0), sum: items.reduce((t, x) => t + x.w, 0), divine: entries.filter((e) => e.level === DIVINE), pool: entries, finish: pack.finish, boost: pack.finishBoost || 1, divBoost: pack.divineBoost || 1 });
     }
 
-    function pullOne({ items, sum, divine, finish, boost = 1, upItems = [], upSum = 0, upChance = 0, divUp = [], divChance = 0, divBoost = 1 }) {
+    function pullOne({ items, sum, sumHi = 0, divine, finish, boost = 1, upItems = [], upSum = 0, upChance = 0, divUp = [], divChance = 0, divBoost = 1 }) {
       let e;
-      if (divChance && Math.random() < divChance) e = divUp[Math.floor(Math.random() * divUp.length)];
-      else if (upChance && Math.random() < upChance) {
+      const L = luck();   // prestige luck: every chance of something rarer is multiplied by this
+      if (divChance && Math.random() < Math.min(1, divChance * L)) e = divUp[Math.floor(Math.random() * divUp.length)];
+      else if (upChance && Math.random() < Math.min(1, upChance * L)) {
         let r = Math.random() * upSum, pick = upItems[upItems.length - 1];
         for (const x of upItems) { r -= x.w; if (r <= 0) { pick = x; break; } }
         e = pick.e;
-      } else if (divine.length && (!items.length || Math.random() < DIVINE_CHANCE * divBoost)) e = divine[Math.floor(Math.random() * divine.length)];
+      } else if (divine.length && (!items.length || Math.random() < Math.min(1, DIVINE_CHANCE * divBoost * L))) e = divine[Math.floor(Math.random() * divine.length)];
       else {
-        let r = Math.random() * sum, pick = items[items.length - 1];
-        for (const x of items) { r -= x.w; if (r <= 0) { pick = x; break; } }
+        let r = Math.random() * (sum + (L - 1) * sumHi), pick = items[items.length - 1];   // anything above Common counts L times as much
+        for (const x of items) { r -= x.e.level > 0 ? x.w * L : x.w; if (r <= 0) { pick = x; break; } }
         e = pick.e;
       }
-      const flags = VARIANTS.filter((v) => (finish && finish.includes(v[0])) || Math.random() < Math.min(1, v[2] * boost)).map((v) => v[0]).join('');
+      const flags = VARIANTS.filter((v) => (finish && finish.includes(v[0])) || Math.random() < Math.min(1, v[2] * boost * L)).map((v) => v[0]).join('');
       return { e, flags };
     }
 
@@ -655,8 +667,9 @@
     // these finishes has the chance of the character times (the finish chance for each finish it has, and one minus it for each it lacks)
     function oddsText(e, flags = '') {
       const pool = poolFor(PACKS.find((p) => p.id === 'mega'));
-      let prob = e.level === DIVINE ? DIVINE_CHANCE / (pool.divine.length || 1) : (1 - (pool.divine.length ? DIVINE_CHANCE : 0)) * Math.pow(RARITY_DROP, e.fam) / pool.sum;
-      VARIANTS.forEach((v) => { prob *= flags.includes(v[0]) ? v[2] : 1 - v[2]; });
+      const L = luck(), dc = Math.min(1, DIVINE_CHANCE * L);
+      let prob = e.level === DIVINE ? dc / (pool.divine.length || 1) : (1 - (pool.divine.length ? dc : 0)) * Math.pow(RARITY_DROP, e.fam) * (e.level > 0 ? L : 1) / (pool.sum + (L - 1) * (pool.sumHi || 0));
+      VARIANTS.forEach((v) => { const p = Math.min(1, v[2] * L); prob *= flags.includes(v[0]) ? p : 1 - p; });
       if (!(prob > 0)) return '';
       const n = 1 / prob;
       return '1 in ' + (n >= 100 ? Math.round(n) : n >= 10 ? n.toFixed(1) : n.toFixed(2)).toLocaleString() + ' pulls';
@@ -764,8 +777,66 @@
       });
     }
 
+    // ---- Prestige: reset your account for permanent luck (every chance of something rarer x1.04, compounding) and more starting gold ----
+    let prestigeRows = null;   // [{ price, card }] from the "Cards Prestige" sheet; null while loading, false if it failed
+    const parseMoney = (v) => {
+      const m = String(v == null ? '' : v).replace(/[$,\s]/g, '').match(/^(\d*\.?\d+)([kmb])?$/i);
+      return m ? Number(m[1]) * ({ k: 1e3, m: 1e6, b: 1e9 }[(m[2] || '').toLowerCase()] || 1) : NaN;
+    };
+    // The card a prestige needs: a character name, optionally with finishes ("Goku", "Goku Shiny", "Goku (Gold Border)")
+    function resolveReq(text) {
+      const all = [...byName.values()], find = (t) => all.find((e) => nameOf(e.c).toLowerCase() === t.trim().toLowerCase());
+      let t = String(text || '').trim(), e = find(t), flags = '';
+      if (!e) {
+        let rest = t.toLowerCase();
+        VARIANTS.forEach((v) => { if (rest.includes(v[1].toLowerCase())) { flags += v[0]; rest = rest.replace(v[1].toLowerCase(), ' '); } });
+        rest = rest.replace(/\s+/g, ' ').replace(/^[\s(),\-\u2013+]+|[\s(),\-\u2013+]+$/g, '');
+        e = find(rest);
+      }
+      return e ? { e, flags } : null;
+    }
+    const ownsReq = (r) => Object.keys(state.cards).some((k) => { const [n, f = ''] = k.split('||'); return state.cards[k] > 0 && n === nameOf(r.e.c) && [...r.flags].every((c) => f.includes(c)); });
+    function renderPrestige() {
+      const box = $('prestige-box'), P = state.prestige || 0, L = luck();
+      const pct = (x) => ((x - 1) * 100).toFixed(x >= 1.1 ? 1 : 2).replace(/\.?0+$/, '') + '%';
+      $('luckbar').textContent = P ? `\u00b7 Prestige ${P} \u00b7 Luck +${pct(L)}` : '';
+      let h = `<div class="frow"><span class="lbl">Prestige</span><b>${P}</b></div>
+        <div class="frow"><span class="lbl">Luck</span><b>+${pct(L)}</b><span class="muted">every chance of a rarer card or finish is ${L.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')}x</span></div>
+        <div class="frow"><span class="lbl">Start</span><b>${startCoinsFor(P).toLocaleString()} coins</b><span class="muted">what you start with after a prestige</span></div>`;
+      if (prestigeRows === null || !loaded) h += '<p class="muted">Loading prestige requirements...</p>';
+      else if (prestigeRows === false) h += '<p class="muted">Couldn\u2019t load the prestige requirements from the sheet.</p>';
+      else if (P >= prestigeRows.length) h += `<p><b>${prestigeRows.length ? 'Max prestige reached.' : 'No prestige levels are set up yet.'}</b></p>`;
+      else {
+        // Every level above yours can be taken straight away if you meet THAT level's price and card (you can skip levels)
+        const status = (q) => { const req = q.card ? resolveReq(q.card) : null, haveCard = !q.card || !!(req && ownsReq(req)), haveCoins = state.coins >= q.price; return { req, haveCard, haveCoins, ok: haveCard && haveCoins }; };
+        prestigeRows.forEach((q, i) => {
+          if (i < P) return;
+          const n = i + 1, st = status(q), next = i === P;
+          h += `<h2 class="sec">${next ? 'Prestige ' + n + ' requires' : 'Skip to prestige ' + n}</h2>
+            <div class="frow"><span class="lbl">Coins</span><b>${q.price.toLocaleString()}</b><span class="muted">${st.haveCoins ? 'you have enough' : 'you have ' + state.coins.toLocaleString()}</span></div>
+            ${q.card ? `<div class="frow"><span class="lbl">Card</span><b>${esc(q.card)}</b><span class="muted">${st.req ? (st.haveCard ? 'you own it' : 'you do not own it yet') : 'this card is not in the character list'}</span></div>` : ''}
+            <div class="frow"><span class="muted">Gives luck +${pct(Math.pow(PRESTIGE_LUCK, n))} and ${startCoinsFor(n).toLocaleString()} starting coins</span>
+              <button class="btn ${next ? 'primary' : ''}" data-prestige="${n}" ${st.ok ? '' : 'disabled'} style="margin-left:auto">${st.ok ? (next ? 'Prestige now' : 'Skip to prestige ' + n) : 'Requirements not met'}</button></div>`;
+        });
+        h += '<p class="muted" style="margin:8px 0">Prestiging resets your coins and removes all your cards, packs and favorites. You keep your prestige level and luck.</p>';
+      }
+      if (box.dataset.html === h) return;   // nothing changed: keep the button as it is, so a click is never lost to a redraw
+      box.dataset.html = h; box.innerHTML = h;
+      box.querySelectorAll('[data-prestige]').forEach((b) => { b.onclick = () => doPrestige(+b.dataset.prestige); });
+    }
+    function doPrestige(n) {   // n = the prestige level you are going to (it can be higher than your level + 1)
+      const P = state.prestige || 0, q = prestigeRows && prestigeRows[n - 1];
+      if (!q || n <= P || busy || state.coins < q.price) return;
+      if (q.card) { const r = resolveReq(q.card); if (!r || !ownsReq(r)) return; }
+      if (!window.confirm(`Go to Prestige ${n}${n > P + 1 ? ' (skipping ' + (n - P - 1) + ' level' + (n - P - 1 > 1 ? 's' : '') + ')' : ''}? This resets your coins to ${startCoinsFor(n).toLocaleString()} and removes ALL your cards, packs and favorites. You keep the luck.`)) return;
+      state = { coins: startCoinsFor(n), cards: {}, ready: {}, packs: {}, next: {}, fav: {}, lim: {}, cbuy: {}, divOpened: 0, divSlot: 0, prestige: n };
+      save(); $('pack-box').hidden = true; location.hash = '#packs';
+      renderShop(); renderCardShop(); renderAll(); showTab();
+    }
+
     function renderAll() {
       $('coins').textContent = state.coins.toLocaleString();
+      renderPrestige();
       const owned = PACKS.reduce((t, p) => t + (state.packs[p.id] || 0), 0);
       $('tab-packs').textContent = 'Open Packs' + (owned ? ` (${owned})` : '');
       renderOwned();
@@ -802,12 +873,12 @@
     function combosOf() {   // every finish combo with its chance of coming up on a normal card
       return Array.from({ length: 1 << VARIANTS.length }, (_, m) => ({
         flags: VARIANTS.filter((v, i) => m & (1 << i)).map((v) => v[0]).join(''),
-        p: VARIANTS.reduce((t, v, i) => t * (m & (1 << i) ? v[2] : 1 - v[2]), 1) }));
+        p: VARIANTS.reduce((t, v, i) => t * (m & (1 << i) ? Math.min(1, v[2] * luck()) : 1 - Math.min(1, v[2] * luck())), 1) }));
     }
     function pickUnowned(pool) {
       const combos = combosOf(), pickFrom = (list) => {
         const opts = [];
-        for (const x of list) for (const c of combos) if (!state.cards[nameOf(x.e.c) + '||' + c.flags]) opts.push({ e: x.e, flags: c.flags, w: x.w * c.p });
+        for (const x of list) for (const c of combos) if (!state.cards[nameOf(x.e.c) + '||' + c.flags]) opts.push({ e: x.e, flags: c.flags, w: x.w * (x.e.level > 0 ? luck() : 1) * c.p });
         if (!opts.length) return null;
         let r = Math.random() * opts.reduce((t, o) => t + o.w, 0), pick = opts[opts.length - 1];
         for (const o of opts) { r -= o.w; if (r <= 0) { pick = o; break; } }
@@ -928,12 +999,12 @@
       if (e.key !== KEY) return;
       try {
         const s = JSON.parse(e.newValue);
-        if (s && typeof s.coins === 'number') { state = { coins: s.coins, cards: s.cards || {}, ready: s.ready || {}, packs: s.packs || {}, next: s.next || {}, fav: s.fav || {}, lim: s.lim || {}, cbuy: s.cbuy || {}, divOpened: s.divOpened || 0, divSlot: s.divSlot || 0 }; updateRegen(); renderAll(); }
+        if (s && typeof s.coins === 'number') { state = { coins: s.coins, cards: s.cards || {}, ready: s.ready || {}, packs: s.packs || {}, next: s.next || {}, fav: s.fav || {}, lim: s.lim || {}, cbuy: s.cbuy || {}, divOpened: s.divOpened || 0, divSlot: s.divSlot || 0, prestige: s.prestige || 0 }; updateRegen(); renderAll(); }
       } catch (err) { /* ignore */ }
     });
 
     // ---- Tabs: #shop, #packs (open your packs), #collection ----
-    const TABS = ['shop', 'packs', 'collection'];
+    const TABS = ['shop', 'packs', 'collection', 'prestige'];
     function showTab() {
       let id = location.hash.slice(1);
       if (!TABS.includes(id)) id = 'packs';   // the Open tab is home (the free pack lives there)
@@ -969,6 +1040,14 @@
         renderAll();
       },
       error: () => { $('status').textContent = 'Couldn\u2019t load the characters.'; }
+    });
+    if (typeof Papa !== 'undefined') Papa.parse(PRESTIGE_CSV_URL, {
+      download: true, header: false, skipEmptyLines: true,
+      complete: (r) => {
+        prestigeRows = r.data.map((row) => ({ price: parseMoney(row[0]), card: String(row[1] == null ? '' : row[1]).trim() })).filter((x) => x.price >= 0);   // the header row is skipped because its price is not a number
+        renderPrestige();
+      },
+      error: () => { prestigeRows = false; renderPrestige(); }
     });
   </script>
 </body>
