@@ -211,6 +211,7 @@
     // =====================  SETTINGS YOU CAN CHANGE  =====================
     const PRESTIGE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQWRS4v9F9SJ-Y4wUOO3efaf3UXCItz8EX4wK4QV6lnHX37MQMrchewnvjC9IcwYnehddX5VjBAzUxi/pub?gid=191912243&single=true&output=csv';   // the "Cards Prestige" tab: column 1 = price, column 2 = the card you need; row 1 is Prestige 1, row 2 is Prestige 2, ...
     const PRESTIGE_LUCK = 1.06;        // every prestige multiplies your luck by this (compounding: 1.06, 1.1236, ...)
+    const LUCK_RARITY_STEP = 1;       // luck weights a card by luck ^ (its rarity number x this): Uncommon x L, Rare x L squared, ... Celestial x L to the 7th. 0 = same boost for everything above Common, 0.5 = gentler
     const PRESTIGE_GOLD_BONUS = 1;     // every prestige adds this much x the base starting coins (1 = +100%)
     const START_COINS = 100;       // coins a new player starts with
     const CARD_SHOP_SIZE = 8;      // how many cards are for sale in the Shop at a time
@@ -324,7 +325,7 @@
     function packValue(pack) {   // average coins you get by selling every card in one pack
       const pool = poolFor(pack), nDiv = pool.divine.length;
       const divV = nDiv ? pool.divine.reduce((t, e) => t + RARITIES[e.level].value, 0) / nDiv : 0;
-      const L = luck(), wl = (x) => (x.e.level > 0 ? x.w * L : x.w);
+      const L = luck(), wl = (x) => x.w * lw(x.e.level, L);
       const regV = pool.sum ? pool.items.reduce((t, x) => t + wl(x) * RARITIES[x.e.level].value, 0) / pool.items.reduce((t, x) => t + wl(x), 0) : 0;
       // Divine (Boundless) cards are left out of the price, since the chance of one is tiny and its value is an extreme outlier.
       // The Divine Pack is the one exception: every card in it is Divine, so it is priced on that.
@@ -404,6 +405,7 @@
       if (saved && typeof saved.coins === 'number') state = { coins: saved.coins, cards: saved.cards || {}, ready: saved.ready || {}, packs: saved.packs || {}, next: saved.next || {}, fav: saved.fav || {}, lim: saved.lim || {}, cbuy: saved.cbuy || {}, divOpened: saved.divOpened || 0, divSlot: saved.divSlot || 0, prestige: saved.prestige || 0 };
       else { const old = JSON.parse(localStorage.getItem('powerscaling-cards-v1')); if (old) state.cards = old; }   // keep cards from the first version
     } catch (err) { /* start fresh */ }
+    const lw = (level, L = luck()) => Math.pow(L, level * LUCK_RARITY_STEP);   // how much more likely luck makes a card of this rarity (Common = 1)
     const luck = () => Math.pow(PRESTIGE_LUCK, state.prestige || 0);   // 1 = no prestige; multiplies every rare chance
     const startCoinsFor = (p) => START_COINS * (1 + p * PRESTIGE_GOLD_BONUS);
     const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (err) { /* storage unavailable */ } };
@@ -435,10 +437,10 @@
       // Rarity packs: a small chance per card to come from a higher rarity (Divine excluded), weighted like a normal pull
       const upItems = pack.upgrade ? [...byName.values()].filter((e) => e.level > pack.rarity && e.level !== DIVINE).map((e) => ({ e, w: Math.pow(drop, e.fam) })) : [];
       const divUp = pack.divineChance ? [...byName.values()].filter((e) => e.level === DIVINE) : [];   // Divine cards a rarity pack can rarely give
-      return (poolCache[pack.id] = { divUp, divChance: divUp.length ? pack.divineChance : 0, upItems, upSum: upItems.reduce((t, x) => t + x.w, 0), upChance: upItems.length ? pack.upgrade : 0, items, sumHi: items.reduce((t, x) => t + (x.e.level > 0 ? x.w : 0), 0), sum: items.reduce((t, x) => t + x.w, 0), divine: entries.filter((e) => e.level === DIVINE), pool: entries, finish: pack.finish, boost: pack.finishBoost || 1, divBoost: pack.divineBoost || 1 });
+      return (poolCache[pack.id] = { divUp, divChance: divUp.length ? pack.divineChance : 0, upItems, upSum: upItems.reduce((t, x) => t + x.w, 0), upChance: upItems.length ? pack.upgrade : 0, items, sumHi: items.reduce((t, x) => t + (x.e.level > 0 ? x.w : 0), 0), lvSum: RARITIES.map((r, l) => items.reduce((t, x) => t + (x.e.level === l ? x.w : 0), 0)), sum: items.reduce((t, x) => t + x.w, 0), divine: entries.filter((e) => e.level === DIVINE), pool: entries, finish: pack.finish, boost: pack.finishBoost || 1, divBoost: pack.divineBoost || 1 });
     }
 
-    function pullOne({ items, sum, sumHi = 0, divine, finish, boost = 1, upItems = [], upSum = 0, upChance = 0, divUp = [], divChance = 0, divBoost = 1 }) {
+    function pullOne({ items, sum, lvSum = [], divine, finish, boost = 1, upItems = [], upSum = 0, upChance = 0, divUp = [], divChance = 0, divBoost = 1 }) {
       let e;
       const L = luck();   // prestige luck: every chance of something rarer is multiplied by this
       if (divChance && Math.random() < Math.min(1, divChance * L)) e = divUp[Math.floor(Math.random() * divUp.length)];
@@ -448,8 +450,8 @@
         e = pick.e;
       } else if (divine.length && (!items.length || Math.random() < Math.min(1, DIVINE_CHANCE * divBoost * L))) e = divine[Math.floor(Math.random() * divine.length)];
       else {
-        let r = Math.random() * (sum + (L - 1) * sumHi), pick = items[items.length - 1];   // anything above Common counts L times as much
-        for (const x of items) { r -= x.e.level > 0 ? x.w * L : x.w; if (r <= 0) { pick = x; break; } }
+        let r = Math.random() * lvSum.reduce((t, w, l) => t + w * lw(l, L), 0), pick = items[items.length - 1];   // each rarity step up counts L times as much
+        for (const x of items) { r -= x.w * lw(x.e.level, L); if (r <= 0) { pick = x; break; } }
         e = pick.e;
       }
       const flags = VARIANTS.filter((v) => (finish && finish.includes(v[0])) || Math.random() < Math.min(1, v[2] * boost * L)).map((v) => v[0]).join('');
@@ -668,7 +670,7 @@
     function oddsText(e, flags = '') {
       const pool = poolFor(PACKS.find((p) => p.id === 'mega'));
       const L = luck(), dc = Math.min(1, DIVINE_CHANCE * L);
-      let prob = e.level === DIVINE ? dc / (pool.divine.length || 1) : (1 - (pool.divine.length ? dc : 0)) * Math.pow(RARITY_DROP, e.fam) * (e.level > 0 ? L : 1) / (pool.sum + (L - 1) * (pool.sumHi || 0));
+      let prob = e.level === DIVINE ? dc / (pool.divine.length || 1) : (1 - (pool.divine.length ? dc : 0)) * Math.pow(RARITY_DROP, e.fam) * lw(e.level, L) / pool.lvSum.reduce((t, w, l) => t + w * lw(l, L), 0);
       VARIANTS.forEach((v) => { const p = Math.min(1, v[2] * L); prob *= flags.includes(v[0]) ? p : 1 - p; });
       if (!(prob > 0)) return '';
       const n = 1 / prob;
@@ -878,7 +880,7 @@
     function pickUnowned(pool) {
       const combos = combosOf(), pickFrom = (list) => {
         const opts = [];
-        for (const x of list) for (const c of combos) if (!state.cards[nameOf(x.e.c) + '||' + c.flags]) opts.push({ e: x.e, flags: c.flags, w: x.w * (x.e.level > 0 ? luck() : 1) * c.p });
+        for (const x of list) for (const c of combos) if (!state.cards[nameOf(x.e.c) + '||' + c.flags]) opts.push({ e: x.e, flags: c.flags, w: x.w * lw(x.e.level) * c.p });
         if (!opts.length) return null;
         let r = Math.random() * opts.reduce((t, o) => t + o.w, 0), pick = opts[opts.length - 1];
         for (const o of opts) { r -= o.w; if (r <= 0) { pick = o; break; } }
