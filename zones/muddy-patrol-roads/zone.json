@@ -1,0 +1,74 @@
+{
+  "id": "muddy-patrol-roads",
+  "name": "Muddy Patrol Roads",
+  "description": "Dirt tracks softened by spring rain that slow down heavy ground zombies but limit vehicle-based towers.",
+  "grassA": "#5b7a3f",
+  "grassB": "#557339",
+  "grassStyle": "speckle",
+  "walls": [
+    {
+      "name": "Mud Bank",
+      "color": "#3f2d1b",
+      "inner": "#6b4c2e",
+      "style": "mound"
+    },
+    {
+      "name": "Fence Posts",
+      "color": "#3b2a1a",
+      "inner": "#7a5a38",
+      "style": "fence"
+    },
+    {
+      "name": "Scrub",
+      "color": "#33501f",
+      "inner": "#4d7430",
+      "style": "bush"
+    },
+    {
+      "name": "Boulder",
+      "color": "#55524a",
+      "inner": "#7d796f",
+      "style": "rock"
+    },
+    {
+      "name": "Roadside Shed",
+      "color": "#4a3022",
+      "inner": "#a8452e",
+      "style": "house"
+    },
+    {
+      "name": "Roadblock",
+      "color": "#6a6d70",
+      "inner": "#d9a62a",
+      "style": "barricade"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Main Path",
+      "color": "#5a4128",
+      "inner": "#6e4f30",
+      "style": "plain"
+    },
+    {
+      "name": "Mud Track",
+      "color": "#4f3922",
+      "inner": "#6e4e2d",
+      "style": "mud"
+    },
+    {
+      "name": "Gravel Shoulder",
+      "color": "#706556",
+      "inner": "#978977",
+      "style": "gravel"
+    },
+    {
+      "name": "Plank Walkway",
+      "color": "#4d3722",
+      "inner": "#84653e",
+      "style": "planks"
+    }
+  ],
+  "variant": "muddy",
+  "tier": 2
+}

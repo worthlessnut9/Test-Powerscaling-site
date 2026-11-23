@@ -1,0 +1,74 @@
+{
+  "id": "ski-lodge",
+  "name": "Alpine Ski Lodge",
+  "description": "Slushy, melting slopes where lingering snowdrifts chill and slow down unprotected towers.",
+  "grassA": "#cfd8de",
+  "grassB": "#c6d0d7",
+  "grassStyle": "speckle",
+  "walls": [
+    {
+      "name": "Snowdrift",
+      "color": "#b9c6cf",
+      "inner": "#f1f6f9",
+      "style": "mound"
+    },
+    {
+      "name": "Alpine Pine",
+      "color": "#4a3a2a",
+      "inner": "#2d5a45",
+      "style": "tree"
+    },
+    {
+      "name": "Lodge Timber",
+      "color": "#6a4a2c",
+      "inner": "#a87c4c",
+      "style": "block"
+    },
+    {
+      "name": "Icy Rock",
+      "color": "#6a7c88",
+      "inner": "#a6bac6",
+      "style": "rock"
+    },
+    {
+      "name": "Ski Lodge",
+      "color": "#4a3a2a",
+      "inner": "#6e4a32",
+      "style": "house"
+    },
+    {
+      "name": "Chalet",
+      "color": "#2f2118",
+      "inner": "#8a6038",
+      "style": "cabin"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Main Path",
+      "color": "#8a9aa3",
+      "inner": "#a8b6bd",
+      "style": "plain"
+    },
+    {
+      "name": "Packed Snow",
+      "color": "#dfe7ed",
+      "inner": "#f2f5f8",
+      "style": "snow"
+    },
+    {
+      "name": "Slush Trail",
+      "color": "#5d5347",
+      "inner": "#7f6d58",
+      "style": "mud"
+    },
+    {
+      "name": "Salted Walkway",
+      "color": "#777874",
+      "inner": "#a8a8a0",
+      "style": "tiles"
+    }
+  ],
+  "variant": "snowy",
+  "tier": 8
+}

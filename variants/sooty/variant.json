@@ -1,0 +1,14 @@
+{
+  "id": "sooty",
+  "name": "Sooty",
+  "description": "Blackened by smoke and ash, in hard hats.",
+  "tint": {
+    "color": "#3a3a3c",
+    "amount": 0.3
+  },
+  "extras": [
+    "soot"
+  ],
+  "outfit": "hardhat",
+  "gear": "#d8a020"
+}

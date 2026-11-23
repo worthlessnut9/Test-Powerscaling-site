@@ -1,0 +1,74 @@
+{
+  "id": "city-hall",
+  "name": "Besieged City Hall",
+  "description": "A grand, fortified government building with sandbagged steps and automated turrets frozen in place.",
+  "grassA": "#c4cdd4",
+  "grassB": "#bcc6cd",
+  "grassStyle": "tiles",
+  "walls": [
+    {
+      "name": "Marble Wall",
+      "color": "#a8a8a0",
+      "inner": "#e0e0d6",
+      "style": "block"
+    },
+    {
+      "name": "Sandbags",
+      "color": "#7a6a48",
+      "inner": "#b49e6a",
+      "style": "mound"
+    },
+    {
+      "name": "Barricade",
+      "color": "#4a3a2a",
+      "inner": "#8a6a46",
+      "style": "fence"
+    },
+    {
+      "name": "Frozen Turret",
+      "color": "#4a5a6a",
+      "inner": "#8ab0c8",
+      "style": "metal"
+    },
+    {
+      "name": "City Hall Wing",
+      "color": "#2e2e36",
+      "inner": "#bcbcc3",
+      "style": "skyscraper"
+    },
+    {
+      "name": "Guardhouse",
+      "color": "#4a3022",
+      "inner": "#d8aba1",
+      "style": "house"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Cobblestone Road",
+      "color": "#7a7e82",
+      "inner": "#9a9ea2",
+      "style": "cobble"
+    },
+    {
+      "name": "Marble Steps",
+      "color": "#72706a",
+      "inner": "#a4a198",
+      "style": "tiles"
+    },
+    {
+      "name": "Snow Drive",
+      "color": "#dde5ea",
+      "inner": "#f0f4f6",
+      "style": "snow"
+    },
+    {
+      "name": "Sandbag Alley",
+      "color": "#7a7771",
+      "inner": "#a5a19a",
+      "style": "gravel"
+    }
+  ],
+  "variant": "snowy",
+  "tier": 39
+}

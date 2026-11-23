@@ -1,0 +1,74 @@
+{
+  "id": "firebombed-district",
+  "name": "The Firebombed Financial District",
+  "description": "Smoldering, ash-covered ruins where lingering fires melt the falling snow into thick, blinding steam.",
+  "grassA": "#3a3836",
+  "grassB": "#353331",
+  "grassStyle": "speckle",
+  "walls": [
+    {
+      "name": "Charred Brick",
+      "color": "#2a2220",
+      "inner": "#5a463c",
+      "style": "brick"
+    },
+    {
+      "name": "Smoldering Rubble",
+      "color": "#3a2a22",
+      "inner": "#a8501a",
+      "style": "mound"
+    },
+    {
+      "name": "Scorched Steel",
+      "color": "#2a2e34",
+      "inner": "#5a626c",
+      "style": "metal"
+    },
+    {
+      "name": "Steam Cloud",
+      "color": "#8a8f94",
+      "inner": "#e6e8ea",
+      "style": "water"
+    },
+    {
+      "name": "Burnt Tower",
+      "color": "#2e2e36",
+      "inner": "#bcbcc3",
+      "style": "skyscraper"
+    },
+    {
+      "name": "Gutted Shop",
+      "color": "#4a463e",
+      "inner": "#8a8478",
+      "style": "ruins"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Main Road",
+      "color": "#2a2826",
+      "inner": "#3e3b38",
+      "style": "road"
+    },
+    {
+      "name": "Ash Road",
+      "color": "#625d56",
+      "inner": "#89837a",
+      "style": "gravel"
+    },
+    {
+      "name": "Melted Slush",
+      "color": "#403122",
+      "inner": "#604830",
+      "style": "mud"
+    },
+    {
+      "name": "Scorched Tile",
+      "color": "#5a564f",
+      "inner": "#888378",
+      "style": "tiles"
+    }
+  ],
+  "variant": "sooty",
+  "tier": 40
+}

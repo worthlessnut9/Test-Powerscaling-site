@@ -1,0 +1,74 @@
+{
+  "id": "strip-mall",
+  "name": "Strip Mall Parking Lot",
+  "description": "Wide, shimmering asphalt expanses with zero natural cover, demanding careful tower placement.",
+  "grassA": "#5a5d62",
+  "grassB": "#54575c",
+  "grassStyle": "plain",
+  "walls": [
+    {
+      "name": "Storefront Wall",
+      "color": "#7a5a4a",
+      "inner": "#b08a70",
+      "style": "brick"
+    },
+    {
+      "name": "Parked Car",
+      "color": "#8a2f2f",
+      "inner": "#c4504a",
+      "style": "metal"
+    },
+    {
+      "name": "Concrete Planter",
+      "color": "#7a7d80",
+      "inner": "#a5a8aa",
+      "style": "block"
+    },
+    {
+      "name": "Dumpster",
+      "color": "#2f5a3a",
+      "inner": "#4a8a58",
+      "style": "metal"
+    },
+    {
+      "name": "Big-Box Store",
+      "color": "#3a3a40",
+      "inner": "#a0a0a8",
+      "style": "warehouse"
+    },
+    {
+      "name": "Shop Front",
+      "color": "#2a6a3a",
+      "inner": "#8a7a6a",
+      "style": "shop"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Main Road",
+      "color": "#3a3c40",
+      "inner": "#4a4d52",
+      "style": "road"
+    },
+    {
+      "name": "Concrete Sidewalk",
+      "color": "#5f5c56",
+      "inner": "#8c8980",
+      "style": "tiles"
+    },
+    {
+      "name": "Cracked Asphalt",
+      "color": "#67635d",
+      "inner": "#8d8982",
+      "style": "gravel"
+    },
+    {
+      "name": "Loading Dock Grate",
+      "color": "#2e3135",
+      "inner": "#747c83",
+      "style": "grating"
+    }
+  ],
+  "variant": "",
+  "tier": 19
+}

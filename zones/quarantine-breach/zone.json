@@ -1,0 +1,74 @@
+{
+  "id": "quarantine-breach",
+  "name": "The Quarantine Wall Breach",
+  "description": "A massive, jagged hole blown through a three-story concrete perimeter wall during a violent thunderstorm.",
+  "grassA": "#5a5a54",
+  "grassB": "#55554f",
+  "grassStyle": "speckle",
+  "walls": [
+    {
+      "name": "Concrete Wall",
+      "color": "#6a6d70",
+      "inner": "#9a9da0",
+      "style": "block"
+    },
+    {
+      "name": "Rubble",
+      "color": "#55524c",
+      "inner": "#8a857a",
+      "style": "mound"
+    },
+    {
+      "name": "Razor-Wire Fence",
+      "color": "#3a3a3c",
+      "inner": "#8a8e94",
+      "style": "fence"
+    },
+    {
+      "name": "Army Crates",
+      "color": "#3f4a30",
+      "inner": "#66784a",
+      "style": "crate"
+    },
+    {
+      "name": "Guard Tower",
+      "color": "#33424a",
+      "inner": "#7ab0c0",
+      "style": "skyscraper"
+    },
+    {
+      "name": "Field Tent",
+      "color": "#6a5a38",
+      "inner": "#c9b88a",
+      "style": "tent"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Cobblestone Road",
+      "color": "#4a4a48",
+      "inner": "#5e5e5a",
+      "style": "cobble"
+    },
+    {
+      "name": "Rubble Track",
+      "color": "#6c6760",
+      "inner": "#938e84",
+      "style": "gravel"
+    },
+    {
+      "name": "Breach Mud",
+      "color": "#4a3b2c",
+      "inner": "#69533a",
+      "style": "mud"
+    },
+    {
+      "name": "Concrete Slab",
+      "color": "#646059",
+      "inner": "#928e83",
+      "style": "tiles"
+    }
+  ],
+  "variant": "bloody",
+  "tier": 30
+}

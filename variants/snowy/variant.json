@@ -1,0 +1,14 @@
+{
+  "id": "snowy",
+  "name": "Snowy",
+  "description": "Snow piled on parka hoods.",
+  "tint": {
+    "color": "#dbe8f0",
+    "amount": 0.22
+  },
+  "extras": [
+    "snow"
+  ],
+  "outfit": "hood",
+  "gear": "#6f8aa8"
+}

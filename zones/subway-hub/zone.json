@@ -1,0 +1,74 @@
+{
+  "id": "subway-hub",
+  "name": "Derelict Subway Hub",
+  "description": "An underground transit station used by survivors for warmth, featuring burning barrels that thaw nearby towers.",
+  "grassA": "#4a4c52",
+  "grassB": "#45474d",
+  "grassStyle": "tiles",
+  "walls": [
+    {
+      "name": "Tiled Wall",
+      "color": "#3a5a5a",
+      "inner": "#7aa8a8",
+      "style": "brick"
+    },
+    {
+      "name": "Burning Barrel",
+      "color": "#5a3a1a",
+      "inner": "#e8731a",
+      "style": "metal"
+    },
+    {
+      "name": "Turnstile Fence",
+      "color": "#3a3a3e",
+      "inner": "#8a8e96",
+      "style": "fence"
+    },
+    {
+      "name": "Rubble",
+      "color": "#4a4a48",
+      "inner": "#78787a",
+      "style": "mound"
+    },
+    {
+      "name": "Station Office",
+      "color": "#3a4350",
+      "inner": "#afb5bb",
+      "style": "house"
+    },
+    {
+      "name": "Kiosk",
+      "color": "#2a6a3a",
+      "inner": "#cac3bc",
+      "style": "shop"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Rail Line",
+      "color": "#3a3a3e",
+      "inner": "#55555c",
+      "style": "rails"
+    },
+    {
+      "name": "Platform Tile",
+      "color": "#5f5c56",
+      "inner": "#8f8b83",
+      "style": "tiles"
+    },
+    {
+      "name": "Grated Walkway",
+      "color": "#2e3135",
+      "inner": "#767d84",
+      "style": "grating"
+    },
+    {
+      "name": "Rubble",
+      "color": "#67635d",
+      "inner": "#908b85",
+      "style": "gravel"
+    }
+  ],
+  "variant": "sooty",
+  "tier": 34
+}

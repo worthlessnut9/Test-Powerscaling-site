@@ -1,0 +1,74 @@
+{
+  "id": "derelict-mall",
+  "name": "Derelict Shopping Mall",
+  "description": "Multi-level glass atriums where rain leaks through shattered skylights onto slippery tile floors.",
+  "grassA": "#a8a090",
+  "grassB": "#a09888",
+  "grassStyle": "tiles",
+  "walls": [
+    {
+      "name": "Shop Front",
+      "color": "#5a4a44",
+      "inner": "#8a766c",
+      "style": "brick"
+    },
+    {
+      "name": "Glass Display",
+      "color": "#3a5a6a",
+      "inner": "#8ac0d4",
+      "style": "metal"
+    },
+    {
+      "name": "Fountain Water",
+      "color": "#3a7a9a",
+      "inner": "#a8e0f0",
+      "style": "water"
+    },
+    {
+      "name": "Kiosk",
+      "color": "#6a4a3a",
+      "inner": "#a47a5e",
+      "style": "crate"
+    },
+    {
+      "name": "Department Store",
+      "color": "#3a4048",
+      "inner": "#7a8a96",
+      "style": "warehouse"
+    },
+    {
+      "name": "Shop Unit",
+      "color": "#2a4a8a",
+      "inner": "#9a8a7a",
+      "style": "shop"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Main Path",
+      "color": "#7a7468",
+      "inner": "#8f897c",
+      "style": "plain"
+    },
+    {
+      "name": "Mall Tile",
+      "color": "#726d62",
+      "inner": "#a19b8d",
+      "style": "tiles"
+    },
+    {
+      "name": "Rain-Puddled Floor",
+      "color": "#584836",
+      "inner": "#786044",
+      "style": "mud"
+    },
+    {
+      "name": "Escalator Grate",
+      "color": "#35383a",
+      "inner": "#7d8388",
+      "style": "grating"
+    }
+  ],
+  "variant": "dusty",
+  "tier": 29
+}

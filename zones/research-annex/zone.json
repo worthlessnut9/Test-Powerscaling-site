@@ -1,0 +1,74 @@
+{
+  "id": "research-annex",
+  "name": "Quarantine Research Annex",
+  "description": "Shattered containment labs with broken cryo-pods leaking freezing gas onto the warm, mutated floor.",
+  "grassA": "#5a6a70",
+  "grassB": "#546469",
+  "grassStyle": "tiles",
+  "walls": [
+    {
+      "name": "Lab Wall",
+      "color": "#8a9aa2",
+      "inner": "#d8e6ec",
+      "style": "block"
+    },
+    {
+      "name": "Cryo-Pod",
+      "color": "#2a4a6a",
+      "inner": "#6ac0f0",
+      "style": "metal"
+    },
+    {
+      "name": "Freezing Gas",
+      "color": "#6ab4d4",
+      "inner": "#e4faff",
+      "style": "water"
+    },
+    {
+      "name": "Containment Fence",
+      "color": "#3a4a52",
+      "inner": "#8aa0ac",
+      "style": "fence"
+    },
+    {
+      "name": "Lab Block",
+      "color": "#3a3039",
+      "inner": "#998191",
+      "style": "warehouse"
+    },
+    {
+      "name": "Cold Tank",
+      "color": "#6a4a3a",
+      "inner": "#a8785a",
+      "style": "silo"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Main Path",
+      "color": "#3a4a52",
+      "inner": "#587080",
+      "style": "plain"
+    },
+    {
+      "name": "Lab Tile",
+      "color": "#5f605c",
+      "inner": "#90938e",
+      "style": "tiles"
+    },
+    {
+      "name": "Cryo Ice",
+      "color": "#a3c6dd",
+      "inner": "#ddedf6",
+      "style": "ice"
+    },
+    {
+      "name": "Containment Grate",
+      "color": "#2e3338",
+      "inner": "#768089",
+      "style": "grating"
+    }
+  ],
+  "variant": "frozen",
+  "tier": 46
+}

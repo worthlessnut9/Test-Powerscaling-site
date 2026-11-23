@@ -1,0 +1,74 @@
+{
+  "id": "spore-tunnels",
+  "name": "Spore-Choked Metro Tunnels",
+  "description": "Dark train bores coated in glowing fungal growths that release disorienting spore clouds when damaged.",
+  "grassA": "#2f3a3a",
+  "grassB": "#2a3535",
+  "grassStyle": "plain",
+  "walls": [
+    {
+      "name": "Fungal Growth",
+      "color": "#4a2a6a",
+      "inner": "#a860e8",
+      "style": "bush"
+    },
+    {
+      "name": "Glowing Spores",
+      "color": "#2a5a5a",
+      "inner": "#4af0d0",
+      "style": "mound"
+    },
+    {
+      "name": "Tunnel Brick",
+      "color": "#2a2f33",
+      "inner": "#4a555a",
+      "style": "brick"
+    },
+    {
+      "name": "Wrecked Train Car",
+      "color": "#3a3a4a",
+      "inner": "#6a6a8a",
+      "style": "metal"
+    },
+    {
+      "name": "Signal Hut",
+      "color": "#45302a",
+      "inner": "#76453e",
+      "style": "house"
+    },
+    {
+      "name": "Ruined Station",
+      "color": "#4a463e",
+      "inner": "#8a8478",
+      "style": "ruins"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Rail Line",
+      "color": "#252f33",
+      "inner": "#3f4f55",
+      "style": "rails"
+    },
+    {
+      "name": "Fungal Floor",
+      "color": "#763949",
+      "inner": "#ba4a69",
+      "style": "flesh"
+    },
+    {
+      "name": "Spore Mud",
+      "color": "#3f3326",
+      "inner": "#604e38",
+      "style": "mud"
+    },
+    {
+      "name": "Platform Tile",
+      "color": "#595853",
+      "inner": "#898981",
+      "style": "tiles"
+    }
+  ],
+  "variant": "infested",
+  "tier": 43
+}

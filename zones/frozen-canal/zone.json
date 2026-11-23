@@ -1,0 +1,74 @@
+{
+  "id": "frozen-canal",
+  "name": "Frozen River Canal",
+  "description": "Thick ice allows zombies to march straight across open water, bypassing standard bridge choke points.",
+  "grassA": "#cfdce6",
+  "grassB": "#c6d4df",
+  "grassStyle": "plain",
+  "walls": [
+    {
+      "name": "Ice Sheet",
+      "color": "#8fb8d4",
+      "inner": "#e4f4fc",
+      "style": "water"
+    },
+    {
+      "name": "Canal Wall",
+      "color": "#5a6672",
+      "inner": "#8a98a6",
+      "style": "brick"
+    },
+    {
+      "name": "Frozen Reeds",
+      "color": "#7a8f90",
+      "inner": "#c4dcdc",
+      "style": "bush"
+    },
+    {
+      "name": "Ice Boulder",
+      "color": "#6a8aa0",
+      "inner": "#a8c8dc",
+      "style": "rock"
+    },
+    {
+      "name": "Boathouse",
+      "color": "#3a4350",
+      "inner": "#afb5bb",
+      "style": "house"
+    },
+    {
+      "name": "Lock Control",
+      "color": "#4a4a3a",
+      "inner": "#cacdc0",
+      "style": "warehouse"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Main Path",
+      "color": "#8fb0c8",
+      "inner": "#b9d6e8",
+      "style": "plain"
+    },
+    {
+      "name": "Thick Ice",
+      "color": "#a8cce3",
+      "inner": "#e2f3fb",
+      "style": "ice"
+    },
+    {
+      "name": "Snow Bank Path",
+      "color": "#dfe9f0",
+      "inner": "#f3f8fb",
+      "style": "snow"
+    },
+    {
+      "name": "Canal Bridge",
+      "color": "#544739",
+      "inner": "#917a5b",
+      "style": "bridge"
+    }
+  ],
+  "variant": "frozen",
+  "tier": 32
+}

@@ -1,0 +1,74 @@
+{
+  "id": "ranger-station",
+  "name": "Abandoned Ranger Station",
+  "description": "A timber lookout post nestled in misty foothills where fog rolls in between waves.",
+  "grassA": "#6b8a6a",
+  "grassB": "#658460",
+  "grassStyle": "speckle",
+  "walls": [
+    {
+      "name": "Misty Pine",
+      "color": "#3d2c1c",
+      "inner": "#2f5a3a",
+      "style": "tree"
+    },
+    {
+      "name": "Timber Cabin Wall",
+      "color": "#5a3c22",
+      "inner": "#8a6038",
+      "style": "block"
+    },
+    {
+      "name": "Foothill Rock",
+      "color": "#6d7a80",
+      "inner": "#97a4aa",
+      "style": "rock"
+    },
+    {
+      "name": "Rail Fence",
+      "color": "#5a3c22",
+      "inner": "#9a7448",
+      "style": "fence"
+    },
+    {
+      "name": "Ranger Cabin",
+      "color": "#3a2a1c",
+      "inner": "#a8784a",
+      "style": "cabin"
+    },
+    {
+      "name": "Radio Shack",
+      "color": "#4a3022",
+      "inner": "#a8452e",
+      "style": "house"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Cobblestone Road",
+      "color": "#6d6254",
+      "inner": "#80746a",
+      "style": "cobble"
+    },
+    {
+      "name": "Forest Trail",
+      "color": "#816846",
+      "inner": "#9c7f57",
+      "style": "dirt"
+    },
+    {
+      "name": "Boardwalk",
+      "color": "#4f3b28",
+      "inner": "#896c48",
+      "style": "bridge"
+    },
+    {
+      "name": "Stone Steps",
+      "color": "#60594e",
+      "inner": "#877f71",
+      "style": "cobble"
+    }
+  ],
+  "variant": "mossy",
+  "tier": 5
+}

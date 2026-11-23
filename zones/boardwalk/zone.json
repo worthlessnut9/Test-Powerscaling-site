@@ -1,0 +1,74 @@
+{
+  "id": "boardwalk",
+  "name": "Coastal Boardwalk",
+  "description": "A decaying seaside amusement pier where high tides periodically flood the lower lanes.",
+  "grassA": "#d8c9a0",
+  "grassB": "#d0c198",
+  "grassStyle": "speckle",
+  "walls": [
+    {
+      "name": "Ocean",
+      "color": "#2a7fb0",
+      "inner": "#9ad8f0",
+      "style": "water"
+    },
+    {
+      "name": "Pier Railing",
+      "color": "#6a4a2a",
+      "inner": "#d8d2c4",
+      "style": "fence"
+    },
+    {
+      "name": "Arcade Booth",
+      "color": "#a8405f",
+      "inner": "#f2d06b",
+      "style": "block"
+    },
+    {
+      "name": "Beach Rock",
+      "color": "#6a7078",
+      "inner": "#9aa2aa",
+      "style": "rock"
+    },
+    {
+      "name": "Arcade",
+      "color": "#8f2a2a",
+      "inner": "#a0866c",
+      "style": "shop"
+    },
+    {
+      "name": "Beach House",
+      "color": "#3a4350",
+      "inner": "#4e5a68",
+      "style": "house"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Plank Walkway",
+      "color": "#7a5a38",
+      "inner": "#a07a4c",
+      "style": "planks"
+    },
+    {
+      "name": "Beach Sand",
+      "color": "#bca171",
+      "inner": "#d5bd8c",
+      "style": "sand"
+    },
+    {
+      "name": "Pier Bridge",
+      "color": "#513a24",
+      "inner": "#8d6c44",
+      "style": "bridge"
+    },
+    {
+      "name": "Tiled Promenade",
+      "color": "#726554",
+      "inner": "#a6967e",
+      "style": "tiles"
+    }
+  ],
+  "variant": "",
+  "tier": 14
+}

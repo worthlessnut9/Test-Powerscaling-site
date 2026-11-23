@@ -1,0 +1,74 @@
+{
+  "id": "shipping-port",
+  "name": "Container Shipping Port",
+  "description": "Towering stacks of sun-heated metal cargo crates creating a tight, claustrophobic urban maze.",
+  "grassA": "#7a7e82",
+  "grassB": "#74787c",
+  "grassStyle": "tiles",
+  "walls": [
+    {
+      "name": "Red Container",
+      "color": "#7a2a22",
+      "inner": "#b8453a",
+      "style": "metal"
+    },
+    {
+      "name": "Blue Container",
+      "color": "#223f66",
+      "inner": "#3d6aa5",
+      "style": "metal"
+    },
+    {
+      "name": "Green Container",
+      "color": "#2a5a3a",
+      "inner": "#4a8f5d",
+      "style": "metal"
+    },
+    {
+      "name": "Pallet Crates",
+      "color": "#6a5030",
+      "inner": "#a8814e",
+      "style": "crate"
+    },
+    {
+      "name": "Warehouse",
+      "color": "#4a4a3a",
+      "inner": "#8a8f72",
+      "style": "warehouse"
+    },
+    {
+      "name": "Harbour Office",
+      "color": "#3a4350",
+      "inner": "#4e5a68",
+      "style": "house"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Main Road",
+      "color": "#3a3d41",
+      "inner": "#4c5055",
+      "style": "road"
+    },
+    {
+      "name": "Concrete Yard",
+      "color": "#5f5d57",
+      "inner": "#8c8981",
+      "style": "tiles"
+    },
+    {
+      "name": "Steel Grating",
+      "color": "#2e3236",
+      "inner": "#747c84",
+      "style": "grating"
+    },
+    {
+      "name": "Gravel Lot",
+      "color": "#67645e",
+      "inner": "#8d8983",
+      "style": "gravel"
+    }
+  ],
+  "variant": "",
+  "tier": 15
+}

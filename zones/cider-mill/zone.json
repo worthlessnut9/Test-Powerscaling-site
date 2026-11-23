@@ -1,0 +1,74 @@
+{
+  "id": "cider-mill",
+  "name": "Abandoned Apple Cider Mill",
+  "description": "Pumpkin patches and decaying barns swarming with hordes emerging from thick autumn mist.",
+  "grassA": "#8a7a3a",
+  "grassB": "#847436",
+  "grassStyle": "speckle",
+  "walls": [
+    {
+      "name": "Decaying Barn",
+      "color": "#6a3024",
+      "inner": "#a04a36",
+      "style": "block"
+    },
+    {
+      "name": "Pumpkin Patch",
+      "color": "#a85a14",
+      "inner": "#e88a2a",
+      "style": "bush"
+    },
+    {
+      "name": "Autumn Tree",
+      "color": "#4a3220",
+      "inner": "#d9822b",
+      "style": "tree"
+    },
+    {
+      "name": "Stone Wall",
+      "color": "#5a5448",
+      "inner": "#8a8474",
+      "style": "brick"
+    },
+    {
+      "name": "Cider Mill",
+      "color": "#4a3a2a",
+      "inner": "#6e4a32",
+      "style": "house"
+    },
+    {
+      "name": "Big Barn",
+      "color": "#3a3a40",
+      "inner": "#a0a0a8",
+      "style": "warehouse"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Cobblestone Road",
+      "color": "#6a4e30",
+      "inner": "#82603a",
+      "style": "cobble"
+    },
+    {
+      "name": "Leaf Path",
+      "color": "#80623b",
+      "inner": "#9d7949",
+      "style": "dirt"
+    },
+    {
+      "name": "Mill Planks",
+      "color": "#503923",
+      "inner": "#886840",
+      "style": "planks"
+    },
+    {
+      "name": "Mud Yard",
+      "color": "#543d25",
+      "inner": "#745330",
+      "style": "mud"
+    }
+  ],
+  "variant": "leafy",
+  "tier": 22
+}

@@ -1,0 +1,74 @@
+{
+  "id": "central-park",
+  "name": "Snowbound Central Park",
+  "description": "A sprawling urban forest blanketed in white, hiding camouflaged ambushers in the snowbanks.",
+  "grassA": "#e4ecf0",
+  "grassB": "#dbe5ea",
+  "grassStyle": "speckle",
+  "walls": [
+    {
+      "name": "Snowy Pine",
+      "color": "#4a3a2c",
+      "inner": "#e6f0f2",
+      "style": "tree"
+    },
+    {
+      "name": "Snow Mound",
+      "color": "#b8c6d0",
+      "inner": "#f6fafc",
+      "style": "mound"
+    },
+    {
+      "name": "Park Fence",
+      "color": "#2a2e32",
+      "inner": "#6a7076",
+      "style": "fence"
+    },
+    {
+      "name": "Frozen Pond",
+      "color": "#9cc0d6",
+      "inner": "#e8f6fc",
+      "style": "water"
+    },
+    {
+      "name": "Boathouse",
+      "color": "#3a4350",
+      "inner": "#afb5bb",
+      "style": "house"
+    },
+    {
+      "name": "Warming Hut",
+      "color": "#3a2a1c",
+      "inner": "#d8c2ae",
+      "style": "cabin"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Cobblestone Road",
+      "color": "#a8b2ba",
+      "inner": "#c2cad0",
+      "style": "cobble"
+    },
+    {
+      "name": "Snowy Trail",
+      "color": "#e1e9ee",
+      "inner": "#f4f7f9",
+      "style": "snow"
+    },
+    {
+      "name": "Frozen Pond",
+      "color": "#a9cce2",
+      "inner": "#e2f2fa",
+      "style": "ice"
+    },
+    {
+      "name": "Park Bridge",
+      "color": "#584737",
+      "inner": "#927857",
+      "style": "bridge"
+    }
+  ],
+  "variant": "snowy",
+  "tier": 37
+}

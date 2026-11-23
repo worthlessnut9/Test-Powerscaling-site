@@ -1,0 +1,74 @@
+{
+  "id": "golf-course",
+  "name": "Overgrown Golf Course",
+  "description": "Rolling hills, sand traps, and stagnant water hazards crawling with sun-bleached walkers.",
+  "grassA": "#4f8f3c",
+  "grassB": "#478836",
+  "grassStyle": "stripes",
+  "walls": [
+    {
+      "name": "Sand Trap",
+      "color": "#b9a46a",
+      "inner": "#e8d9a0",
+      "style": "mound"
+    },
+    {
+      "name": "Water Hazard",
+      "color": "#3a7f9a",
+      "inner": "#8fd0e0",
+      "style": "water"
+    },
+    {
+      "name": "Oak Tree",
+      "color": "#4a3520",
+      "inner": "#3f7f34",
+      "style": "tree"
+    },
+    {
+      "name": "Hedge",
+      "color": "#2d5a28",
+      "inner": "#4a8a3a",
+      "style": "bush"
+    },
+    {
+      "name": "Clubhouse",
+      "color": "#4a3a2a",
+      "inner": "#6e4a32",
+      "style": "house"
+    },
+    {
+      "name": "Pro Shop",
+      "color": "#2a6a3a",
+      "inner": "#8a7a6a",
+      "style": "shop"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Main Path",
+      "color": "#c9b98a",
+      "inner": "#ddd0a4",
+      "style": "plain"
+    },
+    {
+      "name": "Fairway Dirt",
+      "color": "#9d8256",
+      "inner": "#b89b69",
+      "style": "dirt"
+    },
+    {
+      "name": "Sand Trap Path",
+      "color": "#d4be8a",
+      "inner": "#e8d6a7",
+      "style": "sand"
+    },
+    {
+      "name": "Cart Gravel",
+      "color": "#928974",
+      "inner": "#b9b09a",
+      "style": "gravel"
+    }
+  ],
+  "variant": "mossy",
+  "tier": 13
+}

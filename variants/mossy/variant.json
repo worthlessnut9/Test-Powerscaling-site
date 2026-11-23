@@ -1,0 +1,14 @@
+{
+  "id": "mossy",
+  "name": "Mossy",
+  "description": "Patches of moss and damp growth, in ranger hats.",
+  "tint": {
+    "color": "#4f7a3a",
+    "amount": 0.15
+  },
+  "extras": [
+    "moss"
+  ],
+  "outfit": "brimhat",
+  "gear": "#6a7a3a"
+}

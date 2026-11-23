@@ -1,0 +1,74 @@
+{
+  "id": "fairgrounds",
+  "name": "Dust Bowl County Fairgrounds",
+  "description": "Rusted Ferris wheels and collapsed carnival tents under a blazing sun that overheats rapid-fire towers.",
+  "grassA": "#c9ad74",
+  "grassB": "#c1a56d",
+  "grassStyle": "speckle",
+  "walls": [
+    {
+      "name": "Carnival Tent",
+      "color": "#b3392f",
+      "inner": "#f0ddc8",
+      "style": "block"
+    },
+    {
+      "name": "Ferris Wheel Frame",
+      "color": "#5a5f66",
+      "inner": "#8d949c",
+      "style": "metal"
+    },
+    {
+      "name": "Rusted Cart",
+      "color": "#7a3e22",
+      "inner": "#b0693a",
+      "style": "crate"
+    },
+    {
+      "name": "Dead Brush",
+      "color": "#6b5a2a",
+      "inner": "#9a8240",
+      "style": "bush"
+    },
+    {
+      "name": "Striped Tent",
+      "color": "#4a5a6a",
+      "inner": "#a8b8c8",
+      "style": "tent"
+    },
+    {
+      "name": "Midway Stall",
+      "color": "#8f2a2a",
+      "inner": "#a0866c",
+      "style": "shop"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Main Path",
+      "color": "#8f6b3d",
+      "inner": "#a98150",
+      "style": "plain"
+    },
+    {
+      "name": "Boardwalk",
+      "color": "#583f26",
+      "inner": "#906f45",
+      "style": "planks"
+    },
+    {
+      "name": "Dusty Midway",
+      "color": "#c2a773",
+      "inner": "#d8bf8e",
+      "style": "sand"
+    },
+    {
+      "name": "Gravel Lot",
+      "color": "#80715d",
+      "inner": "#a99881",
+      "style": "gravel"
+    }
+  ],
+  "variant": "dusty",
+  "tier": 12
+}

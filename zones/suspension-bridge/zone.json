@@ -1,0 +1,74 @@
+{
+  "id": "suspension-bridge",
+  "name": "Fog-Shrouded Suspension Bridge",
+  "description": "A massive steel bridge spanning a wide river, choked with wrecked cars and blinding autumn fog.",
+  "grassA": "#707880",
+  "grassB": "#6a727a",
+  "grassStyle": "plain",
+  "walls": [
+    {
+      "name": "Wrecked Car",
+      "color": "#5a4a3a",
+      "inner": "#8a7360",
+      "style": "metal"
+    },
+    {
+      "name": "Bridge Railing",
+      "color": "#4a5460",
+      "inner": "#8e9aa8",
+      "style": "fence"
+    },
+    {
+      "name": "River",
+      "color": "#3a5a70",
+      "inner": "#7ea6c0",
+      "style": "water"
+    },
+    {
+      "name": "Steel Pylon",
+      "color": "#4a5058",
+      "inner": "#7a838e",
+      "style": "block"
+    },
+    {
+      "name": "Toll Booth",
+      "color": "#3a4350",
+      "inner": "#4e5a68",
+      "style": "house"
+    },
+    {
+      "name": "Bridge Tower",
+      "color": "#2a3446",
+      "inner": "#5f7ea0",
+      "style": "skyscraper"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Main Road",
+      "color": "#3a3f45",
+      "inner": "#4e545b",
+      "style": "road"
+    },
+    {
+      "name": "Bridge Deck",
+      "color": "#483626",
+      "inner": "#816746",
+      "style": "bridge"
+    },
+    {
+      "name": "Gravel Shoulder",
+      "color": "#67645f",
+      "inner": "#8e8b84",
+      "style": "gravel"
+    },
+    {
+      "name": "Maintenance Grating",
+      "color": "#2e3236",
+      "inner": "#757c84",
+      "style": "grating"
+    }
+  ],
+  "variant": "",
+  "tier": 26
+}

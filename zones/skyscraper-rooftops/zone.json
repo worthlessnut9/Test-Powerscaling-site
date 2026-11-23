@@ -1,0 +1,74 @@
+{
+  "id": "skyscraper-rooftops",
+  "name": "Ice-Slicked Skyscraper Rooftops",
+  "description": "High-altitude bridges and helipads where icy surfaces cause knocked-back zombies to slide off ledges.",
+  "grassA": "#7a8590",
+  "grassB": "#737e89",
+  "grassStyle": "tiles",
+  "walls": [
+    {
+      "name": "Rooftop Vent",
+      "color": "#4a5560",
+      "inner": "#8a9aaa",
+      "style": "metal"
+    },
+    {
+      "name": "Ice Ledge",
+      "color": "#8fb0c8",
+      "inner": "#d6ecf8",
+      "style": "block"
+    },
+    {
+      "name": "Antenna Fence",
+      "color": "#4a5560",
+      "inner": "#a6b4c2",
+      "style": "fence"
+    },
+    {
+      "name": "Snow Drift",
+      "color": "#aebcc8",
+      "inner": "#eef4f8",
+      "style": "mound"
+    },
+    {
+      "name": "Penthouse",
+      "color": "#2a3446",
+      "inner": "#b7c5d4",
+      "style": "skyscraper"
+    },
+    {
+      "name": "Rooftop Shed",
+      "color": "#4a3022",
+      "inner": "#d8aba1",
+      "style": "house"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Main Path",
+      "color": "#5a6670",
+      "inner": "#7a8894",
+      "style": "plain"
+    },
+    {
+      "name": "Rooftop Gravel",
+      "color": "#70706c",
+      "inner": "#9b9a95",
+      "style": "gravel"
+    },
+    {
+      "name": "Helipad Pad",
+      "color": "#696965",
+      "inner": "#9a9a94",
+      "style": "tiles"
+    },
+    {
+      "name": "Ice Sheet",
+      "color": "#a5c8de",
+      "inner": "#dfeff7",
+      "style": "ice"
+    }
+  ],
+  "variant": "frozen",
+  "tier": 35
+}

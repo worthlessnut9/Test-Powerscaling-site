@@ -1,0 +1,74 @@
+{
+  "id": "sewer-mains",
+  "name": "Steaming Sewer Mains",
+  "description": "Subterranean tunnels heated by biological runoff, teeming with acid-spitting mutations.",
+  "grassA": "#3f4a3a",
+  "grassB": "#3a4536",
+  "grassStyle": "tiles",
+  "walls": [
+    {
+      "name": "Sludge",
+      "color": "#4a6a1a",
+      "inner": "#9acd32",
+      "style": "water"
+    },
+    {
+      "name": "Brick Tunnel",
+      "color": "#3a3f38",
+      "inner": "#68705f",
+      "style": "brick"
+    },
+    {
+      "name": "Sewer Pipes",
+      "color": "#4a4030",
+      "inner": "#8a7a4a",
+      "style": "metal"
+    },
+    {
+      "name": "Acid Slime",
+      "color": "#3a5a1a",
+      "inner": "#8aea2a",
+      "style": "mound"
+    },
+    {
+      "name": "Pump Station",
+      "color": "#3a3039",
+      "inner": "#998191",
+      "style": "warehouse"
+    },
+    {
+      "name": "Collapsed Wall",
+      "color": "#4a463e",
+      "inner": "#8a8478",
+      "style": "ruins"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Main Path",
+      "color": "#2f3a30",
+      "inner": "#46543f",
+      "style": "plain"
+    },
+    {
+      "name": "Sludge",
+      "color": "#423725",
+      "inner": "#625032",
+      "style": "mud"
+    },
+    {
+      "name": "Sewer Grating",
+      "color": "#2c3134",
+      "inner": "#747c81",
+      "style": "grating"
+    },
+    {
+      "name": "Slime Tile",
+      "color": "#5c5c52",
+      "inner": "#8b8b7b",
+      "style": "tiles"
+    }
+  ],
+  "variant": "toxic",
+  "tier": 41
+}

@@ -1,0 +1,74 @@
+{
+  "id": "mountain-tunnel",
+  "name": "Mountain Pass Tunnel",
+  "description": "A high-altitude highway bore blocked by rockslides, forcing zombies into a tight single-lane choke point.",
+  "grassA": "#6c7076",
+  "grassB": "#666a70",
+  "grassStyle": "speckle",
+  "walls": [
+    {
+      "name": "Rockslide",
+      "color": "#52565c",
+      "inner": "#80858c",
+      "style": "rock"
+    },
+    {
+      "name": "Tunnel Wall",
+      "color": "#3d4146",
+      "inner": "#5f656c",
+      "style": "brick"
+    },
+    {
+      "name": "Jersey Barrier",
+      "color": "#8a8d90",
+      "inner": "#b5b8ba",
+      "style": "block"
+    },
+    {
+      "name": "Snow Patch",
+      "color": "#a9b3bd",
+      "inner": "#e8eef3",
+      "style": "mound"
+    },
+    {
+      "name": "Control Hut",
+      "color": "#4a4a3a",
+      "inner": "#8a8f72",
+      "style": "warehouse"
+    },
+    {
+      "name": "Roadblock",
+      "color": "#6a6d70",
+      "inner": "#d9a62a",
+      "style": "barricade"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Main Road",
+      "color": "#35383d",
+      "inner": "#464a50",
+      "style": "road"
+    },
+    {
+      "name": "Gravel Shoulder",
+      "color": "#65625d",
+      "inner": "#8b8881",
+      "style": "gravel"
+    },
+    {
+      "name": "Service Grating",
+      "color": "#2d3135",
+      "inner": "#747b83",
+      "style": "grating"
+    },
+    {
+      "name": "Rockfall Dirt",
+      "color": "#715b3f",
+      "inner": "#8b734f",
+      "style": "dirt"
+    }
+  ],
+  "variant": "dusty",
+  "tier": 7
+}

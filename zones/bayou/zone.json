@@ -1,0 +1,74 @@
+{
+  "id": "bayou",
+  "name": "Mosquito-Infested Bayou",
+  "description": "Humid swampland with elevated wooden walkways where bloated, toxic zombies wade through murky water.",
+  "grassA": "#4a6b3a",
+  "grassB": "#456534",
+  "grassStyle": "speckle",
+  "walls": [
+    {
+      "name": "Murky Water",
+      "color": "#2f4a2a",
+      "inner": "#6a9a4f",
+      "style": "water"
+    },
+    {
+      "name": "Cypress Tree",
+      "color": "#4a3a28",
+      "inner": "#3f6b3a",
+      "style": "tree"
+    },
+    {
+      "name": "Reeds",
+      "color": "#3a5a28",
+      "inner": "#5f8a3a",
+      "style": "bush"
+    },
+    {
+      "name": "Stilt Shack",
+      "color": "#5a4630",
+      "inner": "#8a6c46",
+      "style": "block"
+    },
+    {
+      "name": "Fishing Lodge",
+      "color": "#4a3022",
+      "inner": "#a8452e",
+      "style": "house"
+    },
+    {
+      "name": "Bait Shop",
+      "color": "#2a4a8a",
+      "inner": "#9a8a7a",
+      "style": "shop"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Plank Walkway",
+      "color": "#5a4328",
+      "inner": "#7a5c38",
+      "style": "planks"
+    },
+    {
+      "name": "Mud Bank",
+      "color": "#4f3922",
+      "inner": "#725230",
+      "style": "mud"
+    },
+    {
+      "name": "Swamp Bridge",
+      "color": "#4c3621",
+      "inner": "#886841",
+      "style": "bridge"
+    },
+    {
+      "name": "Sandbar",
+      "color": "#b29b6d",
+      "inner": "#cab486",
+      "style": "sand"
+    }
+  ],
+  "variant": "mossy",
+  "tier": 17
+}

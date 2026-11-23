@@ -1,0 +1,74 @@
+{
+  "id": "walled-sanctuary",
+  "name": "The Walled Sanctuary",
+  "description": "A heavily fortified, sunlit survivor town surrounded by blooming spring orchards and wooden palisades.",
+  "grassA": "#5f8f4a",
+  "grassB": "#5a8846",
+  "grassStyle": "speckle",
+  "walls": [
+    {
+      "name": "Wooden Palisade",
+      "color": "#5a3e22",
+      "inner": "#9a7448",
+      "style": "fence"
+    },
+    {
+      "name": "Blooming Orchard Tree",
+      "color": "#5a3e22",
+      "inner": "#f2b6c9",
+      "style": "tree"
+    },
+    {
+      "name": "Stone Wall",
+      "color": "#6e6a62",
+      "inner": "#a8a296",
+      "style": "brick"
+    },
+    {
+      "name": "Hedge",
+      "color": "#2f5d2a",
+      "inner": "#4f8a3d",
+      "style": "bush"
+    },
+    {
+      "name": "Timber Cottage",
+      "color": "#4a3a2a",
+      "inner": "#6e4a32",
+      "style": "house"
+    },
+    {
+      "name": "Watchtower",
+      "color": "#3a2a1c",
+      "inner": "#a8784a",
+      "style": "cabin"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Cobblestone Road",
+      "color": "#a58b5c",
+      "inner": "#b89e6c",
+      "style": "cobble"
+    },
+    {
+      "name": "Packed Dirt",
+      "color": "#927448",
+      "inner": "#ad8c58",
+      "style": "dirt"
+    },
+    {
+      "name": "Flagstone Walk",
+      "color": "#7f745f",
+      "inner": "#ada188",
+      "style": "tiles"
+    },
+    {
+      "name": "Gravel Drive",
+      "color": "#877b66",
+      "inner": "#aea189",
+      "style": "gravel"
+    }
+  ],
+  "variant": "",
+  "tier": 1
+}

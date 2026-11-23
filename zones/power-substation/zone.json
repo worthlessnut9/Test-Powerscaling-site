@@ -1,0 +1,74 @@
+{
+  "id": "power-substation",
+  "name": "Blackout Power Substation",
+  "description": "Sparks fly from downed power lines in the snow, creating deadly electrical arcs across puddles.",
+  "grassA": "#6a7078",
+  "grassB": "#646a72",
+  "grassStyle": "speckle",
+  "walls": [
+    {
+      "name": "Transformer",
+      "color": "#3f4a56",
+      "inner": "#7a8a9a",
+      "style": "metal"
+    },
+    {
+      "name": "Warning Fence",
+      "color": "#3a3e44",
+      "inner": "#c9a63a",
+      "style": "fence"
+    },
+    {
+      "name": "Puddle",
+      "color": "#3a5a7a",
+      "inner": "#a8d0f0",
+      "style": "water"
+    },
+    {
+      "name": "Insulator Crates",
+      "color": "#4a3a2a",
+      "inner": "#8a6a46",
+      "style": "crate"
+    },
+    {
+      "name": "Control Building",
+      "color": "#3a4048",
+      "inner": "#c3cad0",
+      "style": "warehouse"
+    },
+    {
+      "name": "Switch House",
+      "color": "#3a4350",
+      "inner": "#afb5bb",
+      "style": "house"
+    }
+  ],
+  "paths": [
+    {
+      "name": "Main Path",
+      "color": "#3a3e44",
+      "inner": "#4e535a",
+      "style": "plain"
+    },
+    {
+      "name": "Gravel Yard",
+      "color": "#67645f",
+      "inner": "#8e8a84",
+      "style": "gravel"
+    },
+    {
+      "name": "Cable Grate",
+      "color": "#2e3236",
+      "inner": "#757c84",
+      "style": "grating"
+    },
+    {
+      "name": "Frozen Puddle",
+      "color": "#a3c6dc",
+      "inner": "#ddecf4",
+      "style": "ice"
+    }
+  ],
+  "variant": "snowy",
+  "tier": 38
+}
