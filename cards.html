@@ -276,11 +276,12 @@
         folders: ['Hunter x Hunter'], colors: ['#1f8a3b', '#d6f26b'] },
       { id: 'rot-murderdrones', name: 'Murder Drones Pack', desc: 'Only Murder Drones characters.', size: 8, cost: 200, cooldown: 0,
         folders: ['Glitch Productions, Murder Drones'], colors: ['#e5392e', '#2a2a40'] },
+      { id: 'rot-demonslayer', name: 'Demon Slayer Pack', desc: 'Only Demon Slayer characters.', size: 8, cost: 200, cooldown: 0, folder: 'Demon Slayer', colors: ['#1f9e6e', '#2a2a40'] },
       { id: 'rot-truegold', name: 'True Gold', desc: 'Every card has the Gold Border and Full Gold finishes.', size: 8, cost: 7000, cooldown: 0, finish: 'bg', fixedPrice: true, colors: ['#a87400', '#ffe27a'] },
       { id: 'rot-new', name: 'The New Pack', desc: 'One card you do not own yet: a base card or any finish combo.', size: 1, cost: 500, cooldown: 0, unowned: true, colors: ['#2bd1ff', '#7a2bff'] },   // unowned: the card is always one you do not have (a character + finish combo you have no copy of)
-      // Every card has ALL four finishes. shopChance: 0.01 = it shows up in 1 in 100 shop rotations (it takes over one of the rotating slots). oncePerRotation: you can only buy it once each time the shop rotates. fixedPrice: skips the automatic price rise.
+      // Every card has ALL four finishes. (A pack can also have shopChance: 0.01 = it only shows up in 1 in 100 rotations; the God Pack no longer uses it.) oncePerRotation: you can only buy it once each time the shop rotates. fixedPrice: skips the automatic price rise.
       { id: 'rot-god', name: 'God Pack', desc: 'Every card is Foil, Shiny, Gold Border and Full Gold.', size: 8, cost: 5000, cooldown: 0, finish: 'fsbg',
-        oncePerRotation: true, fixedPrice: true, shopChance: 0.01, colors: ['#ff2bd6', '#ffd23f'] },
+        oncePerRotation: true, fixedPrice: true, colors: ['#ff2bd6', '#ffd23f'] },
       // ---- ADD YOUR OWN HERE (same options as the packs above: folder, characters, minTier, maxTier, colors, rarityDrop, hold, finishBoost) ----
     ];
 
@@ -329,10 +330,11 @@
       } });
     });
 
-    // The Divine Pack: the base price doubled once for every Divine Pack you have opened (selling cards does not bring it back down).
+    // The Divine Pack: the base price doubled once for every Divine Pack you opened during the CURRENT shop rotation (it goes back to the base price when the shop rotates).
+    const divCount = () => (state.divSlot === rotSlot() ? state.divOpened || 0 : 0);
     PACKS.filter((p) => p.divineDouble).forEach((p) => {
       const base = p.cost;
-      Object.defineProperty(p, 'cost', { enumerable: true, get() { try { return base * Math.pow(2, state.divOpened || 0); } catch (e) { return base; } } });
+      Object.defineProperty(p, 'cost', { enumerable: true, get() { try { return base * Math.pow(2, divCount()); } catch (e) { return base; } } });
     });
 
     const PALETTE = [['#2b5cff', '#7a2bff'], ['#e5392e', '#ff9f2e'], ['#13a67b', '#2bd1ff'], ['#b32bff', '#ff2b8a'], ['#c9971c', '#ffe27a']];   // pack colours when a pack has no colors
@@ -387,10 +389,10 @@
 
     // ---- Saved game (kept in this browser, survives refreshes) ----
     const KEY = 'powerscaling-cards-v2';
-    let state = { coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {}, fav: {}, lim: {}, cbuy: {}, divOpened: 0 };   // cards: "Name||flags" -> copies; ready: pack id -> time it can be opened again
+    let state = { coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {}, fav: {}, lim: {}, cbuy: {}, divOpened: 0, divSlot: 0 };   // cards: "Name||flags" -> copies; ready: pack id -> time it can be opened again
     try {
       const saved = JSON.parse(localStorage.getItem(KEY));
-      if (saved && typeof saved.coins === 'number') state = { coins: saved.coins, cards: saved.cards || {}, ready: saved.ready || {}, packs: saved.packs || {}, next: saved.next || {}, fav: saved.fav || {}, lim: saved.lim || {}, cbuy: saved.cbuy || {}, divOpened: saved.divOpened || 0 };
+      if (saved && typeof saved.coins === 'number') state = { coins: saved.coins, cards: saved.cards || {}, ready: saved.ready || {}, packs: saved.packs || {}, next: saved.next || {}, fav: saved.fav || {}, lim: saved.lim || {}, cbuy: saved.cbuy || {}, divOpened: saved.divOpened || 0, divSlot: saved.divSlot || 0 };
       else { const old = JSON.parse(localStorage.getItem('powerscaling-cards-v1')); if (old) state.cards = old; }   // keep cards from the first version
     } catch (err) { /* start fresh */ }
     const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (err) { /* storage unavailable */ } };
@@ -826,7 +828,7 @@
         state.packs[p.id]--;
         updateRegen();   // starts the refill timer if a free pack was full
       }                  // a free pack with no wait can always be opened
-      if (p.divineDouble) state.divOpened = (state.divOpened || 0) + 1;   // each Divine Pack opened doubles the Divine Pack price
+      if (p.divineDouble) { state.divOpened = divCount() + 1; state.divSlot = rotSlot(); }   // each Divine Pack opened doubles the price until the shop rotates
       const pulls = [];
       for (let i = 0; i < p.size; i++) {
         const { e, flags } = p.unowned ? pickUnowned(pool) : pullOne(pool), key = nameOf(e.c) + '||' + flags;
@@ -926,7 +928,7 @@
       if (e.key !== KEY) return;
       try {
         const s = JSON.parse(e.newValue);
-        if (s && typeof s.coins === 'number') { state = { coins: s.coins, cards: s.cards || {}, ready: s.ready || {}, packs: s.packs || {}, next: s.next || {}, fav: s.fav || {}, lim: s.lim || {}, cbuy: s.cbuy || {}, divOpened: s.divOpened || 0 }; updateRegen(); renderAll(); }
+        if (s && typeof s.coins === 'number') { state = { coins: s.coins, cards: s.cards || {}, ready: s.ready || {}, packs: s.packs || {}, next: s.next || {}, fav: s.fav || {}, lim: s.lim || {}, cbuy: s.cbuy || {}, divOpened: s.divOpened || 0, divSlot: s.divSlot || 0 }; updateRegen(); renderAll(); }
       } catch (err) { /* ignore */ }
     });
 
