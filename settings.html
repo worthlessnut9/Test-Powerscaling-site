@@ -44,6 +44,10 @@
         <div class="what"><b>Hard reset</b><span class="muted">Deletes every card, pack and favorite, and sets your coins back to <span id="start">100</span>. It can&rsquo;t be undone.</span></div>
         <button class="btn danger" id="reset">Hard reset</button>
       </div>
+      <div class="row">
+        <div class="what"><b>Pack opening limit</b><span class="muted">Packs are opened at most <span id="cap-n">1,000,000</span> at a time. Remove the limit to open every pack you hold in one go. Very large opens can take a while and use a lot of memory. Currently: <b id="cap-state" style="color:#fff"></b>.</span></div>
+        <button class="btn" id="cap">Remove limit</button>
+      </div>
       <p id="msg" role="status"></p>
     </section>
   </main>
@@ -51,6 +55,8 @@
   <script>
     // Uses the same save as cards.html, so the two pages always agree
     const KEY = 'powerscaling-cards-v2', OLD_KEY = 'powerscaling-cards-v1', START_COINS = 100;
+    const SETTINGS_KEY = 'powerscaling-settings-v1';   // other options, kept apart from the game save (the Cards page reads it too)
+    const OPEN_CAP = 1000000;   // same number as the Cards page
     const $ = (id) => document.getElementById(id);
     const fresh = () => ({ coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {}, fav: {} });
     let storageOk = true;
@@ -65,12 +71,16 @@
     function save(state) {
       try { localStorage.setItem(KEY, JSON.stringify(state)); return true; } catch (e) { return false; }
     }
+    function loadSettings() { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch (e) { return {}; } }
+    function saveSettings(o) { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(o)); return true; } catch (e) { return false; } }
     function show(text, bad) { const m = $('msg'); m.textContent = text; m.className = bad ? 'err' : ''; }
     function render() {
       const s = load();
       $('coins').textContent = Math.floor(s.coins).toLocaleString();
       $('cards').textContent = Object.values(s.cards || {}).reduce((t, n) => t + (+n || 0), 0).toLocaleString();
       $('start').textContent = START_COINS;
+      const off = !!loadSettings().noOpenCap;
+      $('cap-n').textContent = OPEN_CAP.toLocaleString(); $('cap-state').textContent = off ? 'no limit' : 'limited to ' + OPEN_CAP.toLocaleString(); $('cap').textContent = off ? 'Put limit back' : 'Remove limit';
     }
 
     $('reset').addEventListener('click', () => {
@@ -78,6 +88,13 @@
       try { localStorage.removeItem(OLD_KEY); } catch (e) { /* ignore */ }   // the first version's cards would otherwise come back
       if (!save(fresh())) return show('Could not save. Your browser is blocking storage for this site.', true);
       render(); show('Everything was reset.');
+    });
+    $('cap').addEventListener('click', () => {
+      const o = loadSettings(), off = !o.noOpenCap;
+      if (off && !confirm('Remove the limit? Opening a huge number of packs at once can be slow and use a lot of memory.')) return;
+      o.noOpenCap = off;
+      if (!saveSettings(o)) return show('Could not save. Your browser is blocking storage for this site.', true);
+      render(); show(off ? 'The pack opening limit is off.' : 'The pack opening limit is back on (' + OPEN_CAP.toLocaleString() + ').');
     });
     window.addEventListener('storage', (e) => { if (e.key === KEY) render(); });   // the Cards page changed your save in another tab
     render();

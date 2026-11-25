@@ -941,24 +941,56 @@
         flags: VARIANTS.filter((v, i) => m & (1 << i)).map((v) => v[0]).join(''),
         p: VARIANTS.reduce((t, v, i) => t * (m & (1 << i) ? Math.min(1, v[2] * luck()) : 1 - Math.min(1, v[2] * luck())), 1) }));
     }
-    function pickUnowned(pool) {
-      const combos = combosOf(), pickFrom = (list) => {
-        const opts = [];
-        for (const x of list) for (const c of combos) if (!state.cards[nameOf(x.e.c) + '||' + c.flags]) opts.push({ e: x.e, flags: c.flags, w: x.w * lw(x.e.level) * c.p });
-        if (!opts.length) return null;
-        let r = Math.random() * opts.reduce((t, o) => t + o.w, 0), pick = opts[opts.length - 1];
-        for (const o of opts) { r -= o.w; if (r <= 0) { pick = o; break; } }
+    // Picks cards you do not own yet, for The New Pack. A card is a character plus a finish combo, weighted like a normal pull (rarer characters and finishes are
+    // less likely). That weight is (the character's weight) x (the combo's chance), so it is worked out in two steps: a character is drawn from a sum tree whose
+    // weights are updated whenever you gain a card, then one of that character's missing combos. Each pick costs a few dozen steps however many characters there are
+    // (rebuilding the whole list of missing cards for every pick is what limited this pack to a couple of hundred opens a second).
+    function unownedPicker(pool) {
+      const combos = combosOf(), M = combos.length, pc = combos.map((c) => c.p);
+      const sampler = (list) => {   // list: [{ e, a }] where a is the character's weight
+        const n = list.length; let size = 1; while (size < n) size <<= 1;
+        const tree = new Float64Array(2 * size), owned = new Int32Array(n), mass = new Float64Array(n);
+        const massOf = (i) => { let t = 0; for (let m = 0; m < M; m++) if (!(owned[i] & (1 << m))) t += pc[m]; return t; };
+        for (let i = 0; i < n; i++) {
+          const head = keyHead(list[i].e);
+          for (let m = 0; m < M; m++) if (state.cards[head + combos[m].flags]) owned[i] |= 1 << m;
+          mass[i] = massOf(i); tree[size + i] = list[i].a * mass[i];
+        }
+        for (let k = size - 1; k >= 1; k--) tree[k] = tree[2 * k] + tree[2 * k + 1];
+        return {
+          total: () => tree[1],
+          pick() {
+            let r = Math.random() * tree[1], k = 1;
+            while (k < size) { if (r < tree[2 * k] || tree[2 * k + 1] === 0) k = 2 * k; else { r -= tree[2 * k]; k = 2 * k + 1; } }
+            const i = k - size; let r2 = Math.random() * mass[i], m = -1;
+            for (let j = 0; j < M; j++) if (!(owned[i] & (1 << j))) { m = j; r2 -= pc[j]; if (r2 <= 0) break; }
+            return { i, m, e: list[i].e, flags: combos[m].flags };
+          },
+          own(i, m) {
+            owned[i] |= 1 << m; mass[i] = massOf(i);
+            let k = size + i; tree[k] = list[i].a * mass[i];
+            for (k >>= 1; k >= 1; k >>= 1) tree[k] = tree[2 * k] + tree[2 * k + 1];
+          }
+        };
+      };
+      const reg = sampler(pool.items.map((x) => ({ e: x.e, a: x.w * lw(x.e.level) })));
+      const div = sampler(pool.divine.map((e) => ({ e, a: lw(e.level) })));
+      const fullFinish = VARIANTS.map((v) => v[0]).join('');
+      return () => {
+        const useDiv = div.total() > 0 && (!(reg.total() > 0) || Math.random() < DIVINE_CHANCE);   // Divine cards keep their usual tiny chance
+        const from = useDiv ? div : reg.total() > 0 ? reg : null;
+        if (!from) return pool.divine.length ? { e: pool.divine[Math.floor(Math.random() * pool.divine.length)], flags: fullFinish } : null;   // nothing left to own: a Divine card with every finish
+        const pick = from.pick(); from.own(pick.i, pick.m);
         return pick;
       };
-      const reg = pickFrom(pool.items), div = pickFrom(pool.divine.map((e) => ({ e, w: 1 })));
-      const pick = div && (!reg || Math.random() < DIVINE_CHANCE) ? div : reg;   // Divine cards keep their usual tiny chance
-      // Nothing left to own: a Divine card with every finish instead
-      return pick || (pool.divine.length ? { e: pool.divine[Math.floor(Math.random() * pool.divine.length)], flags: VARIANTS.map((v) => v[0]).join('') } : null);
     }
     const canOpenUnowned = (p) => hasUnowned(p) || poolFor(p).divine.length > 0;   // there is a new card to give, or (when you own everything) a Divine with every finish
     const hasUnowned = (p) => { const pool = poolFor(p); return [...pool.items.map((x) => x.e), ...pool.divine].some((e) => combosOf().some((c) => !state.cards[nameOf(e.c) + '||' + c.flags])); };
 
-    const OPEN_HARD_CAP = 250000;   // the most packs that can be opened in one go, however you ask for them
+    const OPEN_HARD_CAP = 1000000;   // the most packs that can be opened in one go, however you ask for them (the Settings page can switch this limit off)
+    const SETTINGS_KEY = 'powerscaling-settings-v1';   // the same key the Settings page writes
+    const openCap = () => { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}').noOpenCap ? Infinity : OPEN_HARD_CAP; } catch (err) { return OPEN_HARD_CAP; } };
+    const PACK_VIEW_MAX = 1000000;   // the most cards from one open that are kept to look through (the rest are still added to your collection)
     const OPEN_MAX_KEY = 100;   // the 0 key opens this many packs at once (when buying it means as many as you can afford)
     const openQty = (alt = altHeld) => (buyQty === Infinity ? OPEN_MAX_KEY : buyQty) * (alt ? 10 : 1);   // holding Alt multiplies it by 10
     const PACK_FIRST = 100, PACK_MORE = 50;
@@ -985,17 +1017,18 @@
       let n = 1;
       if (p.cost || isRegen(p)) {   // a pack you own (bought, or earned for free over time)
         if (!(state.packs[p.id] > 0)) return;
-        n = Math.max(1, Math.min(want, state.packs[p.id], OPEN_HARD_CAP));
+        n = Math.max(1, Math.min(want, state.packs[p.id], openCap()));
       }                             // a free pack with no wait can always be opened
       busy = true;
       refreshPacks();
-      const total = n * p.size, pe = new Array(total), pf = new Array(total), pn = new Uint8Array(total), gain = new Map(), started = Date.now();
+      const total = n * p.size, keep = Math.min(total, PACK_VIEW_MAX), pe = new Array(keep), pf = new Array(keep), pn = new Uint8Array(keep), gain = new Map(), started = Date.now();
       let done = 0, idx = 0;
+      const nextUnowned = p.unowned ? unownedPicker(pool) : null;
       // the pack shakes while the cards are worked out, then the cards are dealt face down for you to flip
       $('pack-box').hidden = false;
       $('pack-box').scrollIntoView({ behavior: 'smooth', block: 'start' });
       $('reveal').hidden = true; $('pack-more').hidden = true;
-      $('pack-title').textContent = n > 1 ? `Latest packs (${n.toLocaleString()} opened)` : 'Latest pack';
+      $('pack-title').textContent = n > 1 ? `Latest packs (${n.toLocaleString()} opened${total > keep ? ', first ' + keep.toLocaleString() + ' cards shown' : ''})` : 'Latest pack';
       $('pack').innerHTML = `<div class="pack-wrap">${packHtml(p, 'shake', n)}</div>${n > 1000 ? '<p class="muted" id="open-progress" style="text-align:center"></p>' : ''}`;
       function finish() {
         if (p.cost || isRegen(p)) state.packs[p.id] -= n;
@@ -1007,7 +1040,7 @@
         setTimeout(() => {
           // Only the first PACK_FIRST cards are drawn (so opening lots of packs does not lag); the button under them adds PACK_MORE at a time.
           // Opening several packs: the images load right away (no waiting until you scroll to them).
-          packPulls = { length: total, e: pe, f: pf, n: pn }; packDrawn = 0; packName = p.name; packMany = n > 1;
+          packPulls = { length: keep, e: pe, f: pf, n: pn }; packDrawn = 0; packName = p.name; packMany = n > 1;
           $('pack').innerHTML = '';
           drawPackCards(PACK_FIRST);
           $('reveal').hidden = false;
@@ -1019,10 +1052,11 @@
         const t0 = performance.now();
         while (done < n && performance.now() - t0 < 30) {
           for (let i = 0; i < p.size; i++) {
-            const { e, flags } = p.unowned ? pickUnowned(pool) : pullOne(pool), key = keyHead(e) + flags;
+            const { e, flags } = nextUnowned ? nextUnowned() : pullOne(pool), key = keyHead(e) + flags;
             if (p.unowned) { pn[idx] = state.cards[key] ? 0 : 1; state.cards[key] = (state.cards[key] || 0) + 1; }   // a New Pack must see what the cards before it gave you
             else { const c = gain.get(key); pn[idx] = c || state.cards[key] ? 0 : 1; gain.set(key, (c || 0) + 1); }
-            pe[idx] = e; pf[idx] = flags; idx++;
+            if (idx < keep) { pe[idx] = e; pf[idx] = flags; }
+            idx++;
           }
           done++;
         }
