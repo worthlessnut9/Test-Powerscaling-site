@@ -394,9 +394,12 @@
     const levelOfRank = (rank) => RARITIES.reduce((lvl, r, i) => rank >= r.min ? i : lvl, 0);
     // what a card sells for: its rarity's coin value times the multiplier of every finish it has
     const sellMult = (flags) => VARIANTS.reduce((m, v) => flags.includes(v[0]) ? m * v[3] : m, 1);
-    const sellPrice = (e, flags = '') => Math.max(1, Math.round(RARITIES[e.level].value * sellMult(flags)));
+    // sellPrice and rarityScore only depend on the character and the finishes, so each answer is worked out once and kept (per character entry, so reloaded data starts fresh)
+    const memo = new WeakMap();
+    const memoOf = (e, flags, name, calc) => { let m = memo.get(e); if (!m) memo.set(e, m = {}); const k = name + flags; return k in m ? m[k] : (m[k] = calc()); };
+    const sellPrice = (e, flags = '') => memoOf(e, flags, 'p', () => Math.max(1, Math.round(RARITIES[e.level].value * sellMult(flags))));
     // how rare a card is overall (used for "rarest first")
-    const rarityScore = (e, flags) => VARIANTS.reduce((m, v) => flags.includes(v[0]) ? m / v[2] : m, 1 / e.w);
+    const rarityScore = (e, flags) => memoOf(e, flags, 's', () => VARIANTS.reduce((m, v) => flags.includes(v[0]) ? m / v[2] : m, 1 / e.w));
     const fmtTime = (ms) => { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 
     // ---- Saved game (kept in this browser, survives refreshes) ----
@@ -689,7 +692,9 @@
     // Changing a filter, the sort or the view starts over at the first page. "Sell everything showing" still counts every matching card, not just the drawn ones.
     const COLLECTION_FIRST = 100, COLLECTION_MORE = 50;
     let collLimit = COLLECTION_FIRST, collSig = '';
+    let collHtml = '';   // what the collection grid currently shows, so an identical redraw can be skipped
     function renderCollection() {
+      if ($('panel-collection').hidden) return;   // not on this tab: it is drawn when you open it
       const ownedNames = new Set(Object.keys(state.cards).map((k) => k.split('||')[0]));
       let all, rows;
       if (F.view === 'missing') {
@@ -731,7 +736,7 @@
       $('shown').textContent = F.view === 'missing' ? `${rows.length} of ${all.length} ${variantMode ? 'cards' : 'characters'} you don’t own yet${rows.length > collLimit ? ` \u00b7 ${collLimit} drawn` : ''}`
         : total ? `Showing ${rows.length} of ${all.length} ${F.view === 'fav' ? 'favorited ' : ''}card types${filtering ? ' (filters on)' : ''}${rows.length > collLimit ? ` \u00b7 ${collLimit} drawn` : ''}` : '';
 
-      $('collection').innerHTML = rows.length ? drawn.map((r) => {
+      const html = rows.length ? drawn.map((r) => {
         if (F.view === 'missing') return `<div class="ghost">${cardHtml(r.e, r.flags, 0, false, `<div class="muted" style="text-align:center;margin-top:8px">Not owned yet<br><b style="color:#fff">Odds: ${oddsText(r.e, r.flags)}</b><br>Sells for ${sellPrice(r.e, r.flags).toLocaleString()} coins</div>`)}</div>`;
         const fav = !!state.fav[r.key];
         return cardHtml(r.e, r.flags, r.n, false,
@@ -739,6 +744,7 @@
            <button class="btn" data-sell="${esc(r.key)}"${fav ? ' disabled title="Unfavorite this card to sell it"' : ''}>${fav ? 'Locked (favorited)' : `Sell 1 for ${sellPrice(r.e, r.flags).toLocaleString()} coins`}</button>`, fav);
       }).join('')
         : `<p class="muted">${F.view === 'missing' ? (all.length ? 'No cards match your filters.' : variantMode ? (F.plain && F.finish.size ? 'No card is both plain and finished. Pick one or the other.' : 'You own every one of those!') : 'You own every character!') : total ? 'No cards match your filters.' : 'No cards yet. Open a pack!'}</p>`;
+      if (html !== collHtml) { collHtml = html; $('collection').innerHTML = html; }   // same cards as already shown: leave the page alone (keeps scroll and hover)
       const left = rows.length - drawn.length;
       $('coll-more').hidden = left <= 0;
       $('coll-more').textContent = `Show ${Math.min(COLLECTION_MORE, left)} more (${left.toLocaleString()} not shown)`;
@@ -818,6 +824,7 @@
       const box = $('prestige-box'), P = state.prestige || 0, L = luck();
       const pct = (x) => ((x - 1) * 100).toFixed(x >= 1.1 ? 1 : 2).replace(/\.?0+$/, '') + '%';
       $('luckbar').textContent = P ? `\u00b7 Prestige ${P} \u00b7 Luck +${pct(L)}` : '';
+      if ($('panel-prestige').hidden) return;   // not on this tab: it is drawn when you open it
       let h = `<div class="frow"><span class="lbl">Prestige</span><b>${P}</b></div>
         <div class="frow"><span class="lbl">Luck</span><b>+${pct(L)}</b><span class="muted">every chance of a rarer card or finish is ${L.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')}x</span></div>
         <div class="frow"><span class="lbl">Start</span><b>${startCoinsFor(P).toLocaleString()} coins</b><span class="muted">what you start with after a prestige</span></div>
@@ -1093,6 +1100,8 @@
         $('panel-' + t).hidden = t !== id;
         $('tab-' + t).setAttribute('aria-selected', String(t === id));
       });
+      if (id === 'collection') renderCollection();
+      if (id === 'prestige') renderPrestige();
     }
     TABS.forEach((t) => $('tab-' + t).addEventListener('click', () => { location.hash = '#' + t; }));
     window.addEventListener('hashchange', showTab);
