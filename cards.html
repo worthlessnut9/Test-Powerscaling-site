@@ -253,7 +253,7 @@
     // hold: the most of this pack you can keep in Open Packs. Leave it out for unlimited (paid packs) or 1 (free packs with a wait).
     const FIXED_PACKS = [   // packs that are always available (the Free Pack in Open Packs, paid packs always in the Shop)
       // (the ids 'basic' and 'mega' are kept from older versions so players keep their saved packs; only the names changed)
-      { id: 'basic', name: 'Free Pack', desc: 'A free pack every minute. Holds up to 3.', size: 4, cost: 0, cooldown: 60, hold: 3 },
+      { id: 'basic', name: 'Free Pack', desc: 'A free pack every minute.', size: 4, cost: 0, cooldown: 60, hold: 3 },
       { id: 'mega', name: 'Basic Pack', desc: 'Eight cards in one go.', size: 8, cost: 100, cooldown: 0 },
 
       // ---- ADD YOUR OWN PACKS HERE. Copy this example, remove the // at the start of each line, and edit it. ----
@@ -538,7 +538,8 @@
 
     // Open tab: the free packs (always here) plus any packs you bought
     const usedThisRotation = (p) => !!p.oncePerRotation && state.lim[p.id] === rotSlot();   // already bought during the current shop rotation
-    const holdOf = (p) => p.hold ?? (p.cost ? Infinity : 1);   // how many of this pack you can keep
+    const PACK_HOLD_PER_PRESTIGE = 1;   // every prestige lets you keep this many more of each free pack
+    const holdOf = (p) => (p.hold ?? (p.cost ? Infinity : 1)) + (isRegen(p) ? PACK_HOLD_PER_PRESTIGE * (state.prestige || 0) : 0);   // how many of this pack you can keep
     const isRegen = (p) => !p.cost && p.cooldown > 0;           // a free pack that refills over time
 
     // Gives free packs earned since last time (also while the page was closed), up to the hold limit.
@@ -804,7 +805,8 @@
       $('luckbar').textContent = P ? `\u00b7 Prestige ${P} \u00b7 Luck +${pct(L)}` : '';
       let h = `<div class="frow"><span class="lbl">Prestige</span><b>${P}</b></div>
         <div class="frow"><span class="lbl">Luck</span><b>+${pct(L)}</b><span class="muted">every chance of a rarer card or finish is ${L.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')}x</span></div>
-        <div class="frow"><span class="lbl">Start</span><b>${startCoinsFor(P).toLocaleString()} coins</b><span class="muted">what you start with after a prestige</span></div>`;
+        <div class="frow"><span class="lbl">Start</span><b>${startCoinsFor(P).toLocaleString()} coins</b><span class="muted">what you start with after a prestige</span></div>
+        <div class="frow"><span class="lbl">Free Pack</span><b>holds ${holdOf(PACKS.find((x) => x.id === 'basic'))}</b><span class="muted">+${PACK_HOLD_PER_PRESTIGE} stored free pack per prestige</span></div>`;
       if (prestigeRows === null || !loaded) h += '<p class="muted">Loading prestige requirements...</p>';
       else if (prestigeRows === false) h += '<p class="muted">Couldn\u2019t load the prestige requirements from the sheet.</p>';
       else if (P >= prestigeRows.length) h += `<p><b>${prestigeRows.length ? 'Max prestige reached.' : 'No prestige levels are set up yet.'}</b></p>`;
@@ -817,7 +819,7 @@
           h += `<h2 class="sec">${next ? 'Prestige ' + n + ' requires' : 'Skip to prestige ' + n}</h2>
             <div class="frow"><span class="lbl">Coins</span><b>${q.price.toLocaleString()}</b><span class="muted">${st.haveCoins ? 'you have enough' : 'you have ' + state.coins.toLocaleString()}</span></div>
             ${q.card ? `<div class="frow"><span class="lbl">Card</span><b>${esc(q.card)}</b><span class="muted">${st.req ? (st.haveCard ? 'you own it' : 'you do not own it yet') : 'this card is not in the character list'}</span></div>` : ''}
-            <div class="frow"><span class="muted">Gives luck +${pct(Math.pow(PRESTIGE_LUCK, n))} and ${startCoinsFor(n).toLocaleString()} starting coins</span>
+            <div class="frow"><span class="muted">Gives luck +${pct(Math.pow(PRESTIGE_LUCK, n))}, ${startCoinsFor(n).toLocaleString()} starting coins and room for ${PACKS.find((x) => x.id === 'basic').hold + PACK_HOLD_PER_PRESTIGE * n} stored Free Packs</span>
               <button class="btn ${next ? 'primary' : ''}" data-prestige="${n}" ${st.ok ? '' : 'disabled'} style="margin-left:auto">${st.ok ? (next ? 'Prestige now' : 'Skip to prestige ' + n) : 'Requirements not met'}</button></div>`;
         });
         h += '<p class="muted" style="margin:8px 0">Prestiging resets your coins and removes all your cards, packs and favorites. You keep your prestige level and luck.</p>';
