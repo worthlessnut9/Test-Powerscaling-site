@@ -455,11 +455,21 @@
         e = pick.e;
       } else if (divine.length && (!items.length || Math.random() < Math.min(1, DIVINE_CHANCE * divBoost * L))) e = divine[Math.floor(Math.random() * divine.length)];
       else {
-        let r = Math.random() * lvSum.reduce((t, w, l) => t + w * lw(l, L), 0), pick = items[items.length - 1];   // each rarity step up counts L times as much
-        for (const x of items) { r -= x.w * lw(x.e.level, L); if (r <= 0) { pick = x; break; } }
-        e = pick.e;
+        // each rarity step up counts L times as much. The running totals are worked out once per luck level, then each pull is a binary search
+        // (a straight scan over thousands of characters for every card is what made opening 100k+ packs so slow)
+        if (items._cumL !== L) {
+          const cum = new Float64Array(items.length); let t = 0;
+          for (let i = 0; i < items.length; i++) { t += items[i].w * lw(items[i].e.level, L); cum[i] = t; }
+          items._cum = cum; items._cumL = L;
+        }
+        const cum = items._cum, total = cum[cum.length - 1], r = Math.random() * total;
+        let lo = 0, hi = items.length - 1;
+        if (!(total > 0) || !isFinite(total)) lo = hi;   // luck so high the numbers overflow: the rarest one
+        else while (lo < hi) { const mid = (lo + hi) >> 1; if (cum[mid] >= r) hi = mid; else lo = mid + 1; }
+        e = items[lo].e;
       }
-      const flags = VARIANTS.filter((v) => (finish && finish.includes(v[0])) || Math.random() < Math.min(1, v[2] * boost * L)).map((v) => v[0]).join('');
+      let flags = '';
+      for (const v of VARIANTS) if ((finish && finish.includes(v[0])) || Math.random() < Math.min(1, v[2] * boost * L)) flags += v[0];
       return { e, flags };
     }
 
@@ -952,10 +962,11 @@
     const OPEN_MAX_KEY = 100;   // the 0 key opens this many packs at once (when buying it means as many as you can afford)
     const openQty = (alt = altHeld) => (buyQty === Infinity ? OPEN_MAX_KEY : buyQty) * (alt ? 10 : 1);   // holding Alt multiplies it by 10
     const PACK_FIRST = 100, PACK_MORE = 50;
-    let packPulls = [], packDrawn = 0, packName = '', packMany = false;
+    let packPulls = { length: 0, e: [], f: [], n: new Uint8Array(0) }, packDrawn = 0, packName = '', packMany = false;   // the cards just opened, kept compactly (a million cards fit)
     function drawPackCards(count) {   // draw the next `count` cards of the pack(s) just opened, face down
       const from = packDrawn, to = Math.min(packPulls.length, from + count);
-      const html = packPulls.slice(from, to).map((x, i) => flipHtml(x.e, x.flags, x.isNew, Math.min(i, 12), packName)).join('');
+      let html = '';
+      for (let k = from; k < to; k++) html += flipHtml(packPulls.e[k], packPulls.f[k], !!packPulls.n[k], Math.min(k - from, 12), packName);
       $('pack').insertAdjacentHTML('beforeend', packMany ? html.replace(/loading="lazy"/g, 'loading="eager"') : html);
       packDrawn = to;
       const left = packPulls.length - packDrawn;
@@ -963,8 +974,9 @@
       $('pack-more').textContent = `Show ${Math.min(PACK_MORE, left)} more (${left.toLocaleString()} not shown)`;
     }
 
+    const keyHead = (e) => e._key || (e._key = nameOf(e.c) + '||');
     // Open a pack. want = how many to open at once (1 by default; a number key held while clicking, or Infinity for Ctrl+click = every copy you hold).
-    // When several are opened the images of all the cards are loaded together.
+    // Big opens are done a little at a time (so the page keeps responding, with a progress count) and added to your collection all at once at the end.
     function openPack(p, want = 1) {
       if (!loaded || busy) return;
       const pool = poolFor(p);
@@ -974,38 +986,52 @@
       if (p.cost || isRegen(p)) {   // a pack you own (bought, or earned for free over time)
         if (!(state.packs[p.id] > 0)) return;
         n = Math.max(1, Math.min(want, state.packs[p.id], OPEN_HARD_CAP));
-        state.packs[p.id] -= n;
-        updateRegen();   // starts the refill timer if a free pack was full
-      }                  // a free pack with no wait can always be opened
-      const pulls = [];
-      for (let k = 0; k < n; k++) {
-        if (p.divineDouble) { state.divOpened = divCount() + 1; state.divSlot = rotSlot(); }   // each Divine Pack opened doubles the price until the shop rotates
-        for (let i = 0; i < p.size; i++) {
-          const { e, flags } = p.unowned ? pickUnowned(pool) : pullOne(pool), key = nameOf(e.c) + '||' + flags;
-          pulls.push({ e, flags, isNew: !state.cards[key] });
-          state.cards[key] = (state.cards[key] || 0) + 1;
-        }
-      }
+      }                             // a free pack with no wait can always be opened
       busy = true;
-      save();
-      updateRegen();
-      renderAll();
-      // the pack shakes, then the cards are dealt face down for you to flip
+      refreshPacks();
+      const total = n * p.size, pe = new Array(total), pf = new Array(total), pn = new Uint8Array(total), gain = new Map(), started = Date.now();
+      let done = 0, idx = 0;
+      // the pack shakes while the cards are worked out, then the cards are dealt face down for you to flip
       $('pack-box').hidden = false;
       $('pack-box').scrollIntoView({ behavior: 'smooth', block: 'start' });
       $('reveal').hidden = true; $('pack-more').hidden = true;
-      $('pack-title').textContent = n > 1 ? `Latest packs (${n} opened)` : 'Latest pack';
-      $('pack').innerHTML = `<div class="pack-wrap">${packHtml(p, 'shake', n)}</div>`;
-      setTimeout(() => {
-        // Only the first PACK_FIRST cards are drawn (so opening lots of packs does not lag); the button under them adds PACK_MORE at a time.
-        // Opening several packs: the images load right away (no waiting until you scroll to them).
-        packPulls = pulls; packDrawn = 0; packName = p.name; packMany = n > 1;
-        $('pack').innerHTML = '';
-        drawPackCards(PACK_FIRST);
-        $('reveal').hidden = false;
-        busy = false;
-        refreshPacks();
-      }, 1000);
+      $('pack-title').textContent = n > 1 ? `Latest packs (${n.toLocaleString()} opened)` : 'Latest pack';
+      $('pack').innerHTML = `<div class="pack-wrap">${packHtml(p, 'shake', n)}</div>${n > 1000 ? '<p class="muted" id="open-progress" style="text-align:center"></p>' : ''}`;
+      function finish() {
+        if (p.cost || isRegen(p)) state.packs[p.id] -= n;
+        gain.forEach((c, key) => { state.cards[key] = (state.cards[key] || 0) + c; });
+        if (p.divineDouble) { state.divOpened = divCount() + n; state.divSlot = rotSlot(); }   // each Divine Pack opened doubles the price until the shop rotates
+        save();
+        updateRegen();   // starts the refill timer if a free pack was full
+        renderAll();
+        setTimeout(() => {
+          // Only the first PACK_FIRST cards are drawn (so opening lots of packs does not lag); the button under them adds PACK_MORE at a time.
+          // Opening several packs: the images load right away (no waiting until you scroll to them).
+          packPulls = { length: total, e: pe, f: pf, n: pn }; packDrawn = 0; packName = p.name; packMany = n > 1;
+          $('pack').innerHTML = '';
+          drawPackCards(PACK_FIRST);
+          $('reveal').hidden = false;
+          busy = false;
+          refreshPacks();
+        }, Math.max(0, 1000 - (Date.now() - started)));
+      }
+      function step() {
+        const t0 = performance.now();
+        while (done < n && performance.now() - t0 < 30) {
+          for (let i = 0; i < p.size; i++) {
+            const { e, flags } = p.unowned ? pickUnowned(pool) : pullOne(pool), key = keyHead(e) + flags;
+            if (p.unowned) { pn[idx] = state.cards[key] ? 0 : 1; state.cards[key] = (state.cards[key] || 0) + 1; }   // a New Pack must see what the cards before it gave you
+            else { const c = gain.get(key); pn[idx] = c || state.cards[key] ? 0 : 1; gain.set(key, (c || 0) + 1); }
+            pe[idx] = e; pf[idx] = flags; idx++;
+          }
+          done++;
+        }
+        if (done < n) {
+          const el = $('open-progress'); if (el) el.textContent = `Opening packs... ${done.toLocaleString()} of ${n.toLocaleString()}`;
+          setTimeout(step, 0);
+        } else finish();
+      }
+      step();
     }
 
     function sellOne(key) {
