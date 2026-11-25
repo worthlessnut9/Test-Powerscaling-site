@@ -542,6 +542,8 @@
     const PACK_HOLD_PER_PRESTIGE = 1;   // every prestige lets you keep this many more of each free pack
     const holdOf = (p) => (p.hold ?? (p.cost ? Infinity : 1)) + (isRegen(p) ? PACK_HOLD_PER_PRESTIGE * (state.prestige || 0) : 0);   // how many of this pack you can keep
     const isRegen = (p) => !p.cost && p.cooldown > 0;           // a free pack that refills over time
+    const COOLDOWN_CUT_PER_PRESTIGE = 1, MIN_FREE_COOLDOWN = 1;   // seconds: every prestige makes a free pack arrive this much sooner, but never faster than the minimum
+    const cooldownOf = (p) => isRegen(p) ? Math.max(MIN_FREE_COOLDOWN, p.cooldown - COOLDOWN_CUT_PER_PRESTIGE * (state.prestige || 0)) : p.cooldown;   // seconds between free packs
 
     // Gives free packs earned since last time (also while the page was closed), up to the hold limit.
     // Returns true if the number of packs you hold changed.
@@ -549,7 +551,7 @@
       const now = Date.now();
       let gained = false, changed = false;
       PACKS.filter(isRegen).forEach((p) => {
-        const hold = holdOf(p), cd = p.cooldown * 1000;
+        const hold = holdOf(p), cd = cooldownOf(p) * 1000;
         if (state.packs[p.id] === undefined) {   // first time: start with one ready (or carry over the old timer)
           const old = state.ready[p.id] || 0;
           state.packs[p.id] = old > now ? 0 : 1;
@@ -608,7 +610,7 @@
       });
       document.querySelectorAll('[data-regen]').forEach((el) => {
         const p = PACKS.find((x) => x.id === el.dataset.regen), n = state.packs[p.id] || 0, hold = holdOf(p), nx = state.next[p.id];
-        el.textContent = n >= hold ? `Full (${n}/${hold})` : `${n}/${hold} stored` + (nx ? ` \u00b7 next in ${fmtTime(Math.max(0, nx - now))}` : '');
+        el.textContent = n >= hold ? `Full (${n}/${hold})` : `${n}/${hold} stored` + (nx ? ` \u00b7 next in ${fmtTime(Math.max(0, nx - now))}` : '') + ` \u00b7 one every ${cooldownOf(p)}s`;
       });
     }
 
@@ -818,7 +820,7 @@
       let h = `<div class="frow"><span class="lbl">Prestige</span><b>${P}</b></div>
         <div class="frow"><span class="lbl">Luck</span><b>+${pct(L)}</b><span class="muted">every chance of a rarer card or finish is ${L.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')}x</span></div>
         <div class="frow"><span class="lbl">Start</span><b>${startCoinsFor(P).toLocaleString()} coins</b><span class="muted">what you start with after a prestige</span></div>
-        <div class="frow"><span class="lbl">Free Pack</span><b>holds ${holdOf(PACKS.find((x) => x.id === 'basic'))}</b><span class="muted">+${PACK_HOLD_PER_PRESTIGE} stored free pack per prestige</span></div>`;
+        <div class="frow"><span class="lbl">Free Pack</span><b>holds ${holdOf(PACKS.find((x) => x.id === 'basic'))}</b><span class="muted">a new one every ${cooldownOf(PACKS.find((x) => x.id === 'basic'))}s &middot; each prestige adds ${PACK_HOLD_PER_PRESTIGE} stored pack and makes the wait ${COOLDOWN_CUT_PER_PRESTIGE}s shorter</span></div>`;
       if (prestigeRows === null || !loaded) h += '<p class="muted">Loading prestige requirements...</p>';
       else if (prestigeRows === false) h += '<p class="muted">Couldn\u2019t load the prestige requirements from the sheet.</p>';
       else if (P >= prestigeRows.length) h += `<p><b>${prestigeRows.length ? 'Max prestige reached.' : 'No prestige levels are set up yet.'}</b></p>`;
