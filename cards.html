@@ -137,6 +137,7 @@
 
     <section id="panel-shop">
       <h2 class="sec">Packs <span class="muted" id="pack-timer" style="font-size:0.85rem"></span></h2>
+      <p class="muted" style="margin:0 0 8px;font-size:0.85rem">Tip: hold a number key (1-9, 0 for 10) while you click Buy to buy that many packs at once, as many as you can afford.</p>
       <div class="cgrid packs" id="shop-packs"></div>
       <h2 class="sec">Cards <span class="muted" id="card-timer" style="font-size:0.85rem"></span></h2>
       <div class="cgrid" id="shop-cards"></div>
@@ -583,7 +584,8 @@
       document.querySelectorAll('[data-price]').forEach((el) => { const q = PACKS.find((x) => x.id === el.dataset.price); if (q) el.textContent = q.cost.toLocaleString(); });   // prices that change as you play
       document.querySelectorAll('[data-buy]').forEach((btn) => {
         const p = PACKS.find((x) => x.id === btn.dataset.buy), wait = Math.max(0, (state.ready[p.id] || 0) - now);
-        let label = `Buy (${p.cost.toLocaleString()} coins)`, off = false;
+        const q = buyCount(p);
+        let label = q > 1 ? `Buy \u00d7${q} (${(q * p.cost).toLocaleString()} coins)` : `Buy (${p.cost.toLocaleString()} coins)`, off = false;
         if (!loaded) { label = 'Loading...'; off = true; }
         else if (!poolFor(p).pool.length) { label = 'No characters match'; off = true; }
         else if (p.unowned && !hasUnowned(p)) { label = 'You own everything'; off = true; }
@@ -850,15 +852,33 @@
     }
 
     // ---- Actions ----
+    // Hold a number key (1-9, and 0 for 10) while clicking Buy to buy that many at once.
+    let buyQty = 1;
+    // How many of this pack one click buys: the number held, cut down to what you can afford and have room for
+    function buyCount(p) {
+      if (!p.cost) return 1;
+      const room = holdOf(p) - (state.packs[p.id] || 0), afford = Math.floor(state.coins / p.cost);
+      let n = Math.min(buyQty, afford, room);
+      if (p.oncePerRotation || p.cooldown) n = Math.min(n, 1);   // these can only be bought one at a time
+      return Math.max(1, n);
+    }
     function buyPack(p) {
       if (!loaded || (state.ready[p.id] || 0) > Date.now() || state.coins < p.cost || !poolFor(p).pool.length || (state.packs[p.id] || 0) >= holdOf(p) || usedThisRotation(p)) return;
-      state.coins -= p.cost;
+      const n = buyCount(p);
+      state.coins -= p.cost * n;
       if (p.oncePerRotation) state.lim[p.id] = rotSlot();
       if (p.cooldown) state.ready[p.id] = Date.now() + p.cooldown * 1000;
-      state.packs[p.id] = (state.packs[p.id] || 0) + 1;
+      state.packs[p.id] = (state.packs[p.id] || 0) + n;
       save();
       renderAll();
     }
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|SELECT|TEXTAREA)$/.test((e.target || {}).tagName || '') || !/^[0-9]$/.test(e.key)) return;
+      const q = e.key === '0' ? 10 : +e.key;
+      if (q !== buyQty) { buyQty = q; refreshPacks(); }
+    });
+    document.addEventListener('keyup', (e) => { if (/^[0-9]$/.test(e.key) && (e.key === '0' ? 10 : +e.key) === buyQty) { buyQty = 1; refreshPacks(); } });
+    window.addEventListener('blur', () => { if (buyQty !== 1) { buyQty = 1; refreshPacks(); } });
 
     function buyCard(i) {
       const item = stock[+i];
