@@ -145,7 +145,7 @@
     <section id="panel-packs" hidden>
       <div class="cgrid packs" id="owned"></div>
       <div id="pack-box" hidden>
-        <div class="bar"><h2 class="sec" style="margin:0">Latest pack <span class="muted" style="font-size:0.85rem">click a card to flip it</span></h2><button class="btn small" id="reveal" hidden>Reveal all</button></div>
+        <div class="bar"><h2 class="sec" style="margin:0"><span id="pack-title">Latest pack</span> <span class="muted" style="font-size:0.85rem">click a card to flip it</span></h2><button class="btn small" id="reveal" hidden>Reveal all</button></div>
         <div class="cgrid pack" id="pack"></div>
       </div>
     </section>
@@ -574,7 +574,7 @@
         ? items.map((p) => `<div class="own-item">${packHtml(p, '', p.cost || isRegen(p) ? state.packs[p.id] : 0)}
             <div class="muted">Pulls from: ${esc(sourceText(p))}</div>
             ${p.cost ? '' : isRegen(p) ? `<div class="muted" data-regen="${esc(p.id)}"></div>` : '<div>Free, no wait</div>'}
-            <button class="btn primary" data-open="${esc(p.id)}">Open</button></div>`).join('')
+            <button class="btn primary" data-open="${esc(p.id)}" title="${state.packs[p.id] > 1 ? 'Ctrl + click opens all ' + state.packs[p.id] + ' at once' : 'Open'}">Open</button></div>`).join('')
         : '<p class="muted">You don\u2019t own any packs. Get some in the Shop!</p>';
     }
 
@@ -893,33 +893,43 @@
     }
     const hasUnowned = (p) => { const pool = poolFor(p); return [...pool.items.map((x) => x.e), ...pool.divine].some((e) => combosOf().some((c) => !state.cards[nameOf(e.c) + '||' + c.flags])); };
 
-    function openPack(p) {
+    // Open one pack. With all = true (Ctrl+click) every copy you hold of that pack is opened at once and the images of all the cards are loaded together.
+    function openPack(p, all) {
       if (!loaded || busy) return;
       const pool = poolFor(p);
       if (!pool.pool.length) return;
       if (p.unowned && !hasUnowned(p)) return;   // nothing left that you do not own
+      let n = 1;
       if (p.cost || isRegen(p)) {   // a pack you own (bought, or earned for free over time)
         if (!(state.packs[p.id] > 0)) return;
-        state.packs[p.id]--;
+        n = all ? state.packs[p.id] : 1;
+        state.packs[p.id] -= n;
         updateRegen();   // starts the refill timer if a free pack was full
       }                  // a free pack with no wait can always be opened
-      if (p.divineDouble) { state.divOpened = divCount() + 1; state.divSlot = rotSlot(); }   // each Divine Pack opened doubles the price until the shop rotates
       const pulls = [];
-      for (let i = 0; i < p.size; i++) {
-        const { e, flags } = p.unowned ? pickUnowned(pool) : pullOne(pool), key = nameOf(e.c) + '||' + flags;
-        pulls.push({ e, flags, isNew: !state.cards[key] });
-        state.cards[key] = (state.cards[key] || 0) + 1;
+      for (let k = 0; k < n; k++) {
+        if (k && p.unowned && !hasUnowned(p)) { state.packs[p.id] = (state.packs[p.id] || 0) + (n - k); n = k; break; }   // keep the packs there is nothing left to pull for
+        if (p.divineDouble) { state.divOpened = divCount() + 1; state.divSlot = rotSlot(); }   // each Divine Pack opened doubles the price until the shop rotates
+        for (let i = 0; i < p.size; i++) {
+          const { e, flags } = p.unowned ? pickUnowned(pool) : pullOne(pool), key = nameOf(e.c) + '||' + flags;
+          pulls.push({ e, flags, isNew: !state.cards[key] });
+          state.cards[key] = (state.cards[key] || 0) + 1;
+        }
       }
       busy = true;
       save();
+      updateRegen();
       renderAll();
       // the pack shakes, then the cards are dealt face down for you to flip
       $('pack-box').hidden = false;
       $('pack-box').scrollIntoView({ behavior: 'smooth', block: 'start' });
       $('reveal').hidden = true;
-      $('pack').innerHTML = `<div class="pack-wrap">${packHtml(p, 'shake')}</div>`;
+      $('pack-title').textContent = n > 1 ? `Latest packs (${n} opened)` : 'Latest pack';
+      $('pack').innerHTML = `<div class="pack-wrap">${packHtml(p, 'shake', n)}</div>`;
       setTimeout(() => {
-        $('pack').innerHTML = pulls.map((x, i) => flipHtml(x.e, x.flags, x.isNew, i, p.name)).join('');
+        // opening several packs: the cards load right away (no waiting until you scroll to them) and all deal in together
+        const html = pulls.map((x, i) => flipHtml(x.e, x.flags, x.isNew, n > 1 ? Math.min(i, 12) : i, p.name)).join('');
+        $('pack').innerHTML = n > 1 ? html.replace(/loading="lazy"/g, 'loading="eager"') : html;
         $('reveal').hidden = false;
         busy = false;
         refreshPacks();
@@ -939,7 +949,7 @@
 
     $('panel-shop').addEventListener('click', (e) => { const b = e.target.closest('[data-buy]'); if (b) buyPack(PACKS.find((p) => p.id === b.dataset.buy)); });
     $('shop-cards').addEventListener('click', (e) => { const b = e.target.closest('[data-buycard]'); if (b) buyCard(b.dataset.buycard); });
-    $('owned').addEventListener('click', (e) => { const b = e.target.closest('[data-open]'); if (b) openPack(PACKS.find((p) => p.id === b.dataset.open)); });
+    $('owned').addEventListener('click', (e) => { const b = e.target.closest('[data-open]'); if (b) openPack(PACKS.find((p) => p.id === b.dataset.open), e.ctrlKey || e.metaKey); });   // Ctrl (or Cmd) + click opens every copy of that pack
     $('pack').addEventListener('click', (e) => { const f = e.target.closest('.flip'); if (f) f.classList.add('flipped'); });
     $('reveal').addEventListener('click', () => {
       document.querySelectorAll('#pack .flip:not(.flipped)').forEach((f, i) => setTimeout(() => f.classList.add('flipped'), i * 200));
