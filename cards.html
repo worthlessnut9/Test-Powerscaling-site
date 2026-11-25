@@ -865,20 +865,20 @@
     }
 
     // ---- Actions ----
-    // Hold a number key while clicking Buy (or Open) to do that many at once: 1 = 10, 2-9 = that number, and 0 = as many as you can afford.
+    // Hold a number key while clicking Buy (or Open) to do that many at once: 1 = 10, 2-9 = that number, and 0 = as many as you can afford (100 when opening). Holding Alt multiplies it by 10.
     const keyQty = (k) => (k === '0' ? Infinity : k === '1' ? 10 : +k);
     let buyQty = 1;
     // How many of this pack one click buys: the number held, cut down to what you can afford and have room for
-    function buyCount(p) {
+    function buyCount(p, alt = altHeld) {   // alt = Alt is held, which multiplies the number by 10
       if (!p.cost) return 1;
       const room = holdOf(p) - (state.packs[p.id] || 0), afford = Math.floor(state.coins / p.cost);
-      let n = Math.min(buyQty, afford, room);
+      let n = Math.min(buyQty * (alt ? 10 : 1), afford, room);
       if (p.oncePerRotation || p.cooldown) n = Math.min(n, 1);   // these can only be bought one at a time
       return Math.max(1, n);
     }
-    function buyPack(p) {
+    function buyPack(p, alt) {
       if (!loaded || (state.ready[p.id] || 0) > Date.now() || state.coins < p.cost || !poolFor(p).pool.length || (state.packs[p.id] || 0) >= holdOf(p) || usedThisRotation(p)) return;
-      const n = buyCount(p);
+      const n = buyCount(p, alt);
       state.coins -= p.cost * n;
       if (p.oncePerRotation) state.lim[p.id] = rotSlot();
       if (p.cooldown) state.ready[p.id] = Date.now() + p.cooldown * 1000;
@@ -938,6 +938,7 @@
     }
     const hasUnowned = (p) => { const pool = poolFor(p); return [...pool.items.map((x) => x.e), ...pool.divine].some((e) => combosOf().some((c) => !state.cards[nameOf(e.c) + '||' + c.flags])); };
 
+    const OPEN_HARD_CAP = 250000;   // the most packs that can be opened in one go, however you ask for them
     const OPEN_MAX_KEY = 100;   // the 0 key opens this many packs at once (when buying it means as many as you can afford)
     const openQty = (alt = altHeld) => (buyQty === Infinity ? OPEN_MAX_KEY : buyQty) * (alt ? 10 : 1);   // holding Alt multiplies it by 10
     const PACK_FIRST = 100, PACK_MORE = 50;
@@ -962,7 +963,7 @@
       let n = 1;
       if (p.cost || isRegen(p)) {   // a pack you own (bought, or earned for free over time)
         if (!(state.packs[p.id] > 0)) return;
-        n = Math.max(1, Math.min(want, state.packs[p.id]));
+        n = Math.max(1, Math.min(want, state.packs[p.id], OPEN_HARD_CAP));
         state.packs[p.id] -= n;
         updateRegen();   // starts the refill timer if a free pack was full
       }                  // a free pack with no wait can always be opened
@@ -1009,7 +1010,7 @@
       renderAll();
     }
 
-    $('panel-shop').addEventListener('click', (e) => { const b = e.target.closest('[data-buy]'); if (b) buyPack(PACKS.find((p) => p.id === b.dataset.buy)); });
+    $('panel-shop').addEventListener('click', (e) => { const b = e.target.closest('[data-buy]'); if (b) buyPack(PACKS.find((p) => p.id === b.dataset.buy), e.altKey); });
     $('shop-cards').addEventListener('click', (e) => { const b = e.target.closest('[data-buycard]'); if (b) buyCard(b.dataset.buycard); });
     $('owned').addEventListener('click', (e) => { const b = e.target.closest('[data-open]'); if (b) openPack(PACKS.find((p) => p.id === b.dataset.open), e.ctrlKey || e.metaKey ? Infinity : openQty(e.altKey)); });   // a number key held (1 = 10, 2-9 = that many, 0 = 100) opens that many, x10 with Alt held; Ctrl (or Cmd) + click opens every copy
     $('pack-more').addEventListener('click', () => drawPackCards(PACK_MORE));
