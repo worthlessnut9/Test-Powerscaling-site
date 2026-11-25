@@ -601,6 +601,7 @@
       document.querySelectorAll('[data-buy]').forEach((btn) => {
         const p = PACKS.find((x) => x.id === btn.dataset.buy), wait = Math.max(0, (state.ready[p.id] || 0) - now);
         const q = buyCount(p);
+        btn.title = 'Most packs per click: ' + (isFinite(openCap()) ? openCap().toLocaleString() : 'no limit') + ' (change it in Settings)';
         let label = q > 1 ? `Buy \u00d7${q} (${(q * p.cost).toLocaleString()} coins)` : `Buy (${p.cost.toLocaleString()} coins)`, off = false;
         if (!loaded) { label = 'Loading...'; off = true; }
         else if (!poolFor(p).pool.length) { label = 'No characters match'; off = true; }
@@ -614,6 +615,7 @@
       });
       document.querySelectorAll('[data-open]').forEach((btn) => {
         const p = PACKS.find((x) => x.id === btn.dataset.open), stock = p.cost || isRegen(p), n = state.packs[p.id] || 0;
+        btn.title = (n > 1 ? 'Hold a number key (1 = 10, 2-9 = that many, 0 = 100, Alt = x10) or Ctrl + click (all) to open several at once. ' : '') + 'Most packs per click: ' + (isFinite(openCap()) ? openCap().toLocaleString() : 'no limit') + ' (change it in Settings)';
         let label = stock ? (openQty() > 1 && n > 1 ? `Open \u00d7${Math.min(openQty(), n)}` : 'Open') : 'Open (free)', off = false;
         if (!loaded) { label = 'Loading...'; off = true; }
         else if (busy) { label = 'Opening...'; off = true; }
