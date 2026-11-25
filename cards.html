@@ -192,6 +192,7 @@
       </div>
       <p class="muted" id="shown" style="margin: 0 0 12px;"></p>
       <div class="cgrid" id="collection"></div>
+      <div style="text-align:center;margin:16px 0"><button class="btn" id="coll-more" hidden></button></div>
     </section>
 
     <section id="panel-prestige" hidden>
@@ -681,6 +682,10 @@
 
     let sellShowing = [], variantMode = false;   // variantMode: the not-owned view is listing a finish variant, not whole characters
     let _unused;   // the cards the "Sell everything showing" button would sell right now
+    // The collection draws only the first COLLECTION_FIRST cards (to keep the page fast); the button at the bottom adds COLLECTION_MORE each press.
+    // Changing a filter, the sort or the view starts over at the first page. "Sell everything showing" still counts every matching card, not just the drawn ones.
+    const COLLECTION_FIRST = 100, COLLECTION_MORE = 50;
+    let collLimit = COLLECTION_FIRST, collSig = '';
     function renderCollection() {
       const ownedNames = new Set(Object.keys(state.cards).map((k) => k.split('||')[0]));
       let all, rows;
@@ -708,6 +713,9 @@
         : mode === 'price-asc' ? (a, b) => sellPrice(a.e, a.flags) - sellPrice(b.e, b.flags) || byScore(b, a)
         : byScore);
 
+      const sig = JSON.stringify([F.view, F.q, F.folder, F.from, F.to, [...F.rarity], [...F.finish], F.plain, F.dupes, F.vmin, F.vmax, mode]);
+      if (sig !== collSig) { collSig = sig; collLimit = COLLECTION_FIRST; }
+      const drawn = rows.slice(0, collLimit);
       const total = Object.values(state.cards).reduce((t, n) => t + n, 0);
       const worth = Object.entries(state.cards).reduce((t, [key, n]) => { const e = byName.get(key.split('||')[0]); return e ? t + n * sellPrice(e, flagsOf(key)) : t; }, 0);   // everything you own, favorites included
       $('stats').textContent = total ? `· ${total} cards, ${Object.keys(state.cards).length} unique · Collection value: ${worth.toLocaleString()} coins` : '';
@@ -717,10 +725,10 @@
       $('sell-showing').disabled = !showCards;
       $('sell-showing').textContent = showCards ? `Sell everything showing (${showCards.toLocaleString()} ${showCards === 1 ? 'card' : 'cards'} for ${showCoins.toLocaleString()} coins)` : 'Sell everything showing';
       const filtering = F.q || F.folder || F.from !== '' || F.to !== '' || F.rarity.size || F.finish.size || F.plain || F.dupes || F.vmin !== '' || F.vmax !== '';
-      $('shown').textContent = F.view === 'missing' ? `${rows.length} of ${all.length} ${variantMode ? 'cards' : 'characters'} you don’t own yet`
-        : total ? `Showing ${rows.length} of ${all.length} ${F.view === 'fav' ? 'favorited ' : ''}card types${filtering ? ' (filters on)' : ''}` : '';
+      $('shown').textContent = F.view === 'missing' ? `${rows.length} of ${all.length} ${variantMode ? 'cards' : 'characters'} you don’t own yet${rows.length > collLimit ? ` \u00b7 ${collLimit} drawn` : ''}`
+        : total ? `Showing ${rows.length} of ${all.length} ${F.view === 'fav' ? 'favorited ' : ''}card types${filtering ? ' (filters on)' : ''}${rows.length > collLimit ? ` \u00b7 ${collLimit} drawn` : ''}` : '';
 
-      $('collection').innerHTML = rows.length ? rows.map((r) => {
+      $('collection').innerHTML = rows.length ? drawn.map((r) => {
         if (F.view === 'missing') return `<div class="ghost">${cardHtml(r.e, r.flags, 0, false, `<div class="muted" style="text-align:center;margin-top:8px">Not owned yet<br><b style="color:#fff">Odds: ${oddsText(r.e, r.flags)}</b><br>Sells for ${sellPrice(r.e, r.flags).toLocaleString()} coins</div>`)}</div>`;
         const fav = !!state.fav[r.key];
         return cardHtml(r.e, r.flags, r.n, false,
@@ -728,6 +736,9 @@
            <button class="btn" data-sell="${esc(r.key)}"${fav ? ' disabled title="Unfavorite this card to sell it"' : ''}>${fav ? 'Locked (favorited)' : `Sell 1 for ${sellPrice(r.e, r.flags).toLocaleString()} coins`}</button>`, fav);
       }).join('')
         : `<p class="muted">${F.view === 'missing' ? (all.length ? 'No cards match your filters.' : variantMode ? (F.plain && F.finish.size ? 'No card is both plain and finished. Pick one or the other.' : 'You own every one of those!') : 'You own every character!') : total ? 'No cards match your filters.' : 'No cards yet. Open a pack!'}</p>`;
+      const left = rows.length - drawn.length;
+      $('coll-more').hidden = left <= 0;
+      $('coll-more').textContent = `Show ${Math.min(COLLECTION_MORE, left)} more (${left.toLocaleString()} not shown)`;
     }
 
     // ---- Card shop: a small selection of cards you can buy outright. It changes every CARD_SHOP_MINUTES. ----
@@ -975,6 +986,7 @@
     $('reveal').addEventListener('click', () => {
       document.querySelectorAll('#pack .flip:not(.flipped)').forEach((f, i) => setTimeout(() => f.classList.add('flipped'), i * 200));
     });
+    $('coll-more').addEventListener('click', () => { collLimit += COLLECTION_MORE; renderCollection(); });
     $('collection').addEventListener('click', (e) => {
       const f = e.target.closest('[data-fav]');
       if (f) { const k = f.dataset.fav; if (state.fav[k]) delete state.fav[k]; else state.fav[k] = true; save(); renderCollection(); return; }
