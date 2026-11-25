@@ -889,7 +889,7 @@
     function buyCount(p, alt = altHeld) {   // alt = Alt is held, which multiplies the number by 10
       if (!p.cost) return 1;
       const room = holdOf(p) - (state.packs[p.id] || 0), afford = Math.floor(state.coins / p.cost);
-      let n = Math.min(buyQty * (alt ? 10 : 1), afford, room);
+      let n = Math.min(buyQty * (alt ? 10 : 1), afford, room, openCap());   // openCap(): the same limit as opening (Settings can switch it off)
       if (p.oncePerRotation || p.cooldown) n = Math.min(n, 1);   // these can only be bought one at a time
       return Math.max(1, n);
     }
@@ -987,9 +987,11 @@
     const canOpenUnowned = (p) => hasUnowned(p) || poolFor(p).divine.length > 0;   // there is a new card to give, or (when you own everything) a Divine with every finish
     const hasUnowned = (p) => { const pool = poolFor(p); return [...pool.items.map((x) => x.e), ...pool.divine].some((e) => combosOf().some((c) => !state.cards[nameOf(e.c) + '||' + c.flags])); };
 
-    const OPEN_HARD_CAP = 1000000;   // the most packs that can be opened in one go, however you ask for them (the Settings page can switch this limit off)
+    const OPEN_HARD_CAP = 1000000;   // the default limit on packs opened or bought in one go, however you ask for them (the Settings page can change it or switch it off)
     const SETTINGS_KEY = 'powerscaling-settings-v1';   // the same key the Settings page writes
-    const openCap = () => { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}').noOpenCap ? Infinity : OPEN_HARD_CAP; } catch (err) { return OPEN_HARD_CAP; } };
+    const openCap = () => {   // the limit: switched off, the number saved on the Settings page, or the default
+      try { const o = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'), v = Math.floor(+o.openCap); return o.noOpenCap ? Infinity : v >= 1 ? v : OPEN_HARD_CAP; } catch (err) { return OPEN_HARD_CAP; }
+    };
     const PACK_VIEW_MAX = 1000000;   // the most cards from one open that are kept to look through (the rest are still added to your collection)
     const OPEN_MAX_KEY = 100;   // the 0 key opens this many packs at once (when buying it means as many as you can afford)
     const openQty = (alt = altHeld) => (buyQty === Infinity ? OPEN_MAX_KEY : buyQty) * (alt ? 10 : 1);   // holding Alt multiplies it by 10

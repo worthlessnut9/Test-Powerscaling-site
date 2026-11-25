@@ -45,8 +45,14 @@
         <button class="btn danger" id="reset">Hard reset</button>
       </div>
       <div class="row">
-        <div class="what"><b>Pack opening limit</b><span class="muted">Packs are opened at most <span id="cap-n">1,000,000</span> at a time. Remove the limit to open every pack you hold in one go. Very large opens can take a while and use a lot of memory. Currently: <b id="cap-state" style="color:#fff"></b>.</span></div>
+        <div class="what"><b>Pack opening limit</b><span class="muted">Packs are opened or bought at most <span id="cap-n">1,000,000</span> at a time (you can change that number below). Remove the limit to open every pack you hold, or buy as many as you can afford, in one go. Very large opens can take a while and use a lot of memory. Currently: <b id="cap-state" style="color:#fff"></b>.</span></div>
         <button class="btn" id="cap">Remove limit</button>
+      </div>
+      <div class="row" id="cap-row">
+        <div class="what"><b>Limit amount</b><span class="muted">How many packs can be opened or bought at once while the limit is on (1 or more). The default is <span id="cap-default"></span>.</span></div>
+        <input type="number" id="cap-value" min="1" step="1" style="width:150px;padding:9px 10px;border-radius:8px;border:1px solid var(--border-color);background:var(--tag-bg);color:var(--text-main)">
+        <button class="btn" id="cap-save">Save</button>
+        <button class="btn" id="cap-default-btn">Use default</button>
       </div>
       <p id="msg" role="status"></p>
     </section>
@@ -56,7 +62,8 @@
     // Uses the same save as cards.html, so the two pages always agree
     const KEY = 'powerscaling-cards-v2', OLD_KEY = 'powerscaling-cards-v1', START_COINS = 100;
     const SETTINGS_KEY = 'powerscaling-settings-v1';   // other options, kept apart from the game save (the Cards page reads it too)
-    const OPEN_CAP = 1000000;   // same number as the Cards page
+    const OPEN_CAP = 1000000;   // the default limit, the same number as the Cards page
+    const capNow = (o) => { const v = Math.floor(+(o || loadSettings()).openCap); return v >= 1 ? v : OPEN_CAP; };   // the limit being used: the number you saved, or the default
     const $ = (id) => document.getElementById(id);
     const fresh = () => ({ coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {}, fav: {} });
     let storageOk = true;
@@ -80,7 +87,9 @@
       $('cards').textContent = Object.values(s.cards || {}).reduce((t, n) => t + (+n || 0), 0).toLocaleString();
       $('start').textContent = START_COINS;
       const off = !!loadSettings().noOpenCap;
-      $('cap-n').textContent = OPEN_CAP.toLocaleString(); $('cap-state').textContent = off ? 'no limit' : 'limited to ' + OPEN_CAP.toLocaleString(); $('cap').textContent = off ? 'Put limit back' : 'Remove limit';
+      const cap = capNow();
+      $('cap-n').textContent = cap.toLocaleString(); $('cap-default').textContent = OPEN_CAP.toLocaleString(); $('cap-state').textContent = off ? 'no limit' : 'limited to ' + cap.toLocaleString();
+      $('cap-row').style.opacity = off ? 0.5 : 1; if (document.activeElement !== $('cap-value')) $('cap-value').value = cap; $('cap').textContent = off ? 'Put limit back' : 'Remove limit';
     }
 
     $('reset').addEventListener('click', () => {
@@ -94,7 +103,20 @@
       if (off && !confirm('Remove the limit? Opening a huge number of packs at once can be slow and use a lot of memory.')) return;
       o.noOpenCap = off;
       if (!saveSettings(o)) return show('Could not save. Your browser is blocking storage for this site.', true);
-      render(); show(off ? 'The pack opening limit is off.' : 'The pack opening limit is back on (' + OPEN_CAP.toLocaleString() + ').');
+      render(); show(off ? 'The pack opening limit is off.' : 'The pack opening limit is back on (' + capNow(o).toLocaleString() + ').');
+    });
+    $('cap-save').addEventListener('click', () => {
+      const v = Math.floor(+$('cap-value').value);
+      if (!(v >= 1)) return show('Enter a whole number of 1 or more.', true);
+      const o = loadSettings(); o.openCap = v;
+      if (!saveSettings(o)) return show('Could not save. Your browser is blocking storage for this site.', true);
+      $('cap-value').blur(); render(); show('The limit is now ' + v.toLocaleString() + (o.noOpenCap ? ' (it is currently switched off, so it will apply when you put the limit back).' : '.'));
+    });
+    $('cap-value').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('cap-save').click(); });
+    $('cap-default-btn').addEventListener('click', () => {
+      const o = loadSettings(); delete o.openCap;
+      if (!saveSettings(o)) return show('Could not save. Your browser is blocking storage for this site.', true);
+      $('cap-value').blur(); render(); show('The limit is back to the default (' + OPEN_CAP.toLocaleString() + ').');
     });
     window.addEventListener('storage', (e) => { if (e.key === KEY) render(); });   // the Cards page changed your save in another tab
     render();
