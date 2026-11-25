@@ -289,7 +289,7 @@
         folders: ['Glitch Productions, Murder Drones'], colors: ['#e5392e', '#2a2a40'] },
       { id: 'rot-demonslayer', name: 'Demon Slayer Pack', desc: 'Only Demon Slayer characters.', size: 8, cost: 200, cooldown: 0, folder: 'Demon Slayer', colors: ['#1f9e6e', '#2a2a40'] },
       { id: 'rot-truegold', name: 'True Gold', desc: 'Every card has the Gold Border and Full Gold finishes.', size: 8, cost: 7000, cooldown: 0, finish: 'bg', fixedPrice: true, colors: ['#a87400', '#ffe27a'] },
-      { id: 'rot-new', name: 'The New Pack', desc: 'One card you do not own yet: a base card or any finish combo.', size: 1, cost: 500, cooldown: 0, unowned: true, colors: ['#2bd1ff', '#7a2bff'] },   // unowned: the card is always one you do not have (a character + finish combo you have no copy of)
+      { id: 'rot-new', name: 'The New Pack', desc: 'One card you do not own yet: a base card or any finish combo. Once you own everything, it gives a Divine card with every finish.', size: 1, cost: 500, cooldown: 0, unowned: true, colors: ['#2bd1ff', '#7a2bff'] },   // unowned: the card is always one you do not have (a character + finish combo you have no copy of)
       // Every card has ALL four finishes. (A pack can also have shopChance: 0.01 = it only shows up in 1 in 100 rotations; the God Pack no longer uses it.) oncePerRotation: you can only buy it once each time the shop rotates. fixedPrice: skips the automatic price rise.
       { id: 'rot-god', name: 'God Pack', desc: 'Every card is Foil, Shiny, Gold Border and Full Gold.', size: 8, cost: 5000, cooldown: 0, finish: 'fsbg',
         oncePerRotation: true, fixedPrice: true, colors: ['#ff2bd6', '#ffd23f'] },
@@ -591,7 +591,7 @@
         let label = q > 1 ? `Buy \u00d7${q} (${(q * p.cost).toLocaleString()} coins)` : `Buy (${p.cost.toLocaleString()} coins)`, off = false;
         if (!loaded) { label = 'Loading...'; off = true; }
         else if (!poolFor(p).pool.length) { label = 'No characters match'; off = true; }
-        else if (p.unowned && !hasUnowned(p)) { label = 'You own everything'; off = true; }
+        else if (p.unowned && !canOpenUnowned(p)) { label = 'You own everything'; off = true; }
         else if (usedThisRotation(p)) { label = 'Bought this rotation'; off = true; }
         else if ((state.packs[p.id] || 0) >= holdOf(p)) { label = 'Pack full'; off = true; }
         else if (wait > 0) { label = 'Ready in ' + fmtTime(wait); off = true; }
@@ -934,8 +934,11 @@
         return pick;
       };
       const reg = pickFrom(pool.items), div = pickFrom(pool.divine.map((e) => ({ e, w: 1 })));
-      return div && (!reg || Math.random() < DIVINE_CHANCE) ? div : reg;   // Divine cards keep their usual tiny chance
+      const pick = div && (!reg || Math.random() < DIVINE_CHANCE) ? div : reg;   // Divine cards keep their usual tiny chance
+      // Nothing left to own: a Divine card with every finish instead
+      return pick || (pool.divine.length ? { e: pool.divine[Math.floor(Math.random() * pool.divine.length)], flags: VARIANTS.map((v) => v[0]).join('') } : null);
     }
+    const canOpenUnowned = (p) => hasUnowned(p) || poolFor(p).divine.length > 0;   // there is a new card to give, or (when you own everything) a Divine with every finish
     const hasUnowned = (p) => { const pool = poolFor(p); return [...pool.items.map((x) => x.e), ...pool.divine].some((e) => combosOf().some((c) => !state.cards[nameOf(e.c) + '||' + c.flags])); };
 
     const OPEN_HARD_CAP = 250000;   // the most packs that can be opened in one go, however you ask for them
@@ -959,7 +962,7 @@
       if (!loaded || busy) return;
       const pool = poolFor(p);
       if (!pool.pool.length) return;
-      if (p.unowned && !hasUnowned(p)) return;   // nothing left that you do not own
+      if (p.unowned && !canOpenUnowned(p)) return;   // nothing to give
       let n = 1;
       if (p.cost || isRegen(p)) {   // a pack you own (bought, or earned for free over time)
         if (!(state.packs[p.id] > 0)) return;
@@ -969,7 +972,6 @@
       }                  // a free pack with no wait can always be opened
       const pulls = [];
       for (let k = 0; k < n; k++) {
-        if (k && p.unowned && !hasUnowned(p)) { state.packs[p.id] = (state.packs[p.id] || 0) + (n - k); n = k; break; }   // keep the packs there is nothing left to pull for
         if (p.divineDouble) { state.divOpened = divCount() + 1; state.divSlot = rotSlot(); }   // each Divine Pack opened doubles the price until the shop rotates
         for (let i = 0; i < p.size; i++) {
           const { e, flags } = p.unowned ? pickUnowned(pool) : pullOne(pool), key = nameOf(e.c) + '||' + flags;
