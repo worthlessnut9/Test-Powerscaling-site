@@ -574,7 +574,7 @@
         ? items.map((p) => `<div class="own-item">${packHtml(p, '', p.cost || isRegen(p) ? state.packs[p.id] : 0)}
             <div class="muted">Pulls from: ${esc(sourceText(p))}</div>
             ${p.cost ? '' : isRegen(p) ? `<div class="muted" data-regen="${esc(p.id)}"></div>` : '<div>Free, no wait</div>'}
-            <button class="btn primary" data-open="${esc(p.id)}" title="${state.packs[p.id] > 1 ? 'Ctrl + click opens all ' + state.packs[p.id] + ' at once' : 'Open'}">Open</button></div>`).join('')
+            <button class="btn primary" data-open="${esc(p.id)}" title="${state.packs[p.id] > 1 ? 'Hold a number key (1 = 10, 2-9 = that many, 0 = all) or Ctrl + click to open several at once' : 'Open'}">Open</button></div>`).join('')
         : '<p class="muted">You don\u2019t own any packs. Get some in the Shop!</p>';
     }
 
@@ -597,7 +597,7 @@
       });
       document.querySelectorAll('[data-open]').forEach((btn) => {
         const p = PACKS.find((x) => x.id === btn.dataset.open), stock = p.cost || isRegen(p), n = state.packs[p.id] || 0;
-        let label = stock ? 'Open' : 'Open (free)', off = false;
+        let label = stock ? (buyQty > 1 && n > 1 ? `Open \u00d7${Math.min(buyQty, n)}` : 'Open') : 'Open (free)', off = false;
         if (!loaded) { label = 'Loading...'; off = true; }
         else if (busy) { label = 'Opening...'; off = true; }
         else if (!poolFor(p).pool.length) { label = 'No characters match'; off = true; }
@@ -851,7 +851,8 @@
     }
 
     // ---- Actions ----
-    // Hold a number key (1-9, and 0 for 10) while clicking Buy to buy that many at once.
+    // Hold a number key while clicking Buy (or Open) to do that many at once: 1 = 10, 2-9 = that number, and 0 = as many as you can afford.
+    const keyQty = (k) => (k === '0' ? Infinity : k === '1' ? 10 : +k);
     let buyQty = 1;
     // How many of this pack one click buys: the number held, cut down to what you can afford and have room for
     function buyCount(p) {
@@ -873,10 +874,10 @@
     }
     document.addEventListener('keydown', (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|SELECT|TEXTAREA)$/.test((e.target || {}).tagName || '') || !/^[0-9]$/.test(e.key)) return;
-      const q = e.key === '0' ? 10 : +e.key;
+      const q = keyQty(e.key);
       if (q !== buyQty) { buyQty = q; refreshPacks(); }
     });
-    document.addEventListener('keyup', (e) => { if (/^[0-9]$/.test(e.key) && (e.key === '0' ? 10 : +e.key) === buyQty) { buyQty = 1; refreshPacks(); } });
+    document.addEventListener('keyup', (e) => { if (/^[0-9]$/.test(e.key) && keyQty(e.key) === buyQty) { buyQty = 1; refreshPacks(); } });
     window.addEventListener('blur', () => { if (buyQty !== 1) { buyQty = 1; refreshPacks(); } });
 
     function buyCard(i) {
@@ -912,8 +913,9 @@
     }
     const hasUnowned = (p) => { const pool = poolFor(p); return [...pool.items.map((x) => x.e), ...pool.divine].some((e) => combosOf().some((c) => !state.cards[nameOf(e.c) + '||' + c.flags])); };
 
-    // Open one pack. With all = true (Ctrl+click) every copy you hold of that pack is opened at once and the images of all the cards are loaded together.
-    function openPack(p, all) {
+    // Open a pack. want = how many to open at once (1 by default; a number key held while clicking, or Infinity for Ctrl+click = every copy you hold).
+    // When several are opened the images of all the cards are loaded together.
+    function openPack(p, want = 1) {
       if (!loaded || busy) return;
       const pool = poolFor(p);
       if (!pool.pool.length) return;
@@ -921,7 +923,7 @@
       let n = 1;
       if (p.cost || isRegen(p)) {   // a pack you own (bought, or earned for free over time)
         if (!(state.packs[p.id] > 0)) return;
-        n = all ? state.packs[p.id] : 1;
+        n = Math.max(1, Math.min(want, state.packs[p.id]));
         state.packs[p.id] -= n;
         updateRegen();   // starts the refill timer if a free pack was full
       }                  // a free pack with no wait can always be opened
@@ -968,7 +970,7 @@
 
     $('panel-shop').addEventListener('click', (e) => { const b = e.target.closest('[data-buy]'); if (b) buyPack(PACKS.find((p) => p.id === b.dataset.buy)); });
     $('shop-cards').addEventListener('click', (e) => { const b = e.target.closest('[data-buycard]'); if (b) buyCard(b.dataset.buycard); });
-    $('owned').addEventListener('click', (e) => { const b = e.target.closest('[data-open]'); if (b) openPack(PACKS.find((p) => p.id === b.dataset.open), e.ctrlKey || e.metaKey); });   // Ctrl (or Cmd) + click opens every copy of that pack
+    $('owned').addEventListener('click', (e) => { const b = e.target.closest('[data-open]'); if (b) openPack(PACKS.find((p) => p.id === b.dataset.open), e.ctrlKey || e.metaKey ? Infinity : buyQty); });   // a number key held (1 = 10, 2-9 = that many, 0 = all) opens that many; Ctrl (or Cmd) + click opens every copy
     $('pack').addEventListener('click', (e) => { const f = e.target.closest('.flip'); if (f) f.classList.add('flipped'); });
     $('reveal').addEventListener('click', () => {
       document.querySelectorAll('#pack .flip:not(.flipped)').forEach((f, i) => setTimeout(() => f.classList.add('flipped'), i * 200));
