@@ -44,10 +44,6 @@
         <div class="what"><b>Hard reset</b><span class="muted">Deletes every card, pack and favorite, and sets your coins back to <span id="start">100</span>. It can&rsquo;t be undone.</span></div>
         <button class="btn danger" id="reset">Hard reset</button>
       </div>
-      <div class="row">
-        <div class="what"><b>Jump to Prestige <span id="jump-n">22</span></b><span class="muted">Takes you straight to prestige <span id="jump-n2">22</span> with its luck and <span id="jump-coins"></span> starting coins, like prestiging does: all your cards, packs and favorites are removed. It won&rsquo;t lower a prestige you already have.</span></div>
-        <button class="btn danger" id="jump">Go to Prestige 22</button>
-      </div>
       <p id="msg" role="status"></p>
     </section>
   </main>
@@ -55,7 +51,6 @@
   <script>
     // Uses the same save as cards.html, so the two pages always agree
     const KEY = 'powerscaling-cards-v2', OLD_KEY = 'powerscaling-cards-v1', START_COINS = 100;
-    const JUMP_PRESTIGE = 22, PRESTIGE_GOLD_BONUS = 1;   // PRESTIGE_GOLD_BONUS is the same number as on the Cards page: each prestige adds this much x the base starting coins
     const $ = (id) => document.getElementById(id);
     const fresh = () => ({ coins: START_COINS, cards: {}, ready: {}, packs: {}, next: {}, fav: {} });
     let storageOk = true;
@@ -76,8 +71,6 @@
       $('coins').textContent = Math.floor(s.coins).toLocaleString();
       $('cards').textContent = Object.values(s.cards || {}).reduce((t, n) => t + (+n || 0), 0).toLocaleString();
       $('start').textContent = START_COINS;
-      const jc = START_COINS * (1 + JUMP_PRESTIGE * PRESTIGE_GOLD_BONUS);
-      $('jump-n').textContent = $('jump-n2').textContent = JUMP_PRESTIGE; $('jump-coins').textContent = jc.toLocaleString(); $('jump').textContent = 'Go to Prestige ' + JUMP_PRESTIGE;
     }
 
     $('reset').addEventListener('click', () => {
@@ -85,13 +78,6 @@
       try { localStorage.removeItem(OLD_KEY); } catch (e) { /* ignore */ }   // the first version's cards would otherwise come back
       if (!save(fresh())) return show('Could not save. Your browser is blocking storage for this site.', true);
       render(); show('Everything was reset.');
-    });
-    $('jump').addEventListener('click', () => {
-      const s = load(), P = s.prestige || 0, coins = START_COINS * (1 + JUMP_PRESTIGE * PRESTIGE_GOLD_BONUS);
-      if (P >= JUMP_PRESTIGE) return show('You are already at prestige ' + P + '.', true);
-      if (!confirm('Go to Prestige ' + JUMP_PRESTIGE + '? This resets your coins to ' + coins.toLocaleString() + ' and removes ALL your cards, packs and favorites. It can’t be undone.')) return;
-      if (!save({ coins, cards: {}, ready: {}, packs: {}, next: {}, fav: {}, lim: {}, cbuy: {}, divOpened: 0, divSlot: 0, prestige: JUMP_PRESTIGE })) return show('Could not save. Your browser is blocking storage for this site.', true);
-      render(); show('You are now at prestige ' + JUMP_PRESTIGE + '.');
     });
     window.addEventListener('storage', (e) => { if (e.key === KEY) render(); });   // the Cards page changed your save in another tab
     render();
