@@ -147,6 +147,7 @@
       <div id="pack-box" hidden>
         <div class="bar"><h2 class="sec" style="margin:0"><span id="pack-title">Latest pack</span> <span class="muted" style="font-size:0.85rem">click a card to flip it</span></h2><button class="btn small" id="reveal" hidden>Reveal all</button></div>
         <div class="cgrid pack" id="pack"></div>
+        <div style="text-align:center;margin:16px 0"><button class="btn" id="pack-more" hidden></button></div>
       </div>
     </section>
 
@@ -926,6 +927,18 @@
     }
     const hasUnowned = (p) => { const pool = poolFor(p); return [...pool.items.map((x) => x.e), ...pool.divine].some((e) => combosOf().some((c) => !state.cards[nameOf(e.c) + '||' + c.flags])); };
 
+    const PACK_FIRST = 100, PACK_MORE = 50;
+    let packPulls = [], packDrawn = 0, packName = '', packMany = false;
+    function drawPackCards(count) {   // draw the next `count` cards of the pack(s) just opened, face down
+      const from = packDrawn, to = Math.min(packPulls.length, from + count);
+      const html = packPulls.slice(from, to).map((x, i) => flipHtml(x.e, x.flags, x.isNew, Math.min(i, 12), packName)).join('');
+      $('pack').insertAdjacentHTML('beforeend', packMany ? html.replace(/loading="lazy"/g, 'loading="eager"') : html);
+      packDrawn = to;
+      const left = packPulls.length - packDrawn;
+      $('pack-more').hidden = left <= 0;
+      $('pack-more').textContent = `Show ${Math.min(PACK_MORE, left)} more (${left.toLocaleString()} not shown)`;
+    }
+
     // Open a pack. want = how many to open at once (1 by default; a number key held while clicking, or Infinity for Ctrl+click = every copy you hold).
     // When several are opened the images of all the cards are loaded together.
     function openPack(p, want = 1) {
@@ -957,13 +970,15 @@
       // the pack shakes, then the cards are dealt face down for you to flip
       $('pack-box').hidden = false;
       $('pack-box').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      $('reveal').hidden = true;
+      $('reveal').hidden = true; $('pack-more').hidden = true;
       $('pack-title').textContent = n > 1 ? `Latest packs (${n} opened)` : 'Latest pack';
       $('pack').innerHTML = `<div class="pack-wrap">${packHtml(p, 'shake', n)}</div>`;
       setTimeout(() => {
-        // opening several packs: the cards load right away (no waiting until you scroll to them) and all deal in together
-        const html = pulls.map((x, i) => flipHtml(x.e, x.flags, x.isNew, n > 1 ? Math.min(i, 12) : i, p.name)).join('');
-        $('pack').innerHTML = n > 1 ? html.replace(/loading="lazy"/g, 'loading="eager"') : html;
+        // Only the first PACK_FIRST cards are drawn (so opening lots of packs does not lag); the button under them adds PACK_MORE at a time.
+        // Opening several packs: the images load right away (no waiting until you scroll to them).
+        packPulls = pulls; packDrawn = 0; packName = p.name; packMany = n > 1;
+        $('pack').innerHTML = '';
+        drawPackCards(PACK_FIRST);
         $('reveal').hidden = false;
         busy = false;
         refreshPacks();
@@ -984,9 +999,10 @@
     $('panel-shop').addEventListener('click', (e) => { const b = e.target.closest('[data-buy]'); if (b) buyPack(PACKS.find((p) => p.id === b.dataset.buy)); });
     $('shop-cards').addEventListener('click', (e) => { const b = e.target.closest('[data-buycard]'); if (b) buyCard(b.dataset.buycard); });
     $('owned').addEventListener('click', (e) => { const b = e.target.closest('[data-open]'); if (b) openPack(PACKS.find((p) => p.id === b.dataset.open), e.ctrlKey || e.metaKey ? Infinity : buyQty); });   // a number key held (1 = 10, 2-9 = that many, 0 = all) opens that many; Ctrl (or Cmd) + click opens every copy
+    $('pack-more').addEventListener('click', () => drawPackCards(PACK_MORE));
     $('pack').addEventListener('click', (e) => { const f = e.target.closest('.flip'); if (f) f.classList.add('flipped'); });
     $('reveal').addEventListener('click', () => {
-      document.querySelectorAll('#pack .flip:not(.flipped)').forEach((f, i) => setTimeout(() => f.classList.add('flipped'), i * 200));
+      document.querySelectorAll('#pack .flip:not(.flipped)').forEach((f, i) => setTimeout(() => f.classList.add('flipped'), Math.min(i * 200, 2000)));
     });
     $('coll-more').addEventListener('click', () => { collLimit += COLLECTION_MORE; renderCollection(); });
     $('collection').addEventListener('click', (e) => {
