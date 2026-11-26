@@ -452,7 +452,6 @@
       { id: 'finluck', group: 'Luck', name: 'Finish Fortune', max: 5, base: 2, desc: 'Finishes show up more often.', fx: (l) => `finish chances x${(1 + 0.1 * l).toFixed(1)}` },
       { id: 'divtouch', group: 'Luck', name: 'Divine Touch', max: 4, base: 3, desc: 'Divine cards show up more often.', fx: (l) => `Divine chance x${(1 + 0.5 * l).toFixed(1)}` },
       { id: 'prestluck', group: 'Luck', name: 'Stronger Prestige', max: 5, base: 3, desc: 'Each prestige gives a bit more luck.', fx: (l) => `${(PRESTIGE_LUCK + 0.005 * l).toFixed(3)}x luck per prestige` },
-      { id: 'floor', group: 'Luck', name: 'Rarity Floor', max: 4, base: 4, desc: 'The weakest rarities stop dropping (packs that only hold weak cards are not affected).', fx: (l) => l ? 'no ' + RARITIES.slice(0, l).map((r) => r.name).join(', ') : 'off' },
       { id: 'hold', group: 'Free Packs', name: 'Bigger Pockets', max: 10, base: 1, desc: 'Store more free packs.', fx: (l) => `+${l} stored` },
       { id: 'quick', group: 'Free Packs', name: 'Quick Hands', max: 10, base: 1, desc: 'Free packs arrive sooner (it stacks with prestige).', fx: (l) => `-${2 * l}s wait` },
       { id: 'stock', group: 'Packs & Cards', name: 'Extra Stock', max: 4, base: 3, desc: 'More rotating packs in the Shop.', fx: (l) => `+${l} rotating pack${l === 1 ? '' : 's'}` },
@@ -545,7 +544,7 @@
     function pullOne({ items, sum, lvSum = [], divine, finish, boost = 1, upItems = [], upSum = 0, upChance = 0, divUp = [], divChance = 0, divBoost = 1 }) {
       let e;
       const L = luck();   // prestige luck: every chance of something rarer is multiplied by this
-      const S = state.ascend.lv, floor = S.floor || 0, ff = 1 + 0.1 * (S.finluck || 0), dt = 1 + 0.5 * (S.divtouch || 0);   // skills: Rarity Floor, Finish Fortune, Divine Touch
+      const S = state.ascend.lv, ff = 1 + 0.1 * (S.finluck || 0), dt = 1 + 0.5 * (S.divtouch || 0);   // skills: Finish Fortune, Divine Touch
       if (divChance && Math.random() < Math.min(1, divChance * dt * L)) e = divUp[Math.floor(Math.random() * divUp.length)];
       else if (upChance && Math.random() < Math.min(1, upChance * L)) {
         let r = Math.random() * upSum, pick = upItems[upItems.length - 1];
@@ -555,12 +554,10 @@
       else {
         // each rarity step up counts L times as much. The running totals are worked out once per luck level, then each pull is a binary search
         // (a straight scan over thousands of characters for every card is what made opening 100k+ packs so slow)
-        const ck = L + '|' + floor;
-        if (items._cumK !== ck) {
-          const cum = new Float64Array(items.length);
-          const build = (fl) => { let t = 0; for (let i = 0; i < items.length; i++) { if (items[i].e.level >= fl) t += items[i].w * lw(items[i].e.level, L); cum[i] = t; } return t; };
-          if (!(build(floor) > 0) && floor) build(0);   // nothing left above the floor in this pack: ignore the floor
-          items._cum = cum; items._cumK = ck;
+        if (items._cumL !== L) {
+          const cum = new Float64Array(items.length); let t = 0;
+          for (let i = 0; i < items.length; i++) { t += items[i].w * lw(items[i].e.level, L); cum[i] = t; }
+          items._cum = cum; items._cumL = L;
         }
         const cum = items._cum, total = cum[cum.length - 1], r = Math.random() * total;
         let lo = 0, hi = items.length - 1;
