@@ -477,10 +477,10 @@
     const skillCost = (x, lv) => x.base * Math.pow(2, lv);
     // The Ascend tab has sub-tabs. To add one: add a row here (need = a skill id that unlocks it, or leave it out) and a function in ASCEND_VIEWS that returns its HTML.
     const ASCEND_TABS = [
+      { id: 'rebirth', name: 'Ascend' },
       { id: 'tree', name: 'Skill Tree' },
       { id: 'gens', name: 'Generators', need: 'genunlock' },
       { id: 'workshop', name: 'Workshop', need: 'workunlock' },
-      { id: 'rebirth', name: 'Ascend' },
     ];
     // Generators: they make coins on their own (also while the page is closed, up to GEN_OFFLINE_HOURS) and you keep them through prestiges and Ascends.
     const GENERATORS = [
@@ -1109,7 +1109,7 @@
     const fmtBig = (n) => n >= 1e15 ? n.toExponential(2) : (Math.round(n * 10) / 10).toLocaleString();
 
     // ---- The Ascend tab ----
-    let ascendView = 'tree';
+    let ascendView = 'rebirth';
     const ASCEND_VIEWS = {
       tree() {
         const a = state.ascend;
@@ -1163,7 +1163,7 @@
       $('tab-ascend').textContent = 'Ascend' + (a.points ? ` (${a.points})` : '');
       if ($('panel-ascend').hidden) return;
       const tabs = ASCEND_TABS.filter((t) => !t.need || sk(t.need));
-      if (!tabs.some((t) => t.id === ascendView)) ascendView = 'tree';
+      if (!tabs.some((t) => t.id === ascendView)) ascendView = tabs[0].id;
       const bar = tabs.map((t) => `<button type="button" class="fchip${t.id === ascendView ? ' on' : ''}" data-sub="${t.id}">${esc(t.name)}</button>`).join('');
       const bx = $('ascend-tabs'); if (bx.dataset.html !== bar) { bx.dataset.html = bar; bx.innerHTML = bar; }
       const h = ASCEND_VIEWS[ascendView](), body = $('ascend-body');
