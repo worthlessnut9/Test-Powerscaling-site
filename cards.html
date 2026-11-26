@@ -269,11 +269,11 @@
     // hold: the most of this pack you can keep in Open Packs. Leave it out for unlimited (paid packs) or 1 (free packs with a wait).
     const FIXED_PACKS = [   // packs that are always available (the Free Pack in Open Packs, paid packs always in the Shop)
       // (the ids 'basic' and 'mega' are kept from older versions so players keep their saved packs; only the names changed)
-      { id: 'basic', name: 'Free Pack', desc: 'A free pack every minute.', size: 4, cost: 0, cooldown: 60, hold: 3 },
-      { id: 'mega', name: 'Basic Pack', desc: 'Eight cards in one go.', size: 8, cost: 100, cooldown: 0 },
+      { id: 'basic', name: 'Free Pack', desc: 'Free.', size: 4, cost: 0, cooldown: 60, hold: 3 },
+      { id: 'mega', name: 'Basic Pack', desc: 'The standard pack.', size: 8, cost: 100, cooldown: 0 },
 
       // ---- ADD YOUR OWN PACKS HERE. Copy this example, remove the // at the start of each line, and edit it. ----
-      // { id: 'dragon-ball', name: 'Dragon Ball Pack', desc: 'Only Dragon Ball characters.', size: 5, cost: 50, cooldown: 0,
+      // { id: 'dragon-ball', name: 'Dragon Ball Pack', desc: 'Dragon Ball only.', size: 5, cost: 50, cooldown: 0,
       //   folder: 'Dragon Ball',                   // optional: only characters in this folder. Use a path for a sub-folder: 'Dragon Ball, Saiyan Saga'
       //   // folder: ['Marvel', 'DC'],             // ...or a list of folders. Use 'Not Sorted' for characters with no folder
       //   characters: ['Goku (Raditz Saga)'],      // optional: only these characters (names must match the sheet)
@@ -290,22 +290,22 @@
     const ROTATING_SLOTS = 3;
     const PACK_ROTATION_MINUTES = 5;
     const ROTATING_PACKS = [
-      { id: 'rot-lucky',  name: 'Lucky Pack',    desc: 'Rarer cards, finishes and Divines show up more often.', size: 8, cost: 200, cooldown: 0, rarityDrop: 0.97, finishBoost: 2, divineBoost: 5 },   // divineBoost: Divine chance x5 (1 in 20,000)
+      { id: 'rot-lucky',  name: 'Lucky Pack',    desc: 'Better odds.', size: 8, cost: 200, cooldown: 0, rarityDrop: 0.97, finishBoost: 2, divineBoost: 5 },   // divineBoost: Divine chance x5 (1 in 20,000)
         // finishBoost: every finish chance x2
-      { id: 'rot-superlucky', name: 'Super Lucky Pack', desc: 'Even better odds for rare cards, finishes and Divines.', size: 8, cost: 500, cooldown: 0, rarityDrop: 0.99, finishBoost: 4, divineBoost: 10, colors: ['#ffd23f', '#ff2bd6'] },   // finishBoost: every finish chance x4
-      { id: 'rot-dragonball', name: 'Dragon Ball Pack',   desc: 'Only Dragon Ball characters.',   size: 8, cost: 200, cooldown: 0, folder: 'Dragon Ball',   colors: ['#ff8a00', '#ffd23f'] },
-      { id: 'rot-karatekid',  name: 'Karate Kid Pack',    desc: 'Only Karate Kid characters.',    size: 8, cost: 200, cooldown: 0, folder: 'Karate Kid',    colors: ['#c4161c', '#f2f2f2'] },
-      { id: 'rot-opm',        name: 'One Punch Man Pack', desc: 'Only One Punch Man characters.', size: 8, cost: 200, cooldown: 0, folder: 'One Punch Man', colors: ['#ffd23f', '#e5392e'] },
-      { id: 'rot-jjk',        name: 'Jujutsu Kaisen Pack', desc: 'Only Jujutsu Kaisen characters.', size: 8, cost: 200, cooldown: 0, folder: 'Jujutsu Kaisen', colors: ['#2b1fa8', '#2bd1ff'] },
-      { id: 'rot-hxh',        name: 'Hunter x Hunter Pack', desc: 'Only Hunter x Hunter characters.', size: 8, cost: 200, cooldown: 0,
+      { id: 'rot-superlucky', name: 'Super Lucky Pack', desc: 'Much better odds.', size: 8, cost: 500, cooldown: 0, rarityDrop: 0.99, finishBoost: 4, divineBoost: 10, colors: ['#ffd23f', '#ff2bd6'] },   // finishBoost: every finish chance x4
+      { id: 'rot-dragonball', name: 'Dragon Ball Pack',   desc: 'Dragon Ball only.',   size: 8, cost: 200, cooldown: 0, folder: 'Dragon Ball',   colors: ['#ff8a00', '#ffd23f'] },
+      { id: 'rot-karatekid',  name: 'Karate Kid Pack',    desc: 'Karate Kid only.',    size: 8, cost: 200, cooldown: 0, folder: 'Karate Kid',    colors: ['#c4161c', '#f2f2f2'] },
+      { id: 'rot-opm',        name: 'One Punch Man Pack', desc: 'One Punch Man only.', size: 8, cost: 200, cooldown: 0, folder: 'One Punch Man', colors: ['#ffd23f', '#e5392e'] },
+      { id: 'rot-jjk',        name: 'Jujutsu Kaisen Pack', desc: 'Jujutsu Kaisen only.', size: 8, cost: 200, cooldown: 0, folder: 'Jujutsu Kaisen', colors: ['#2b1fa8', '#2bd1ff'] },
+      { id: 'rot-hxh',        name: 'Hunter x Hunter Pack', desc: 'Hunter x Hunter only.', size: 8, cost: 200, cooldown: 0,
         folders: ['Hunter x Hunter'], colors: ['#1f8a3b', '#d6f26b'] },
-      { id: 'rot-murderdrones', name: 'Murder Drones Pack', desc: 'Only Murder Drones characters.', size: 8, cost: 200, cooldown: 0,
+      { id: 'rot-murderdrones', name: 'Murder Drones Pack', desc: 'Murder Drones only.', size: 8, cost: 200, cooldown: 0,
         folders: ['Glitch Productions, Murder Drones'], colors: ['#e5392e', '#2a2a40'] },
-      { id: 'rot-demonslayer', name: 'Demon Slayer Pack', desc: 'Only Demon Slayer characters.', size: 8, cost: 200, cooldown: 0, folder: 'Demon Slayer', colors: ['#1f9e6e', '#2a2a40'] },
-      { id: 'rot-truegold', name: 'True Gold', desc: 'Every card has the Gold Border and Full Gold finishes.', size: 8, cost: 7000, cooldown: 0, finish: 'bg', fixedPrice: true, colors: ['#a87400', '#ffe27a'] },
-      { id: 'rot-new', name: 'The New Pack', desc: 'One card you do not own yet: a base card or any finish combo. Once you own everything, it gives a Divine card with every finish.', size: 1, cost: 500, cooldown: 0, unowned: true, colors: ['#2bd1ff', '#7a2bff'] },   // unowned: the card is always one you do not have (a character + finish combo you have no copy of)
+      { id: 'rot-demonslayer', name: 'Demon Slayer Pack', desc: 'Demon Slayer only.', size: 8, cost: 200, cooldown: 0, folder: 'Demon Slayer', colors: ['#1f9e6e', '#2a2a40'] },
+      { id: 'rot-truegold', name: 'True Gold', desc: 'All Gold.', size: 8, cost: 7000, cooldown: 0, finish: 'bg', fixedPrice: true, colors: ['#a87400', '#ffe27a'] },
+      { id: 'rot-new', name: 'The New Pack', desc: 'A card you do not own.', size: 1, cost: 500, cooldown: 0, unowned: true, colors: ['#2bd1ff', '#7a2bff'] },   // unowned: the card is always one you do not have (a character + finish combo you have no copy of)
       // Every card has ALL four finishes. (A pack can also have shopChance: 0.01 = it only shows up in 1 in 100 rotations; the God Pack no longer uses it.) oncePerRotation: you can only buy it once each time the shop rotates. fixedPrice: skips the automatic price rise.
-      { id: 'rot-god', name: 'God Pack', desc: 'Every card is Foil, Shiny, Gold Border and Full Gold.', size: 8, cost: 5000, cooldown: 0, finish: 'fsbg',
+      { id: 'rot-god', name: 'God Pack', desc: 'All finishes.', size: 8, cost: 5000, cooldown: 0, finish: 'fsbg',
         oncePerRotation: true, fixedPrice: true, colors: ['#ff2bd6', '#ffd23f'] },
       // ---- ADD YOUR OWN HERE (same options as the packs above: folder, characters, minTier, maxTier, colors, rarityDrop, hold, finishBoost) ----
     ];
@@ -324,9 +324,9 @@
     const RARITY_COLORS = [['#8a8f99', '#c9ced6'], ['#13a67b', '#7be0b4'], ['#2b5cff', '#2bd1ff'], ['#7a2bff', '#b98aff'], ['#b32bff', '#ff2b8a'],
       ['#e5392e', '#ff9f2e'], ['#ff6a00', '#ffd23f'], ['#00b3a4', '#7affd9'], ['#1b1f3a', '#6a5cff'], ['#c9971c', '#fff3b0']];
     const FINISH_COLORS = { f: ['#2bd1ff', '#e9f7ff'], s: ['#ff2bd6', '#2bd1ff'], b: ['#c9971c', '#ffe27a'], g: ['#a87400', '#ffd34a'] };
-    const RARITY_PACKS = RARITIES.map((r, i) => ({ id: 'rarity-' + slug(r.name), name: r.name + ' Pack', desc: (i === DIVINE ? DIVINE_PACK_SIZE + ' card' : RARITY_PACK_SIZE + ' cards') + ', ' + (i === DIVINE ? 'guaranteed ' : 'every one ') + r.name + '.',
+    const RARITY_PACKS = RARITIES.map((r, i) => ({ id: 'rarity-' + slug(r.name), name: r.name + ' Pack', desc: 'All ' + r.name + '.',
       size: i === DIVINE ? DIVINE_PACK_SIZE : RARITY_PACK_SIZE, cost: r.name === 'Divine' ? DIVINE_PACK_COST : RARITY_PACK_BASE + RARITY_PACK_STEP * i, fixedPrice: i === DIVINE, divineDouble: i === DIVINE, cooldown: 0, rarity: i, upgrade: i < DIVINE ? RARITY_UPGRADE_CHANCE : 0, divineChance: i === DIVINE - 1 ? TRANSCENDENT_DIVINE_CHANCE : 0, colors: RARITY_COLORS[i % RARITY_COLORS.length] }));
-    const FINISH_PACKS = VARIANTS.map(([c, n]) => ({ id: 'finish-' + c, name: n + ' Pack', desc: 'Every card has the ' + n + ' finish.',
+    const FINISH_PACKS = VARIANTS.map(([c, n]) => ({ id: 'finish-' + c, name: n + ' Pack', desc: 'All ' + n + '.',
       size: FINISH_PACK_SIZE, cost: FINISH_PACK_COST[c], cooldown: 0, finish: c, colors: FINISH_COLORS[c] })).sort((a, b) => a.cost - b.cost);
     const EXTRA_PACKS = ROTATING_PACKS.concat(RARITY_PACKS, FINISH_PACKS);   // everything that can show up in the rotating slots
     const PACKS = FIXED_PACKS.concat(EXTRA_PACKS);   // every pack in the game
