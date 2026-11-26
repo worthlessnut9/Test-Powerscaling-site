@@ -439,6 +439,7 @@
     // Every level of a skill costs double the one before it: base, base x2, base x4, ... (a skill with max 1 is a one-time buy costing its base).
     const PRESTIGE_MAX = 100;   // the top prestige level
     const POINTS_PER_CLIMB = 1;
+    const VAULT_PER_LEVEL = 5;   // Favorite Vault: how many different favorited cards each level keeps
     const SKILLS = [
       { id: 'price', group: 'Coins', name: 'Better Prices', max: 10, base: 1, desc: 'Every card sells for more.', fx: (l) => `+${10 * l}% sell value` },
       { id: 'divapp', group: 'Coins', name: 'Divine Appraisal', max: 10, base: 2, desc: 'Divine cards sell for even more.', fx: (l) => `+${25 * l}% Divine sell value` },
@@ -460,6 +461,7 @@
       { id: 'pity', group: 'Packs & Cards', name: 'Pity Timer', max: 4, base: 3, desc: 'Every so often a pack comes out one rarity higher.', fx: (l) => l ? `every ${60 - 10 * l}th pack opened` : 'off' },
       { id: 'climb', group: 'Runs', name: 'Cheaper Climb', max: 5, base: 2, desc: 'Prestige costs less coins.', fx: (l) => `-${5 * l}% prestige prices` },
       { id: 'keep', group: 'Runs', name: 'Keepsake', max: 4, base: 3, desc: 'Keep your most valuable cards when you prestige or Ascend.', fx: (l) => `keep your best ${l}` },
+      { id: 'vault', group: 'Runs', name: 'Favorite Vault', max: 10, base: 2, desc: 'Favorited cards survive a prestige or Ascend, every copy of them. If you favorite more than fit, the most valuable ones are kept.', fx: (l) => `keeps up to ${VAULT_PER_LEVEL * l} favorited cards` },
       { id: 'autosell', group: 'Automation', name: 'Auto-Sell Duplicates', max: 1, base: 3, desc: 'Packs you open sell their extra copies on the spot (you keep one of each; favorites are skipped).', fx: (l) => l ? 'unlocked' : 'locked', auto: 'sell' },
       { id: 'autoopen', group: 'Automation', name: 'Auto-Open', max: 1, base: 3, desc: 'Your stored free packs open by themselves (the page has to be open).', fx: (l) => l ? 'unlocked' : 'locked', auto: 'open' },
       { id: 'autoprest', group: 'Automation', name: 'Auto-Prestige', max: 1, base: 4, desc: 'Prestiges for you as soon as you can afford it (up to the level you choose). It resets your coins, cards and packs each time, and it never Ascends for you.', fx: (l) => l ? 'unlocked' : 'locked', auto: 'prest', autoOff: true },
@@ -969,7 +971,7 @@
             <div class="frow"><span class="muted">Gives luck +${pct(Math.pow(PRESTIGE_LUCK, n))}, ${startCoinsFor(n).toLocaleString()} starting coins and room for ${PACKS.find((x) => x.id === 'basic').hold + PACK_HOLD_PER_PRESTIGE * n} stored Free Packs</span>
               <button class="btn ${next ? 'primary' : ''}" data-prestige="${n}" ${st.ok ? '' : 'disabled'} style="margin-left:auto">${st.ok ? (next ? 'Prestige now' : 'Skip to prestige ' + n) : 'Requirements not met'}</button></div>`;
         });
-        h += '<p class="muted" style="margin:8px 0">Prestiging resets your coins and removes all your cards, packs and favorites. You keep your prestige level and luck.</p>';
+        h += '<p class="muted" style="margin:8px 0">Prestiging resets your coins and removes all your cards, packs and favorites' + keepNote() + '. You keep your prestige level and luck.</p>';
       }
       if (box.dataset.html === h) return;   // nothing changed: keep the button as it is, so a click is never lost to a redraw
       box.dataset.html = h; box.innerHTML = h;
@@ -979,7 +981,7 @@
       const P = state.prestige || 0, q = prestigeRows && prestigeRows[n - 1];
       if (!q || n <= P || busy || state.coins < q.price) return;
       if (q.card) { const r = resolveReq(q.card); if (!r || !ownsReq(r)) return; }
-      if (!auto && !window.confirm(`Go to Prestige ${n}${n > P + 1 ? ' (skipping ' + (n - P - 1) + ' level' + (n - P - 1 > 1 ? 's' : '') + ')' : ''}? This resets your coins to ${startCoinsFor(n).toLocaleString()} and removes ALL your cards, packs and favorites. You keep the luck.`)) return;
+      if (!auto && !window.confirm(`Go to Prestige ${n}${n > P + 1 ? ' (skipping ' + (n - P - 1) + ' level' + (n - P - 1 > 1 ? 's' : '') + ')' : ''}? This resets your coins to ${startCoinsFor(n).toLocaleString()} and removes ALL your cards, packs and favorites${keepNote()}. You keep the luck.`)) return;
       freshRun(n);
       const got = reachCheck();
       save(); $('pack-box').hidden = true; if (!auto) location.hash = '#packs';
@@ -987,12 +989,13 @@
       if (got) $('status').textContent = `Prestige ${PRESTIGE_MAX} reached! You earned ${POINTS_PER_CLIMB} skill point${POINTS_PER_CLIMB === 1 ? '' : 's'}: open the Ascend tab.`;
     }
     // Starts a new run at prestige n: your coins, cards, packs and favorites reset, but the Skill Tree stays (Keepsake keeps your best cards, Starter Packs adds some Basic Packs)
+    const keepNote = () => { const p = []; if (sk('vault')) p.push(`up to ${sk('vault') * VAULT_PER_LEVEL} favorited cards`); if (sk('keep')) p.push(`your ${sk('keep')} best card${sk('keep') === 1 ? '' : 's'}`); return p.length ? ' (except ' + p.join(' and ') + ', which you keep)' : ''; };
+    const valueOfKey = (k) => sellPrice(byName.get(k.split('||')[0]), flagsOf(k));
     function freshRun(n) {
-      const keepN = sk('keep'), cards = {}, fav = {}, packs = {};
-      if (keepN) {
-        Object.keys(state.cards).filter((k) => state.cards[k] > 0 && byName.has(k.split('||')[0])).map((k) => ({ k, v: sellPrice(byName.get(k.split('||')[0]), flagsOf(k)) }))
-          .sort((a, b) => b.v - a.v).slice(0, keepN).forEach((x) => { cards[x.k] = 1; if (state.fav[x.k]) fav[x.k] = true; });
-      }
+      const keepN = sk('keep'), vault = sk('vault') * VAULT_PER_LEVEL, cards = {}, fav = {}, packs = {};
+      const have = Object.keys(state.cards).filter((k) => state.cards[k] > 0 && byName.has(k.split('||')[0])).map((k) => ({ k, v: valueOfKey(k) })).sort((x, y) => y.v - x.v);
+      if (vault) have.filter((x) => state.fav[x.k]).slice(0, vault).forEach((x) => { cards[x.k] = state.cards[x.k]; fav[x.k] = true; });   // Favorite Vault: every copy, still favorited
+      if (keepN) have.filter((x) => !cards[x.k]).slice(0, keepN).forEach((x) => { cards[x.k] = 1; if (state.fav[x.k]) fav[x.k] = true; });   // Keepsake: one copy of your best cards
       if (sk('starter')) packs.mega = 5 * sk('starter');
       state = { coins: startCoinsFor(n), cards, ready: {}, packs, next: {}, fav, lim: {}, cbuy: {}, divOpened: 0, divSlot: 0, prestige: n, ascend: state.ascend };
     }
@@ -1006,7 +1009,7 @@
     }
     function doAscend() {
       if (busy || (state.prestige || 0) < PRESTIGE_MAX) return;
-      if (!window.confirm(`Ascend? You go back to Prestige 0 and lose your coins, cards, packs and favorites${sk('keep') ? ' (except the ' + sk('keep') + ' best you keep)' : ''}. You keep your skills and generators, and reaching Prestige ${PRESTIGE_MAX} again earns another ${POINTS_PER_CLIMB} point${POINTS_PER_CLIMB === 1 ? '' : 's'}.`)) return;
+      if (!window.confirm(`Ascend? You go back to Prestige 0 and lose your coins, cards, packs and favorites${keepNote()}. You keep your skills and generators, and reaching Prestige ${PRESTIGE_MAX} again earns another ${POINTS_PER_CLIMB} point${POINTS_PER_CLIMB === 1 ? '' : 's'}.`)) return;
       state.ascend.claimed = false; state.ascend.count++;
       freshRun(0); rebuildPrestigeRows();
       save(); $('pack-box').hidden = true; location.hash = '#packs';
