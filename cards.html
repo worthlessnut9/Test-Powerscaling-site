@@ -435,9 +435,9 @@
     const KEY = 'powerscaling-cards-v2';
 
     // =====================  SKILL TREE (the Ascend tab)  =====================
-    // Reach Prestige PRESTIGE_MAX to earn POINTS_PER_CLIMB skill points (and unlock the Ascend tab). Ascending takes you back to Prestige 0 so you can climb again for more.
+    // Reach Prestige ASCEND_AT to earn POINTS_PER_CLIMB skill points (and unlock the Ascend tab). Ascending takes you back to Prestige 0 so you can climb again for more.
     // Every level of a skill costs double the one before it: base, base x2, base x4, ... (a skill with max 1 is a one-time buy costing its base).
-    const PRESTIGE_MAX = 100;   // the top prestige level
+    const ASCEND_AT = 50;   // the prestige level where you earn a skill point and can Ascend (you can keep prestiging past it)
     const POINTS_PER_CLIMB = 1;
     const VAULT_PER_LEVEL = 5;   // Favorite Vault: how many different favorited cards each level keeps
     const SKILLS = [
@@ -461,6 +461,7 @@
       { id: 'pity', group: 'Packs & Cards', name: 'Pity Timer', max: 4, base: 3, desc: 'Every so often a pack comes out one rarity higher.', fx: (l) => l ? `every ${60 - 10 * l}th pack opened` : 'off' },
       { id: 'climb', group: 'Runs', name: 'Cheaper Climb', max: 5, base: 2, desc: 'Prestige costs less coins.', fx: (l) => `-${5 * l}% prestige prices` },
       { id: 'keep', group: 'Runs', name: 'Keepsake', max: 4, base: 3, desc: 'Keep your most valuable cards when you prestige or Ascend.', fx: (l) => `keep your best ${l}` },
+      { id: 'overflow', group: 'Runs', name: 'Overflow', max: 10, base: 3, desc: `Keep prestiging past Prestige ${ASCEND_AT} (there is no limit) and earn extra skill points along the way. Each level makes them come sooner.`, fx: (l) => l ? `+1 point every ${OVERFLOW_BASE_STEP - l} prestiges past ${ASCEND_AT}` : 'off' },
       { id: 'vault', group: 'Runs', name: 'Favorite Vault', max: 10, base: 2, desc: 'Favorited cards survive a prestige or Ascend, every copy of them. If you favorite more than fit, the most valuable ones are kept.', fx: (l) => `keeps up to ${VAULT_PER_LEVEL * l} favorited cards` },
       { id: 'autosell', group: 'Automation', name: 'Auto-Sell Duplicates', max: 1, base: 3, desc: 'Packs you open sell their extra copies on the spot (you keep one of each; favorites are skipped).', fx: (l) => l ? 'unlocked' : 'locked', auto: 'sell' },
       { id: 'autoopen', group: 'Automation', name: 'Auto-Open', max: 1, base: 3, desc: 'Your stored free packs open by themselves (the page has to be open).', fx: (l) => l ? 'unlocked' : 'locked', auto: 'open' },
@@ -492,11 +493,11 @@
     // Generators also slowly make Ascend points. ptHours = how many hours ONE of that generator takes to make one point. Owning more helps only a little:
     // the output grows with the square root of how many you own (4 of them = 2x, 100 of them = 10x). Make the hours bigger to make points rarer.
     const GEN_COST_GROWTH = 1.15, GEN_OFFLINE_HOURS = 8;   // each one you own makes the next cost this much more; offline earnings stop after this many hours
-    const newAscend = () => ({ points: 0, total: 0, count: 0, unlocked: false, claimed: false, lv: {}, auto: { sell: false, open: false, prest: false, buy: false }, pity: 0, gen: {}, genTime: 0, genAcc: 0, ptAcc: 0, mgr: {}, mgrOff: {}, prestTo: PRESTIGE_MAX, buyPack: 'mega', buyKeep: 0 });
+    const newAscend = () => ({ points: 0, total: 0, count: 0, unlocked: false, claimed: false, lv: {}, auto: { sell: false, open: false, prest: false, buy: false }, pity: 0, gen: {}, genTime: 0, genAcc: 0, ptAcc: 0, mgr: {}, mgrOff: {}, prestTo: ASCEND_AT, over: 0, buyPack: 'mega', buyKeep: 0 });
     const normAscend = (a) => {
       const d = newAscend(); if (!a || typeof a !== 'object') return d;
       return { points: +a.points || 0, total: +a.total || 0, count: +a.count || 0, unlocked: !!a.unlocked, claimed: !!a.claimed, lv: Object.assign({}, a.lv || {}), auto: { sell: !!(a.auto && a.auto.sell), open: !!(a.auto && a.auto.open), prest: !!(a.auto && a.auto.prest), buy: !!(a.auto && a.auto.buy) },
-        pity: +a.pity || 0, gen: Object.assign({}, a.gen || {}), genTime: +a.genTime || 0, genAcc: +a.genAcc || 0, ptAcc: +a.ptAcc || 0, mgr: Object.assign({}, a.mgr || {}), mgrOff: Object.assign({}, a.mgrOff || {}), prestTo: Math.max(1, Math.min(PRESTIGE_MAX, Math.floor(+a.prestTo) || PRESTIGE_MAX)), buyPack: String(a.buyPack || 'mega'), buyKeep: Math.max(0, +a.buyKeep || 0) };
+        pity: +a.pity || 0, gen: Object.assign({}, a.gen || {}), genTime: +a.genTime || 0, genAcc: +a.genAcc || 0, ptAcc: +a.ptAcc || 0, mgr: Object.assign({}, a.mgr || {}), mgrOff: Object.assign({}, a.mgrOff || {}), prestTo: Math.max(1, Math.floor(+a.prestTo) || ASCEND_AT), over: Math.max(0, Math.floor(+a.over) || 0), buyPack: String(a.buyPack || 'mega'), buyKeep: Math.max(0, +a.buyKeep || 0) };
     };
     const sk = (id) => state.ascend.lv[id] || 0;   // your level in a skill
     const packSize = (p) => p.size + (p.divineDouble ? 0 : sk('xcard'));   // cards in one pack
@@ -931,10 +932,11 @@
 
     // ---- Prestige: reset your account for permanent luck (every chance of something rarer x1.04, compounding) and more starting gold ----
     // The prestige levels are part of the site now (they used to come from the "Cards Prestige" sheet). Level 1 costs 50,000; from level 2 the price goes
-    // 100k, 250k, 500k, 750k, 1M, 2.5M, 5M, 7.5M, 10M, ... (1, 2.5, 5 and 7.5 times each power of ten) up to PRESTIGE_MAX.
+    // 100k, 250k, 500k, 750k, 1M, 2.5M, 5M, 7.5M, 10M, ... (1, 2.5, 5 and 7.5 times each power of ten), and on like that with no top level.
     const prestigePrice = (n) => n === 1 ? 50000 : Number(['1', '2.5', '5', '7.5'][(n - 2) % 4] + 'e' + (5 + Math.floor((n - 2) / 4)));   // written as text like 2.5e29 so the number comes out exact
-    let prestigeRows = [];
-    const rebuildPrestigeRows = () => { const m = 1 - 0.05 * sk('climb'); prestigeRows = Array.from({ length: PRESTIGE_MAX }, (_, i) => ({ price: m === 1 ? prestigePrice(i + 1) : Math.round(prestigePrice(i + 1) * m), card: '' })); };   // Cheaper Climb lowers the prices   // [{ price, card }]; card = a card you must own too ('' = none)
+    // Prestige never has to stop: the price of any level is worked out when it is needed. It only ends where the price no longer fits in a number (around level 1,200).
+    const PRESTIGE_LIMIT = (() => { let n = 1; while (isFinite(prestigePrice(n + 1))) n++; return n; })();
+    const prestigeRow = (n) => { const m = 1 - 0.05 * sk('climb'), p = prestigePrice(n); return { price: m === 1 ? p : Math.round(p * m), card: '' }; };   // Cheaper Climb lowers the price
     // The card a prestige needs: a character name, optionally with finishes ("Goku", "Goku Shiny", "Goku (Gold Border)")
     function resolveReq(text) {
       const all = [...byName.values()], find = (t) => all.find((e) => nameOf(e.c).toLowerCase() === t.trim().toLowerCase());
@@ -957,14 +959,14 @@
         <div class="frow"><span class="lbl">Luck</span><b>+${pct(L)}</b><span class="muted">every chance of a rarer card or finish is ${L.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')}x</span></div>
         <div class="frow"><span class="lbl">Start</span><b>${startCoinsFor(P).toLocaleString()} coins</b><span class="muted">what you start with after a prestige</span></div>
         <div class="frow"><span class="lbl">Free Pack</span><b>holds ${holdOf(PACKS.find((x) => x.id === 'basic'))}</b><span class="muted">a new one every ${cooldownOf(PACKS.find((x) => x.id === 'basic'))}s &middot; each prestige adds ${PACK_HOLD_PER_PRESTIGE} stored pack and makes the wait ${COOLDOWN_CUT_PER_PRESTIGE}s shorter</span></div>`;
-      if (P >= prestigeRows.length) h += `<p><b>${prestigeRows.length ? 'Max prestige reached. Open the Ascend tab to earn skill points and start a new climb.' : 'No prestige levels are set up yet.'}</b></p>`;
+      if (P >= PRESTIGE_LIMIT) h += '<p><b>Max prestige reached: the next price is too big for the game to count.</b></p>';
       else {
         // Every level above yours can be taken straight away if you meet THAT level's price and card (you can skip levels)
         const status = (q) => { const req = q.card ? resolveReq(q.card) : null, haveCard = !q.card || !!(req && ownsReq(req)), haveCoins = state.coins >= q.price; return { req, haveCard, haveCoins, ok: haveCard && haveCoins }; };
         // Show the next level, plus the (up to 5) highest levels further on that you could already afford to skip to
-        const skips = []; for (let i = P + 1; i < prestigeRows.length && prestigeRows[i].price <= state.coins; i++) skips.push(i);
+        const skips = []; for (let i = P + 1; i < PRESTIGE_LIMIT && prestigeRow(i + 1).price <= state.coins; i++) skips.push(i);
         [P].concat(skips.slice(-5)).forEach((i) => {
-          const q = prestigeRows[i], n = i + 1, st = status(q), next = i === P;
+          const q = prestigeRow(i + 1), n = i + 1, st = status(q), next = i === P;
           h += `<h2 class="sec">${next ? 'Prestige ' + n + ' requires' : 'Skip to prestige ' + n}</h2>
             <div class="frow"><span class="lbl">Coins</span><b>${q.price.toLocaleString()}</b><span class="muted">${st.haveCoins ? 'you have enough' : 'you have ' + state.coins.toLocaleString()}</span></div>
             ${q.card ? `<div class="frow"><span class="lbl">Card</span><b>${esc(q.card)}</b><span class="muted">${st.req ? (st.haveCard ? 'you own it' : 'you do not own it yet') : 'this card is not in the character list'}</span></div>` : ''}
@@ -978,7 +980,7 @@
       box.querySelectorAll('[data-prestige]').forEach((b) => { b.onclick = () => doPrestige(+b.dataset.prestige); });
     }
     function doPrestige(n, auto = false) {   // auto: Auto-Prestige (no question, and you are not moved to another tab)   // n = the prestige level you are going to (it can be higher than your level + 1)
-      const P = state.prestige || 0, q = prestigeRows && prestigeRows[n - 1];
+      const P = state.prestige || 0, q = n >= 1 && n <= PRESTIGE_LIMIT && prestigeRow(n);
       if (!q || n <= P || busy || state.coins < q.price) return;
       if (q.card) { const r = resolveReq(q.card); if (!r || !ownsReq(r)) return; }
       if (!auto && !window.confirm(`Go to Prestige ${n}${n > P + 1 ? ' (skipping ' + (n - P - 1) + ' level' + (n - P - 1 > 1 ? 's' : '') + ')' : ''}? This resets your coins to ${startCoinsFor(n).toLocaleString()} and removes ALL your cards, packs and favorites${keepNote()}. You keep the luck.`)) return;
@@ -986,7 +988,7 @@
       const got = reachCheck();
       save(); $('pack-box').hidden = true; if (!auto) location.hash = '#packs';
       renderShop(); renderCardShop(); renderAll(); showTab();
-      if (got) $('status').textContent = `Prestige ${PRESTIGE_MAX} reached! You earned ${POINTS_PER_CLIMB} skill point${POINTS_PER_CLIMB === 1 ? '' : 's'}: open the Ascend tab.`;
+      if (got) $('status').textContent = `You earned ${got} skill point${got === 1 ? '' : 's'}: open the Ascend tab.`;
     }
     // Starts a new run at prestige n: your coins, cards, packs and favorites reset, but the Skill Tree stays (Keepsake keeps your best cards, Starter Packs adds some Basic Packs)
     const keepNote = () => { const p = []; if (sk('vault')) p.push(`up to ${sk('vault') * VAULT_PER_LEVEL} favorited cards`); if (sk('keep')) p.push(`your ${sk('keep')} best card${sk('keep') === 1 ? '' : 's'}`); return p.length ? ' (except ' + p.join(' and ') + ', which you keep)' : ''; };
@@ -999,19 +1001,22 @@
       if (sk('starter')) packs.mega = 5 * sk('starter');
       state = { coins: startCoinsFor(n), cards, ready: {}, packs, next: {}, fav, lim: {}, cbuy: {}, divOpened: 0, divSlot: 0, prestige: n, ascend: state.ascend };
     }
-    // Reaching the top prestige for the first time in a climb pays out skill points and unlocks the Ascend tab
+    // Reaching Prestige ASCEND_AT for the first time in a climb pays out skill points and unlocks the Ascend tab. With the Overflow skill, every few prestiges past it pay a point too.
+    // Returns how many points were paid.
+    const OVERFLOW_BASE_STEP = 12;   // Overflow level 1 pays a point every 11 prestiges past ASCEND_AT, and each level makes that 1 sooner (level 10: every 2)
     function reachCheck() {
-      const a = state.ascend;
-      if ((state.prestige || 0) < PRESTIGE_MAX || a.claimed) return false;
-      a.claimed = true; a.unlocked = true; a.points += POINTS_PER_CLIMB; a.total += POINTS_PER_CLIMB;
-      save();
-      return true;
+      const a = state.ascend, P = state.prestige || 0, ov = sk('overflow');
+      let got = 0;
+      if (P >= ASCEND_AT && !a.claimed) { a.claimed = true; a.unlocked = true; got += POINTS_PER_CLIMB; }
+      if (ov && P > ASCEND_AT) { const owed = Math.floor((P - ASCEND_AT) / (OVERFLOW_BASE_STEP - ov)) - a.over; if (owed > 0) { a.over += owed; got += owed; } }
+      if (got) { a.points += got; a.total += got; save(); }
+      return got;
     }
     function doAscend() {
-      if (busy || (state.prestige || 0) < PRESTIGE_MAX) return;
-      if (!window.confirm(`Ascend? You go back to Prestige 0 and lose your coins, cards, packs and favorites${keepNote()}. You keep your skills and generators, and reaching Prestige ${PRESTIGE_MAX} again earns another ${POINTS_PER_CLIMB} point${POINTS_PER_CLIMB === 1 ? '' : 's'}.`)) return;
-      state.ascend.claimed = false; state.ascend.count++;
-      freshRun(0); rebuildPrestigeRows();
+      if (busy || (state.prestige || 0) < ASCEND_AT) return;
+      if (!window.confirm(`Ascend? You go back to Prestige 0 and lose your coins, cards, packs and favorites${keepNote()}. You keep your skills and generators, and reaching Prestige ${ASCEND_AT} again earns another ${POINTS_PER_CLIMB} point${POINTS_PER_CLIMB === 1 ? '' : 's'}.`)) return;
+      state.ascend.claimed = false; state.ascend.over = 0; state.ascend.count++;
+      freshRun(0);
       save(); $('pack-box').hidden = true; location.hash = '#packs';
       renderShop(); renderCardShop(); renderAll(); showTab();
     }
@@ -1020,7 +1025,7 @@
       if (!x || lv >= x.max || a.points < skillCost(x, lv) || (x.needs && !sk(x.needs))) return;
       a.points -= skillCost(x, lv); a.lv[id] = lv + 1; skFlag = {};
       if (x.auto && !x.autoOff) a.auto[x.auto] = true;   // switch the new automation on (Auto-Prestige and Auto-Buy start off, so they never spend anything before you choose)
-      rebuildPrestigeRows(); updateRegen(); save();
+      const got = reachCheck(); updateRegen(); save();
       renderShop(); renderAll();
     }
 
@@ -1072,8 +1077,8 @@
     function autoPrestigeTick() {
       const a = state.ascend;
       if (!loaded || busy || !a.auto.prest || !sk('autoprest')) return false;
-      const P = state.prestige || 0, top = Math.min(a.prestTo, PRESTIGE_MAX);
-      for (let n = top; n > P; n--) if (state.coins >= prestigeRows[n - 1].price) { doPrestige(n, true); return true; }
+      const P = state.prestige || 0, top = Math.min(a.prestTo, PRESTIGE_LIMIT);
+      for (let n = top; n > P; n--) if (state.coins >= prestigeRow(n).price) { doPrestige(n, true); return true; }
       return false;
     }
     // Auto-Buy Packs: buys the chosen pack (only while it is in the Shop) with the coins above your "keep" amount
@@ -1108,7 +1113,7 @@
     const ASCEND_VIEWS = {
       tree() {
         const a = state.ascend;
-        let h = `<div class="frow" style="margin-bottom:14px"><span class="lbl">Points</span><b>${a.points}</b><span class="muted">${a.total} earned in total &middot; ${POINTS_PER_CLIMB} point${POINTS_PER_CLIMB === 1 ? '' : 's'} every time you reach Prestige ${PRESTIGE_MAX} &middot; every level costs double the one before</span></div>`;
+        let h = `<div class="frow" style="margin-bottom:14px"><span class="lbl">Points</span><b>${a.points}</b><span class="muted">${a.total} earned in total &middot; ${POINTS_PER_CLIMB} point${POINTS_PER_CLIMB === 1 ? '' : 's'} every time you reach Prestige ${ASCEND_AT} &middot; every level costs double the one before</span></div>`;
         [...new Set(SKILLS.map((x) => x.group))].forEach((grp) => {
           h += `<h2 class="sec">${esc(grp)}</h2><div class="sk-grid">`;
           SKILLS.filter((x) => x.group === grp).forEach((x) => {
@@ -1118,7 +1123,7 @@
               <div class="muted">${esc(x.desc)}</div>
               <div>Now: <b>${esc(lv || x.max === 1 ? x.fx(lv) : 'none')}</b>${done ? '' : `<br>Next: ${esc(x.fx(lv + 1))}`}</div>
               ${x.auto && lv ? `<label class="chk"><input type="checkbox" data-auto="${x.auto}"${a.auto[x.auto] ? ' checked' : ''}> On</label>` : ''}
-              ${x.auto === 'prest' && lv ? `<label class="chk">Stop at prestige <input class="sort" type="number" min="1" max="${PRESTIGE_MAX}" step="1" data-autoval="prestTo" value="${a.prestTo}" style="width:80px"></label>` : ''}
+              ${x.auto === 'prest' && lv ? `<label class="chk">Stop at prestige <input class="sort" type="number" min="1" max="${PRESTIGE_LIMIT}" step="1" data-autoval="prestTo" value="${a.prestTo}" style="width:80px"></label>` : ''}
               ${x.auto === 'buy' && lv ? `<label class="chk">Pack <select class="sort" data-autoval="buyPack">${(() => { const list = buyablePacks(); if (!list.some((p) => p.id === a.buyPack)) { const q = PACKS.find((p) => p.id === a.buyPack); if (q) list.push(q); } return list.map((p) => `<option value="${esc(p.id)}"${p.id === a.buyPack ? ' selected' : ''}>${esc(p.name)}${buyablePacks().includes(p) ? '' : ' (not in the Shop now)'}</option>`).join(''); })()}</select></label>
                 <label class="chk">Keep at least <input class="sort" type="number" min="0" step="any" data-autoval="buyKeep" value="${a.buyKeep}" style="width:110px"> coins</label>` : ''}
               <button class="btn ${done ? '' : 'primary'}" data-skill="${x.id}" ${done || locked || a.points < cost ? 'disabled' : ''}>${locked ? 'Needs ' + esc(SKILL_BY[x.needs].name) : done ? (x.max > 1 ? 'Maxed' : 'Owned') : `${x.max > 1 ? 'Upgrade' : 'Unlock'} (${cost.toLocaleString()} point${cost === 1 ? '' : 's'})`}</button></div>`;
@@ -1144,11 +1149,11 @@
       },
       workshop() { return '<p class="muted">The Workshop is empty for now. This tab is ready for new features.</p>'; },
       rebirth() {
-        const a = state.ascend, P = state.prestige || 0, ready = P >= PRESTIGE_MAX;
+        const a = state.ascend, P = state.prestige || 0, ready = P >= ASCEND_AT;
         return `<div class="filters">
-          <div class="frow"><span class="lbl">Prestige</span><b>${P} / ${PRESTIGE_MAX}</b><span class="muted">${ready ? 'You made it to the top.' : 'Reach the top prestige to Ascend.'}</span></div>
+          <div class="frow"><span class="lbl">Prestige</span><b>${P}</b><span class="muted">${ready ? 'You can Ascend now, or keep prestiging first.' : 'You can Ascend from prestige ' + ASCEND_AT + '.'}</span></div>
           <div class="frow"><span class="lbl">Ascended</span><b>${a.count}</b><span class="muted">times &middot; ${a.points} point${a.points === 1 ? '' : 's'} to spend</span></div>
-          <p class="muted" style="margin:4px 0">Ascending sends you back to Prestige 0 with a fresh run. You keep your skills and generators. Climbing to Prestige ${PRESTIGE_MAX} again earns ${POINTS_PER_CLIMB} more skill point${POINTS_PER_CLIMB === 1 ? '' : 's'}.</p>
+          <p class="muted" style="margin:4px 0">Ascending sends you back to Prestige 0 with a fresh run. You keep your skills and generators. Climbing to Prestige ${ASCEND_AT} again earns ${POINTS_PER_CLIMB} more skill point${POINTS_PER_CLIMB === 1 ? '' : 's'}.</p>
           <div class="frow"><button class="btn primary" data-ascend="1" ${ready ? '' : 'disabled'}>Ascend</button></div></div>`;
       },
     };
@@ -1180,7 +1185,7 @@
       else if (m) { if (m.checked) delete a.mgrOff[m.dataset.mgron]; else a.mgrOff[m.dataset.mgron] = true; save(); }
       else if (v) {
         const k = v.dataset.autoval;
-        if (k === 'prestTo') a.prestTo = Math.max(1, Math.min(PRESTIGE_MAX, Math.floor(+v.value) || PRESTIGE_MAX));
+        if (k === 'prestTo') a.prestTo = Math.max(1, Math.min(PRESTIGE_LIMIT, Math.floor(+v.value) || ASCEND_AT));
         else if (k === 'buyKeep') a.buyKeep = Math.max(0, +v.value || 0);
         else if (k === 'buyPack') a.buyPack = v.value;
         save(); renderAscend();
@@ -1496,7 +1501,7 @@
       if (e.key !== KEY) return;
       try {
         const s = JSON.parse(e.newValue);
-        if (s && typeof s.coins === 'number') { state = { coins: s.coins, cards: s.cards || {}, ready: s.ready || {}, packs: s.packs || {}, next: s.next || {}, fav: s.fav || {}, lim: s.lim || {}, cbuy: s.cbuy || {}, divOpened: s.divOpened || 0, divSlot: s.divSlot || 0, prestige: s.prestige || 0, ascend: normAscend(s.ascend) }; rebuildPrestigeRows(); updateRegen(); renderAll(); }
+        if (s && typeof s.coins === 'number') { state = { coins: s.coins, cards: s.cards || {}, ready: s.ready || {}, packs: s.packs || {}, next: s.next || {}, fav: s.fav || {}, lim: s.lim || {}, cbuy: s.cbuy || {}, divOpened: s.divOpened || 0, divSlot: s.divSlot || 0, prestige: s.prestige || 0, ascend: normAscend(s.ascend) }; updateRegen(); renderAll(); }
       } catch (err) { /* ignore */ }
     });
 
@@ -1519,7 +1524,6 @@
     // ---- Start ----
     buildFilters();
     syncFilterUI();
-    rebuildPrestigeRows();
     reachCheck();
     genTick();   // coins the generators made while the page was closed
     updateRegen();
